@@ -50,6 +50,7 @@ android {
 
 dependencies {
     api files('libs/xSocket-2.8.15.jar')
+    implementation 'com.android.support:multidex:1.0.3'
     implementation "net.zetetic:android-database-sqlcipher:4.5.3"
     implementation "androidx.sqlite:sqlite:2.3.1"
     implementation 'org.whispersystems:curve25519-android:0.5.0'
