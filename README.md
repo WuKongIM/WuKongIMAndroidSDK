@@ -26,21 +26,21 @@ allprojects {
 -dontwarn com.wukong.im.**
 -keep class com.wukong.im.**{*;}
 ```
-***初始化sdk***
+**初始化sdk**
 ```
 WKIM.getInstance().init(context, uid, token);
 ```
-***连接服务端***
+**连接服务端**
 ```
 WKIM.getInstance().getConnectionManager().connection();
 ```
-***发消息***
+**发消息**
 ```
 WKIM.getInstance().getConnectionManager().sendMessage(new WKTextContent("我是文本消息"), channelID, channelType);
 ```
 
 ## 监听
-***连接状态监听***
+**连接状态监听**
 ```
 WKIM.getInstance().getConnectionManager().addOnConnectionStatusListener("listener_key",new IConnectionStatus() {
             @Override
@@ -54,7 +54,7 @@ WKIM.getInstance().getConnectionManager().addOnConnectionStatusListener("listene
             }
         });
 ```
-***发送消息结果监听***
+**发送消息结果监听**
 ```
 WKIM.getInstance().getMsgManager().addSendMsgAckListener("listener_key", new ISendACK() {
             @Override
@@ -66,7 +66,7 @@ WKIM.getInstance().getMsgManager().addSendMsgAckListener("listener_key", new ISe
             }
         })
  ```
-***监听新消息***
+**监听新消息**
 ```
  WKIM.getInstance().getMsgManager().addOnNewMsgListener("listener_key", new INewMsgListener() {
             @Override
@@ -75,7 +75,7 @@ WKIM.getInstance().getMsgManager().addSendMsgAckListener("listener_key", new ISe
             }
         });
 ```
-***命令消息(cmd)监听***
+**命令消息(cmd)监听**
 ```
 WKIM.getInstance().getCMDManager().addCmdListener("listener_key", new ICMDListener() {
             @Override
