@@ -3,9 +3,15 @@
 
 ## 快速入门
 
-**集成**
+**Gradle**
 
-在主程序的build.gradle文件中添加：
+[![](https://jitpack.io/v/WuKongIM/WuKongIMAndroidSDK.svg)](https://jitpack.io/#WuKongIM/WuKongIMAndroidSDK)
+
+```
+implementation 'com.github.WuKongIM:WuKongIMAndroidSDK:1.0.1'
+```
+
+jitpack还需在主程序的`build.gradle`文件中添加：
 
 ```
 allprojects {
@@ -14,10 +20,6 @@ allprojects {
         maven { url 'https://jitpack.io' }
     }
 }
-```
-然后在app model中导入
-```
-implementation 'com.github.WuKongIM:wkim:1.0.0'
 ```
 **混淆**
 ```
