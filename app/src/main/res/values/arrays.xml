@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="data">
+        <item>单聊</item>
+        <item>群聊</item>
+    </string-array>
+</resources>

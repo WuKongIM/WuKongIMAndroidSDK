@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">悟空IM</string>
+    <string name="personal_chat">单聊</string>
+    <string name="group_chat">群聊</string>
+    <string name="sure">确定</string>
+    <string name="input_channel_id">请输入会话ID</string>
+    <string name="input_group_id">请输入群ID</string>
+    <string name="input_uid">请输入对方uid</string>
+    <string name="connect_success">连接成功</string>
+    <string name="connect_fail">连接失败</string>
+    <string name="connecting">连接中…</string>
+    <string name="no_net">无网络</string>
+    <string name="other_device_login">被踢</string>
+    <string name="input_content">请输入聊天内容</string>
+</resources>

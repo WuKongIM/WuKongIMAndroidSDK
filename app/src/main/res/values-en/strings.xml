@@ -1,0 +1,15 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name">WKIM</string>
+    <string name="personal_chat">Single Chat</string>
+    <string name="group_chat">Group Chat</string>
+    <string name="sure">Sure</string>
+    <string name="input_channel_id">Input chat id</string>
+    <string name="input_group_id">Input group id</string>
+    <string name="input_uid">Input uid</string>
+    <string name="connect_success">connect success</string>
+    <string name="connect_fail">connect failed</string>
+    <string name="connecting">connection…</string>
+    <string name="no_net">No network</string>
+    <string name="other_device_login">Kicked</string>
+    <string name="input_content">Input content</string>
+</resources>
