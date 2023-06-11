@@ -1,5 +1,7 @@
 package com.wukong.im.db;
 
+import static com.wukong.im.db.WKDBColumns.TABLE.messageReaction;
+
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.text.TextUtils;
@@ -18,7 +20,6 @@ import java.util.List;
  * 消息回应
  */
 class MsgReactionDBManager {
-    final String messageReaction = "message_reaction";
     private MsgReactionDBManager() {
     }
 

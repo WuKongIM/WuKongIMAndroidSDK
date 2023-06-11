@@ -5,6 +5,18 @@ package com.wukong.im.db;
  * 数据库字段
  */
 public interface WKDBColumns {
+    class TABLE{
+        public static final String message = "message";
+        public static final String messageReaction = "message_reaction";
+        public static final String messageExtra = "message_extra";
+        public static final String conversation = "conversation";
+        public static final String conversationExtra = "conversation_extra";
+        public static final String channel = "channel";
+        public static final String channelMembers = "channel_members";
+        public static final String reminders = "reminders";
+        public static final String robot = "robot";
+        public static final String robotMenu = "robot_menu";
+    }
     //频道db字段
     class WKChannelColumns {
         //自增ID

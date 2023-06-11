@@ -2,7 +2,6 @@ package com.wukong.im.message;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
@@ -46,6 +45,8 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -74,15 +75,25 @@ public class ConnectionHandler {
     private long lastMsgTime = 0;
     private String ip;
     private int port;
-    INonBlockingConnection connection;
-    ClientHandler clientHandler;
+    volatile INonBlockingConnection connection;
+    volatile ClientHandler clientHandler;
     private long requestIPTime;
+    private final long requestIPTimeoutTime = 6;
     public String socketSingleID;
+    private String lastRequestId;
+
+    public synchronized void forcedReconnection() {
+        isReConnecting = false;
+        requestIPTime = 0;
+        reconnection();
+    }
 
     public synchronized void reconnection() {
+        ip = "";
+        port = 0;
         if (isReConnecting) {
             long nowTime = DateUtils.getInstance().getCurrentSeconds();
-            if (nowTime - requestIPTime > 5) {
+            if (nowTime - requestIPTime > requestIPTimeoutTime) {
                 isReConnecting = false;
             }
             return;
@@ -107,14 +118,14 @@ public class ConnectionHandler {
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-                        reconnection();
+                        new Handler(Looper.getMainLooper()).post(() -> reconnection());
                     }
                 }.start();
             }
         }
     }
 
-    private void getIPAndPort() {
+    private synchronized void getIPAndPort() {
         if (!WKIMApplication.getInstance().isNetworkConnected()) {
             isReConnecting = false;
             reconnection();
@@ -127,24 +138,29 @@ public class ConnectionHandler {
         }
         WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.connecting, WKConnectReason.Connecting);
         // 计算获取IP时长 todo
-        ConnectionManager.getInstance().getIpAndPort((ip, port) -> {
-            if (countDownTimer != null) {
-                countDownTimer.cancel();
-                countDownTimer = null;
-                WKLoggerUtils.getInstance().e("取消请求socket IP倒计时器--->");
-            }
+        startRequestIPTimer();
+        lastRequestId = UUID.randomUUID().toString().replace("-", "");
+        ConnectionManager.getInstance().getIpAndPort(lastRequestId, (requestId, ip, port) -> {
             if (TextUtils.isEmpty(ip) || port == 0) {
                 WKLoggerUtils.getInstance().e("返回连接IP或port错误，" + String.format("ip:%s & port:%s", ip, port));
                 isReConnecting = false;
                 reconnection();
             } else {
-                this.ip = ip;
-                this.port = port;
-                WKLoggerUtils.getInstance().e("连接的IP和Port" + ip + ":" + port);
-                new Thread(this::connSocket).start();
+                if (lastRequestId.equals(requestId)) {
+                    ConnectionHandler.this.ip = ip;
+                    ConnectionHandler.this.port = port;
+                    WKLoggerUtils.getInstance().e("连接的IP和Port" + ip + ":" + port);
+                    if (connectionIsNull()) {
+                        new Thread(ConnectionHandler.this::connSocket).start();
+                    }
+                } else {
+                    if (connectionIsNull()) {
+                        WKLoggerUtils.getInstance().e("请求IP的编号不一致，重连中");
+                        reconnection();
+                    }
+                }
             }
         });
-        new Handler(Looper.getMainLooper()).post(this::startRequestIPTimer);
     }
 
     private void connSocket() {
@@ -509,7 +525,7 @@ public class ConnectionHandler {
         if (connection != null && connection.isOpen()) {
             try {
                 WKLoggerUtils.getInstance().e("stop connection" + connection.getId());
-                connection.flush();
+//                connection.flush();
                 connection.close();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -519,28 +535,39 @@ public class ConnectionHandler {
         connection = null;
     }
 
-    CountDownTimer countDownTimer;
+    private Timer checkNetWorkTimer;
 
     private synchronized void startRequestIPTimer() {
-        if (countDownTimer != null) {
-            return;
+        if (checkNetWorkTimer != null) {
+            checkNetWorkTimer.cancel();
+            checkNetWorkTimer = null;
         }
-        countDownTimer = new CountDownTimer(5000, 1000) {
-
+        checkNetWorkTimer = new Timer();
+        WKLoggerUtils.getInstance().e("开始计算IP请求时间");
+        checkNetWorkTimer.schedule(new TimerTask() {
             @Override
-            public void onTick(long l) {
-                WKLoggerUtils.getInstance().e("请求socket IP倒计时中--->");
-            }
-
-            @Override
-            public void onFinish() {
-                if (connectionIsNull()) {
-                    WKLoggerUtils.getInstance().e("请求socket IP已超时--->");
-                    isReConnecting = false;
-                    countDownTimer = null;
-                    reconnection();
+            public void run() {
+                long nowTime = DateUtils.getInstance().getCurrentSeconds();
+                if (nowTime - requestIPTime >= requestIPTimeoutTime) {
+                    checkNetWorkTimer.cancel();
+                    checkNetWorkTimer.purge();
+                    checkNetWorkTimer = null;
+                    if (TextUtils.isEmpty(ip) || port == 0) {
+                        WKLoggerUtils.getInstance().e("请求IP已超时，开始重连--->");
+                        isReConnecting = false;
+                        reconnection();
+                    }
+                } else {
+                    if (!TextUtils.isEmpty(ip) && port != 0) {
+                        checkNetWorkTimer.cancel();
+                        checkNetWorkTimer.purge();
+                        checkNetWorkTimer = null;
+                        WKLoggerUtils.getInstance().e("请求IP倒计时已销毁--->");
+                    } else {
+                        WKLoggerUtils.getInstance().e("请求IP倒计时中--->" + (nowTime - requestIPTime));
+                    }
                 }
             }
-        };
+        }, 500, 1000L);
     }
 }

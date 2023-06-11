@@ -1,5 +1,8 @@
 package com.wukong.im.db;
 
+import static com.wukong.im.db.WKDBColumns.TABLE.channel;
+import static com.wukong.im.db.WKDBColumns.TABLE.channelMembers;
+
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.text.TextUtils;
@@ -21,9 +24,7 @@ import java.util.List;
  * 频道成员数据管理
  */
 public class ChannelMembersDbManager {
-    final String channelMembers = "channel_members";
-    final String channelTab = "channel";
-    final String channelCols = "" + channelTab + ".channel_remark," + channelTab + ".channel_name," + channelTab + ".avatar," + channelTab + ".avatar_cache_key";
+    final String channelCols = "" + channel + ".channel_remark," + channel + ".channel_name," + channel + ".avatar," + channel + ".avatar_cache_key";
 
     private ChannelMembersDbManager() {
     }
@@ -38,7 +39,7 @@ public class ChannelMembersDbManager {
 
     public synchronized List<WKChannelMember> search(String channelId, byte channelType, String keyword, int page, int size) {
         int queryPage = (page - 1) * size;
-        String sql = "select " + channelMembers + ".*," + channelCols + " from " + channelMembers + " LEFT JOIN " + channelTab + " on " + channelMembers + ".member_uid=" + channelTab + ".channel_id and " + channelTab + ".channel_type=1 where " + channelMembers + ".channel_id=" + "\"" + channelId + "\"" + " and " + channelMembers + ".channel_type=" + channelType + " and " + channelMembers + ".is_deleted=0 and " + channelMembers + ".status=1 and (member_name like '%" + keyword + "%' or member_remark like '%" + keyword + "%' or channel_name like '%" + keyword + "%' or channel_remark like '%" + keyword + "%') order by " + channelMembers + ".role=1 desc," + channelMembers + ".role=2 desc," + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.created_at + " asc limit " + queryPage + "," + size + "";
+        String sql = "select " + channelMembers + ".*," + channelCols + " from " + channelMembers + " LEFT JOIN " + channel + " on " + channelMembers + ".member_uid=" + channel + ".channel_id and " + channel + ".channel_type=1 where " + channelMembers + ".channel_id=" + "\"" + channelId + "\"" + " and " + channelMembers + ".channel_type=" + channelType + " and " + channelMembers + ".is_deleted=0 and " + channelMembers + ".status=1 and (member_name like '%" + keyword + "%' or member_remark like '%" + keyword + "%' or channel_name like '%" + keyword + "%' or channel_remark like '%" + keyword + "%') order by " + channelMembers + ".role=1 desc," + channelMembers + ".role=2 desc," + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.created_at + " asc limit " + queryPage + "," + size + "";
         Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper().rawQuery(sql);
@@ -55,7 +56,7 @@ public class ChannelMembersDbManager {
 
     public synchronized List<WKChannelMember> queryWithPage(String channelId, byte channelType, int page, int size) {
         int queryPage = (page - 1) * size;
-        String sql = "select " + channelMembers + ".*," + channelCols + " from " + channelMembers + " LEFT JOIN " + channelTab + " on " + channelMembers + ".member_uid=" + channelTab + ".channel_id and " + channelTab + ".channel_type=1 where " + channelMembers + ".channel_id=" + "\"" + channelId + "\"" + " and " + channelMembers + ".channel_type=" + channelType + " and " + channelMembers + ".is_deleted=0 and " + channelMembers + ".status=1 order by " + channelMembers + ".role=1 desc," + channelMembers + ".role=2 desc," + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.created_at + " asc limit " + queryPage + "," + size + "";
+        String sql = "select " + channelMembers + ".*," + channelCols + " from " + channelMembers + " LEFT JOIN " + channel + " on " + channelMembers + ".member_uid=" + channel + ".channel_id and " + channel + ".channel_type=1 where " + channelMembers + ".channel_id=" + "\"" + channelId + "\"" + " and " + channelMembers + ".channel_type=" + channelType + " and " + channelMembers + ".is_deleted=0 and " + channelMembers + ".status=1 order by " + channelMembers + ".role=1 desc," + channelMembers + ".role=2 desc," + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.created_at + " asc limit " + queryPage + "," + size + "";
         Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper().rawQuery(sql);
@@ -77,7 +78,7 @@ public class ChannelMembersDbManager {
      * @return List<WKChannelMember>
      */
     public synchronized List<WKChannelMember> query(String channelId, byte channelType) {
-        String sql = "select " + channelMembers + ".*," + channelCols + " from " + channelMembers + " LEFT JOIN " + channelTab + " on " + channelMembers + ".member_uid=" + channelTab + ".channel_id and " + channelTab + ".channel_type=1 where " + channelMembers + ".channel_id=" + "\"" + channelId + "\"" + " and " + channelMembers + ".channel_type=" + channelType + " and " + channelMembers + ".is_deleted=0 and " + channelMembers + ".status=1 order by " + channelMembers + ".role=1 desc," + channelMembers + ".role=2 desc," + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.created_at + " asc";
+        String sql = "select " + channelMembers + ".*," + channelCols + " from " + channelMembers + " LEFT JOIN " + channel + " on " + channelMembers + ".member_uid=" + channel + ".channel_id and " + channel + ".channel_type=1 where " + channelMembers + ".channel_id=" + "\"" + channelId + "\"" + " and " + channelMembers + ".channel_type=" + channelType + " and " + channelMembers + ".is_deleted=0 and " + channelMembers + ".status=1 order by " + channelMembers + ".role=1 desc," + channelMembers + ".role=2 desc," + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.created_at + " asc";
         Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper().rawQuery(sql);
@@ -93,7 +94,7 @@ public class ChannelMembersDbManager {
     }
 
     public synchronized List<WKChannelMember> queryDeleted(String channelId, byte channelType) {
-        String sql = "select " + channelMembers + ".*," + channelCols + " from " + channelMembers + " LEFT JOIN " + channelTab + " on " + channelMembers + ".member_uid=" + channelTab + ".channel_id and " + channelTab + ".channel_type=1 where " + channelMembers + ".channel_id=" + "\"" + channelId + "\"" + " and " + channelMembers + ".channel_type=" + channelType + " and " + channelMembers + ".is_deleted=1 and " + channelMembers + ".status=1 order by " + channelMembers + ".role=1 desc," + channelMembers + ".role=2 desc," + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.created_at + " asc";
+        String sql = "select " + channelMembers + ".*," + channelCols + " from " + channelMembers + " LEFT JOIN " + channel + " on " + channelMembers + ".member_uid=" + channel + ".channel_id and " + channel + ".channel_type=1 where " + channelMembers + ".channel_id=" + "\"" + channelId + "\"" + " and " + channelMembers + ".channel_type=" + channelType + " and " + channelMembers + ".is_deleted=1 and " + channelMembers + ".status=1 order by " + channelMembers + ".role=1 desc," + channelMembers + ".role=2 desc," + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.created_at + " asc";
         Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper().rawQuery(sql);
@@ -110,7 +111,7 @@ public class ChannelMembersDbManager {
 
     public synchronized boolean isExist(String channelId, byte channelType, String uid) {
         boolean isExist = false;
-        String sql = "select " + channelMembers + ".*," + channelCols + " from " + channelMembers + " left join " + channelTab + " on " + channelMembers + ".member_uid = " + channelTab + ".channel_id AND " + channelTab + ".channel_type=1 where (" + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.channel_id + "=" + "\"" + channelId + "\"" + " and " + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.channel_type + "=" + channelType + " and " + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.member_uid + "=" + "\"" + uid + "\")";
+        String sql = "select " + channelMembers + ".*," + channelCols + " from " + channelMembers + " left join " + channel + " on " + channelMembers + ".member_uid = " + channel + ".channel_id AND " + channel + ".channel_type=1 where (" + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.channel_id + "=" + "\"" + channelId + "\"" + " and " + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.channel_type + "=" + channelType + " and " + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.member_uid + "=" + "\"" + uid + "\")";
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper().rawQuery(sql)) {
@@ -156,7 +157,7 @@ public class ChannelMembersDbManager {
      */
     public synchronized WKChannelMember query(String channelId, byte channelType, String uid) {
         WKChannelMember wkChannelMember = null;
-        String sql = "select " + channelMembers + ".*," + channelCols + " from " + channelMembers + " left join " + channelTab + " on " + channelMembers + ".member_uid = " + channelTab + ".channel_id AND " + channelTab + ".channel_type=1 where (" + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.channel_id + "=" + "\"" + channelId + "\"" + " and " + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.channel_type + "=" + channelType + " and " + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.member_uid + "=" + "\"" + uid + "\")";
+        String sql = "select " + channelMembers + ".*," + channelCols + " from " + channelMembers + " left join " + channel + " on " + channelMembers + ".member_uid = " + channel + ".channel_id AND " + channel + ".channel_type=1 where (" + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.channel_id + "=" + "\"" + channelId + "\"" + " and " + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.channel_type + "=" + channelType + " and " + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.member_uid + "=" + "\"" + uid + "\")";
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper().rawQuery(sql)) {
@@ -435,7 +436,7 @@ public class ChannelMembersDbManager {
     }
 
     public synchronized List<WKChannelMember> queryChannelMembersByStatus(String channelId, byte channelType, int status) {
-        String sql = "select " + channelMembers + ".*," + channelTab + ".channel_name," + channelTab + ".channel_remark," + channelTab + ".avatar from " + channelMembers + " left Join " + channelTab + " where " + channelMembers + ".member_uid = " + channelTab + ".channel_id AND " + channelTab + ".channel_type=1 AND " + channelMembers + ".channel_id=" + "\"" + channelId + "\"" + " and " + channelMembers + ".channel_type=" + channelType + " and " + channelMembers + ".status=" + status + " order by " + channelMembers + ".role=1 desc," + channelMembers + ".role=2 desc," + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.created_at + " asc";
+        String sql = "select " + channelMembers + ".*," + channel + ".channel_name," + channel + ".channel_remark," + channel + ".avatar from " + channelMembers + " left Join " + channel + " where " + channelMembers + ".member_uid = " + channel + ".channel_id AND " + channel + ".channel_type=1 AND " + channelMembers + ".channel_id=" + "\"" + channelId + "\"" + " and " + channelMembers + ".channel_type=" + channelType + " and " + channelMembers + ".status=" + status + " order by " + channelMembers + ".role=1 desc," + channelMembers + ".role=2 desc," + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.created_at + " asc";
         Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper().rawQuery(sql);

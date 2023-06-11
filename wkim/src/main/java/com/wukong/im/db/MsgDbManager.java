@@ -1,5 +1,10 @@
 package com.wukong.im.db;
 
+import static com.wukong.im.db.WKDBColumns.TABLE.channel;
+import static com.wukong.im.db.WKDBColumns.TABLE.channelMembers;
+import static com.wukong.im.db.WKDBColumns.TABLE.message;
+import static com.wukong.im.db.WKDBColumns.TABLE.messageExtra;
+
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.text.TextUtils;
@@ -35,9 +40,6 @@ import java.util.List;
  * 消息管理
  */
 public class MsgDbManager {
-    private final String message = "message";
-    private final String messageExtra = "message_extra";
-    private final String channel = "channel";
     private final String extraCols = "IFNULL(" + messageExtra + ".readed,0) as readed,IFNULL(" + messageExtra + ".readed_count,0) as readed_count,IFNULL(" + messageExtra + ".unread_count,0) as unread_count,IFNULL(" + messageExtra + ".revoke,0) as revoke,IFNULL(" + messageExtra + ".revoker,'') as revoker,IFNULL(" + messageExtra + ".extra_version,0) as extra_version,IFNULL(" + messageExtra + ".is_mutual_deleted,0) as is_mutual_deleted,IFNULL(" + messageExtra + ".content_edit,'') as content_edit,IFNULL(" + messageExtra + ".edited_at,0) as edited_at";
     private final String messageCols = message + ".client_seq," + message + ".message_id," + message + ".message_seq," + message + ".channel_id," + message + ".channel_type," + message + ".timestamp," + message + ".from_uid," + message + ".type," + message + ".content," + message + ".status," + message + ".voice_status," + message + ".created_at," + message + ".updated_at," + message + ".searchable_word," + message + ".client_msg_no," + message + ".setting," + message + ".order_seq," + message + ".extra," + message + ".is_deleted," + message + ".flame," + message + ".flame_second," + message + ".viewed," + message + ".viewed_at";
 
@@ -54,9 +56,9 @@ public class MsgDbManager {
 
     private int requestCount;
 
-    public void getOrSyncHistoryMessages(String channelId, byte channelType, long oldestOrderSeq, boolean contain, boolean dropDown, int limit, final IGetOrSyncHistoryMsgBack iGetOrSyncHistoryMsgBack) {
+    public void getOrSyncHistoryMessages(String channelId, byte channelType, long oldestOrderSeq, boolean contain, int pullMode, int limit, final IGetOrSyncHistoryMsgBack iGetOrSyncHistoryMsgBack) {
         //获取原始数据
-        List<WKMsg> list = getMessages(channelId, channelType, oldestOrderSeq, contain, dropDown, limit);
+        List<WKMsg> list = getMessages(channelId, channelType, oldestOrderSeq, contain, pullMode, limit);
 
         //业务判断数据
         List<WKMsg> tempList = new ArrayList<>();
@@ -83,31 +85,38 @@ public class MsgDbManager {
         boolean isSyncMsg = false;
         //reverse false：从区间大值开始拉取true：从区间小值开始拉取
         boolean reverse = false;
+        long startMsgSeq = 0;
+        long endMsgSeq = 0;
         //同步消息的最大messageSeq
-        long syncMaxMsgSeq = 0;
+//        long syncMaxMsgSeq = 0;
         //同步消息最小messageSeq,
-        long syncMinMsgSeq = 0;
+//        long syncMinMsgSeq = 0;
 
         //判断页与页之间是否连续
         long oldestMsgSeq;
+
         //如果获取到的messageSeq为0说明oldestOrderSeq这条消息是本地消息则获取他上一条或下一条消息的messageSeq做为判断
         if (oldestOrderSeq % 1000 != 0)
-            oldestMsgSeq = getMsgSeq(channelId, channelType, oldestOrderSeq, dropDown);
+            oldestMsgSeq = getMsgSeq(channelId, channelType, oldestOrderSeq, pullMode);
         else oldestMsgSeq = oldestOrderSeq / 1000;
-        if (dropDown) {
+        if (pullMode == 0) {
             //下拉获取消息
             if (maxMessageSeq != 0 && oldestMsgSeq != 0 && oldestMsgSeq - maxMessageSeq > 1) {
                 isSyncMsg = true;
-                syncMaxMsgSeq = oldestMsgSeq;
-                syncMinMsgSeq = maxMessageSeq;
+//                syncMaxMsgSeq = oldestMsgSeq;
+//                syncMinMsgSeq = maxMessageSeq;
+                startMsgSeq = maxMessageSeq;
+                endMsgSeq = oldestMsgSeq;
                 reverse = false;//区间大值开始获取
             }
         } else {
             //上拉获取消息
             if (minMessageSeq != 0 && oldestMsgSeq != 0 && minMessageSeq - oldestMsgSeq > 1) {
                 isSyncMsg = true;
-                syncMaxMsgSeq = minMessageSeq;
-                syncMinMsgSeq = oldestMsgSeq;
+//                syncMaxMsgSeq = minMessageSeq;
+//                syncMinMsgSeq = oldestMsgSeq;
+                startMsgSeq = minMessageSeq;
+                endMsgSeq = oldestMsgSeq;
                 reverse = true;//区间小值开始获取
             }
         }
@@ -123,10 +132,24 @@ public class MsgDbManager {
                         int num = getDeletedCount(tempList.get(i).messageSeq, tempList.get(nextIndex).messageSeq, channelId, channelType);
                         if (num < (tempList.get(nextIndex).messageSeq - tempList.get(i).messageSeq) - 1) {
                             isSyncMsg = true;
-                            syncMaxMsgSeq = tempList.get(nextIndex).messageSeq;
-                            syncMinMsgSeq = tempList.get(i).messageSeq;
-                            if (dropDown) reverse = false;//区间大值开始获取
-                            else reverse = true;//区间小值开始获取
+//                            syncMaxMsgSeq = tempList.get(nextIndex).messageSeq;
+//                            syncMinMsgSeq = tempList.get(i).messageSeq;
+                            long max = tempList.get(nextIndex).messageSeq;
+                            long min = tempList.get(i).messageSeq;
+                            if (tempList.get(nextIndex).messageSeq < tempList.get(i).messageSeq) {
+                                max = tempList.get(i).messageSeq;
+                                min = tempList.get(nextIndex).messageSeq;
+                            }
+                            if (pullMode == 0) {
+                                // 下拉
+                                startMsgSeq = max;
+                                endMsgSeq = min;
+                            } else {
+                                startMsgSeq = min;
+                                endMsgSeq = max;
+                            }
+//                            if (pullMode == 0) reverse = false;//区间大值开始获取
+//                            else reverse = true;//区间小值开始获取
                             break;
                         }
                     }
@@ -143,18 +166,22 @@ public class MsgDbManager {
         }
         //计算最后一页后是否还存在消息
         if (!isSyncMsg && tempList.size() < limit) {
-            if (dropDown) {
+            if (pullMode == 0) {
                 //如果下拉获取数据
                 isSyncMsg = true;
                 reverse = false;//从区间大值开始获取数据
-                syncMinMsgSeq = 0;
-                syncMaxMsgSeq = oldestMsgSeq;
+//                syncMinMsgSeq = 0;
+//                syncMaxMsgSeq = oldestMsgSeq;
+                startMsgSeq = oldestMsgSeq;
+                endMsgSeq = 0;
             } else {
                 //如果上拉获取数据
                 isSyncMsg = true;
                 reverse = true;//从区间小值开始获取数据
-                syncMaxMsgSeq = 0;
-                syncMinMsgSeq = maxMessageSeq;
+//                syncMaxMsgSeq = 0;
+//                syncMinMsgSeq = maxMessageSeq;
+                startMsgSeq = oldestMsgSeq;
+                endMsgSeq = 0;
             }
         }
 //        if (!isContain) {
@@ -184,12 +211,12 @@ public class MsgDbManager {
 //            }
 //        }
 
-        if (isSyncMsg && syncMaxMsgSeq != syncMinMsgSeq && syncMaxMsgSeq != 0 && requestCount < 5) {
+        if (isSyncMsg && startMsgSeq != endMsgSeq && requestCount < 5) {
             //同步消息
             requestCount++;
-            MsgManager.getInstance().setSyncChannelMsgListener(channelId, channelType, syncMinMsgSeq, syncMaxMsgSeq, limit, reverse, syncChannelMsg -> {
+            MsgManager.getInstance().setSyncChannelMsgListener(channelId, channelType, startMsgSeq, endMsgSeq, limit, pullMode, syncChannelMsg -> {
                 if (syncChannelMsg != null && syncChannelMsg.messages != null && syncChannelMsg.messages.size() > 0) {
-                    getOrSyncHistoryMessages(channelId, channelType, oldestOrderSeq, contain, dropDown, limit, iGetOrSyncHistoryMsgBack);
+                    getOrSyncHistoryMessages(channelId, channelType, oldestOrderSeq, contain, pullMode, limit, iGetOrSyncHistoryMsgBack);
                 } else {
                     requestCount = 0;
                     iGetOrSyncHistoryMsgBack.onResult(list);
@@ -247,14 +274,14 @@ public class MsgDbManager {
         return num;
     }
 
-    private List<WKMsg> getMessages(String channelId, byte channelType, long oldestOrderSeq, boolean contain, boolean dropDown, int limit) {
+    private List<WKMsg> getMessages(String channelId, byte channelType, long oldestOrderSeq, boolean contain, int pullMode, int limit) {
         List<WKMsg> msgList = new ArrayList<>();
         String sql;
 
         if (oldestOrderSeq <= 0) {
             sql = "SELECT * FROM (SELECT " + messageCols + "," + extraCols + " FROM " + message + " LEFT JOIN " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".channel_id='" + channelId + "' and " + message + ".channel_type=" + channelType + " and " + message + ".type<>0 and " + message + ".type<>99) where is_deleted=0 and is_mutual_deleted=0 order by order_seq desc limit 0," + limit;
         } else {
-            if (dropDown) {
+            if (pullMode == 0) {
                 sql = "SELECT * FROM (SELECT " + messageCols + "," + extraCols + " FROM " + message + " LEFT JOIN " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".channel_id='" + channelId + "' and " + message + ".channel_type=" + channelType + " and " + message + ".type<>0 and " + message + ".type<>99 AND " + message + ".order_seq<" + oldestOrderSeq + ") where is_deleted=0 and is_mutual_deleted=0 order by order_seq desc limit 0," + limit;
             } else {
                 if (contain) {
@@ -283,7 +310,7 @@ public class MsgDbManager {
                 }
                 if (!TextUtils.isEmpty(wkMsg.fromUID))
                     fromUIDs.add(wkMsg.fromUID);
-                if (dropDown)
+                if (pullMode == 0)
                     msgList.add(0, wkMsg);
                 else msgList.add(wkMsg);
             }
@@ -708,6 +735,7 @@ public class MsgDbManager {
         }
         return msg;
     }
+
 
     /**
      * 删除消息
@@ -1192,10 +1220,10 @@ public class MsgDbManager {
         return messageSeq;
     }
 
-    private int getMsgSeq(String channelID, byte channelType, long oldestOrderSeq, boolean dropDown) {
+    private int getMsgSeq(String channelID, byte channelType, long oldestOrderSeq, int pullMode) {
         String sql;
         int messageSeq = 0;
-        if (!dropDown) {
+        if (pullMode == 1) {
             sql = "select * from " + message + " where channel_id=" + "\"" + channelID + "\"" + " and channel_type=" + channelType + " and  order_seq>" + oldestOrderSeq + " and message_seq<>0 order by message_seq desc limit 1";
         } else
             sql = "select * from " + message + " where channel_id=" + "\"" + channelID + "\"" + " and channel_type=" + channelType + " and  order_seq<" + oldestOrderSeq + " and message_seq<>0 order by message_seq asc limit 1";

@@ -12,6 +12,7 @@ import com.wukong.im.message.MessageHandler;
 import com.wukong.im.utils.WKLoggerUtils;
 
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -80,9 +81,16 @@ public class ConnectionManager extends BaseManager {
         WKIMApplication.getInstance().closeDbHelper();
     }
 
-    public void getIpAndPort(IGetSocketIpAndPortListener iGetIpAndPortListener) {
+    public interface IRequestIP {
+        void onResult(String requestId, String ip, int port);
+    }
+
+    public void getIpAndPort(String requestId, IRequestIP iRequestIP) {
         if (iGetIpAndPort != null) {
-            runOnMainThread(() -> iGetIpAndPort.getIP(iGetIpAndPortListener));
+            WKLoggerUtils.getInstance().e("获取IP中...");
+            runOnMainThread(() -> iGetIpAndPort.getIP((ip, port) -> iRequestIP.onResult(requestId, ip, port)));
+        } else {
+            WKLoggerUtils.getInstance().e("未注册获取IP事件");
         }
     }
 

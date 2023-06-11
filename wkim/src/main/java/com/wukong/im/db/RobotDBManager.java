@@ -1,5 +1,8 @@
 package com.wukong.im.db;
 
+import static com.wukong.im.db.WKDBColumns.TABLE.robot;
+import static com.wukong.im.db.WKDBColumns.TABLE.robotMenu;
+
 import android.content.ContentValues;
 import android.database.Cursor;
 
@@ -11,8 +14,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RobotDBManager {
-    private final String robot = "robot";
-    private final String robotMenu = "robot_menu";
 
     private RobotDBManager() {
     }
@@ -26,11 +27,11 @@ public class RobotDBManager {
     }
 
     public void insertOrUpdateMenu(List<WKRobotMenu> list) {
-        for (WKRobotMenu robotMenu : list) {
-            if (isExitMenu(robotMenu.robotID, robotMenu.cmd)) {
-                update(robotMenu);
+        for (WKRobotMenu menu : list) {
+            if (isExitMenu(menu.robotID, menu.cmd)) {
+                update(menu);
             } else {
-                WKIMApplication.getInstance().getDbHelper().insert(this.robotMenu, getCV(robotMenu));
+                WKIMApplication.getInstance().getDbHelper().insert(robotMenu, getCV(menu));
             }
         }
     }
@@ -88,33 +89,33 @@ public class RobotDBManager {
         return isExist;
     }
 
-    private void update(WKRobot robot) {
+    private void update(WKRobot wkRobot) {
         String[] updateKey = new String[6];
         String[] updateValue = new String[6];
         updateKey[0] = "status";
-        updateValue[0] = String.valueOf(robot.status);
+        updateValue[0] = String.valueOf(wkRobot.status);
         updateKey[1] = "version";
-        updateValue[1] = String.valueOf(robot.version);
+        updateValue[1] = String.valueOf(wkRobot.version);
         updateKey[2] = "updated_at";
-        updateValue[2] = String.valueOf(robot.updatedAT);
+        updateValue[2] = String.valueOf(wkRobot.updatedAT);
         updateKey[3] = "username";
-        updateValue[3] = robot.username;
+        updateValue[3] = wkRobot.username;
         updateKey[4] = "placeholder";
-        updateValue[4] = robot.placeholder;
+        updateValue[4] = wkRobot.placeholder;
         updateKey[5] = "inline_on";
-        updateValue[5] = String.valueOf(robot.inlineOn);
+        updateValue[5] = String.valueOf(wkRobot.inlineOn);
 
         String where = "robot_id=?";
         String[] whereValue = new String[1];
-        whereValue[0] = robot.robotID;
+        whereValue[0] = wkRobot.robotID;
         WKIMApplication.getInstance().getDbHelper()
-                .update(this.robot, updateKey, updateValue, where, whereValue);
+                .update(robot, updateKey, updateValue, where, whereValue);
 
     }
 
-    private void insert(WKRobot robot) {
-        ContentValues cv = getCV(robot);
-        WKIMApplication.getInstance().getDbHelper().insert(this.robot, cv);
+    private void insert(WKRobot robot1) {
+        ContentValues cv = getCV(robot1);
+        WKIMApplication.getInstance().getDbHelper().insert(robot, cv);
     }
 
     public void insertRobots(List<WKRobot> list) {
@@ -136,8 +137,8 @@ public class RobotDBManager {
     }
 
     public WKRobot query(String robotID) {
-        WKRobot robot = null;
-        String sql = "select * from " + this.robot + " where robot_id = " + "\"" + robotID + "\"";
+        WKRobot wkRobot = null;
+        String sql = "select * from " + robot + " where robot_id = " + "\"" + robotID + "\"";
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper().rawQuery(sql)) {
@@ -145,15 +146,15 @@ public class RobotDBManager {
                 return null;
             }
             if (cursor.moveToLast()) {
-                robot = serializeRobot(cursor);
+                wkRobot = serializeRobot(cursor);
             }
         }
-        return robot;
+        return wkRobot;
     }
 
     public WKRobot queryWithUsername(String username) {
-        WKRobot robot = null;
-        String sql = "select * from " + this.robot + " where username = " + "\"" + username + "\"";
+        WKRobot wkRobot = null;
+        String sql = "select * from " + robot + " where username = " + "\"" + username + "\"";
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper().rawQuery(sql)) {
@@ -161,10 +162,10 @@ public class RobotDBManager {
                 return null;
             }
             if (cursor.moveToLast()) {
-                robot = serializeRobot(cursor);
+                wkRobot = serializeRobot(cursor);
             }
         }
-        return robot;
+        return wkRobot;
     }
 
     public List<WKRobot> queryRobots(List<String> robotIds) {

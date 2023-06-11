@@ -1,5 +1,8 @@
 package com.wukong.im.db;
 
+import static com.wukong.im.db.WKDBColumns.TABLE.channel;
+import static com.wukong.im.db.WKDBColumns.TABLE.channelMembers;
+
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.text.TextUtils;
@@ -21,8 +24,6 @@ import java.util.List;
  * channel DB manager
  */
 public class ChannelDBManager {
-    private final String channel = "channel";
-    private final String channelMembers = "channel_members";
 
     private ChannelDBManager() {
     }
@@ -74,24 +75,24 @@ public class ChannelDBManager {
         selectionArgs[0] = channelId;
         selectionArgs[1] = String.valueOf(channelType);
         Cursor cursor = null;
-        WKChannel channel = null;
+        WKChannel wkChannel = null;
         try {
             cursor = WKIMApplication
                     .getInstance()
                     .getDbHelper()
-                    .select(this.channel, selection, selectionArgs,
+                    .select(channel, selection, selectionArgs,
                             null);
             if (cursor != null) {
                 if (cursor.getCount() > 0) {
                     cursor.moveToNext();
-                    channel = serializableChannel(cursor);
+                    wkChannel = serializableChannel(cursor);
                 }
             }
         } finally {
             if (cursor != null)
                 cursor.close();
         }
-        return channel;
+        return wkChannel;
     }
 
     private boolean isExist(String channelId, int channelType) {
@@ -162,29 +163,29 @@ public class ChannelDBManager {
         }
     }
 
-    private synchronized void insertChannel(WKChannel channel) {
+    private synchronized void insertChannel(WKChannel wkChannel) {
         ContentValues cv = new ContentValues();
         try {
-            cv = WKSqlContentValues.getContentValuesWithChannel(channel);
+            cv = WKSqlContentValues.getContentValuesWithChannel(wkChannel);
         } catch (Exception e) {
             e.printStackTrace();
         }
         WKIMApplication.getInstance().getDbHelper()
-                .insert(this.channel, cv);
+                .insert(channel, cv);
     }
 
-    public synchronized void updateChannel(WKChannel channel) {
+    public synchronized void updateChannel(WKChannel wkChannel) {
         String[] update = new String[2];
-        update[0] = channel.channelID;
-        update[1] = String.valueOf(channel.channelType);
+        update[0] = wkChannel.channelID;
+        update[1] = String.valueOf(wkChannel.channelType);
         ContentValues cv = new ContentValues();
         try {
-            cv = WKSqlContentValues.getContentValuesWithChannel(channel);
+            cv = WKSqlContentValues.getContentValuesWithChannel(wkChannel);
         } catch (Exception e) {
             e.printStackTrace();
         }
         WKIMApplication.getInstance().getDbHelper()
-                .update(this.channel, cv, WKDBColumns.WKChannelColumns.channel_id + "=? and " + WKDBColumns.WKChannelColumns.channel_type + "=?", update);
+                .update(channel, cv, WKDBColumns.WKChannelColumns.channel_id + "=? and " + WKDBColumns.WKChannelColumns.channel_type + "=?", update);
 
     }
 

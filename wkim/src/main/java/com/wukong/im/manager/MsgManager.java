@@ -285,19 +285,19 @@ public class MsgManager extends BaseManager {
      * @param channelType              频道类型
      * @param oldestOrderSeq           最后一次消息大orderSeq 第一次进入聊天传入0
      * @param contain                  是否包含 oldestOrderSeq 这条消息
-     * @param dropDown                 是否下拉
+     * @param pullMode                 拉取模式 0:向下拉取 1:向上拉取
      * @param aroundMsgOrderSeq        查询此消息附近消息
      * @param limit                    每次获取数量
      * @param iGetOrSyncHistoryMsgBack 请求返还
      */
-    public void getOrSyncHistoryMessages(String channelId, byte channelType, long oldestOrderSeq, boolean contain, boolean dropDown, int limit, long aroundMsgOrderSeq, final IGetOrSyncHistoryMsgBack iGetOrSyncHistoryMsgBack) {
+    public void getOrSyncHistoryMessages(String channelId, byte channelType, long oldestOrderSeq, boolean contain, int pullMode, int limit, long aroundMsgOrderSeq, final IGetOrSyncHistoryMsgBack iGetOrSyncHistoryMsgBack) {
         if (aroundMsgOrderSeq != 0) {
             long maxMsgSeq = getMaxMessageSeq(channelId, channelType);
             long aroundMsgSeq = getOrNearbyMsgSeq(aroundMsgOrderSeq);
             if (maxMsgSeq >= aroundMsgSeq && maxMsgSeq - aroundMsgSeq <= limit) {
                 oldestOrderSeq = 0;
                 contain = false;
-                dropDown = true;
+                pullMode = 0;
             } else {
                 long minOrderSeq = MsgDbManager.getInstance().getOrderSeq(channelId, channelType, aroundMsgOrderSeq, 3);
                 if (minOrderSeq == 0) {
@@ -318,11 +318,11 @@ public class MsgManager extends BaseManager {
                             oldestOrderSeq = startOrderSeq;
                     }
                 }
-                dropDown = false;
+                pullMode = 1;
                 contain = true;
             }
         }
-        MsgDbManager.getInstance().getOrSyncHistoryMessages(channelId, channelType, oldestOrderSeq, contain, dropDown, limit, iGetOrSyncHistoryMsgBack);
+        MsgDbManager.getInstance().getOrSyncHistoryMessages(channelId, channelType, oldestOrderSeq, contain, pullMode, limit, iGetOrSyncHistoryMsgBack);
     }
 
     public List<WKMsg> queryAll() {
@@ -879,9 +879,9 @@ public class MsgManager extends BaseManager {
         this.iSyncChannelMsgListener = listener;
     }
 
-    public void setSyncChannelMsgListener(String channelID, byte channelType, long minMessageSeq, long maxMesageSeq, int limit, boolean reverse, ISyncChannelMsgBack iSyncChannelMsgBack) {
+    public void setSyncChannelMsgListener(String channelID, byte channelType, long startMessageSeq, long endMessageSeq, int limit, int pullMode, ISyncChannelMsgBack iSyncChannelMsgBack) {
         if (this.iSyncChannelMsgListener != null) {
-            runOnMainThread(() -> iSyncChannelMsgListener.syncChannelMsgs(channelID, channelType, minMessageSeq, maxMesageSeq, limit, reverse, syncChannelMsg -> {
+            runOnMainThread(() -> iSyncChannelMsgListener.syncChannelMsgs(channelID, channelType, startMessageSeq, endMessageSeq, limit, pullMode, syncChannelMsg -> {
                 if (syncChannelMsg != null && syncChannelMsg.messages != null && syncChannelMsg.messages.size() > 0) {
                     saveSyncChannelMSGs(syncChannelMsg.messages);
                 }

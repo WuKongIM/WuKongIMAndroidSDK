@@ -1,5 +1,7 @@
 package com.wukong.im.db;
 
+import static com.wukong.im.db.WKDBColumns.TABLE.reminders;
+
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.text.TextUtils;
@@ -18,8 +20,6 @@ import java.util.Iterator;
 import java.util.List;
 
 public class ReminderDBManager {
-    private final String tab = "reminders";
-
     private ReminderDBManager() {
     }
 
@@ -32,7 +32,7 @@ public class ReminderDBManager {
     }
 
     public long getMaxVersion() {
-        String sql = "select * from " + tab + " order by version desc limit 1";
+        String sql = "select * from " + reminders + " order by version desc limit 1";
         long version = 0;
         try (Cursor cursor = WKIMApplication
                 .getInstance()
@@ -48,7 +48,7 @@ public class ReminderDBManager {
     }
 
     public List<WKReminder> queryWithChannel(String channelID, byte channelType, int done) {
-        String sql = "select * from " + tab + " where channel_id='" + channelID + "' and channel_type=" + channelType + " and done=" + done + " order by message_seq desc";
+        String sql = "select * from " + reminders + " where channel_id='" + channelID + "' and channel_type=" + channelType + " and done=" + done + " order by message_seq desc";
         List<WKReminder> list = new ArrayList<>();
         try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql)) {
             if (cursor == null) {
@@ -63,7 +63,7 @@ public class ReminderDBManager {
     }
 
     public List<WKReminder> queryWithChannelAndType(String channelID, byte channelType, int done, int type) {
-        String sql = "select * from " + tab + " where channel_id='" + channelID + "' and channel_type=" + channelType + " and done=" + done + " and type =" + type + " order by message_seq desc";
+        String sql = "select * from " + reminders + " where channel_id='" + channelID + "' and channel_type=" + channelType + " and done=" + done + " and type =" + type + " order by message_seq desc";
         List<WKReminder> list = new ArrayList<>();
         try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql)) {
             if (cursor == null) {
@@ -85,7 +85,7 @@ public class ReminderDBManager {
             }
             stringBuffer.append(ids.get(i));
         }
-        String sql = "select * from " + tab + " where reminder_id in (" + stringBuffer + ")";
+        String sql = "select * from " + reminders + " where reminder_id in (" + stringBuffer + ")";
         List<WKReminder> list = new ArrayList<>();
         try (Cursor cursor = WKIMApplication
                 .getInstance()
@@ -111,7 +111,7 @@ public class ReminderDBManager {
             }
             stringBuffer.append(channelIds.get(i)).append("'");
         }
-        String sql = "select * from " + tab + " where channel_id in ('" + stringBuffer + ")";
+        String sql = "select * from " + reminders + " where channel_id in ('" + stringBuffer + ")";
         List<WKReminder> list = new ArrayList<>();
         try (Cursor cursor = WKIMApplication
                 .getInstance()
@@ -165,7 +165,7 @@ public class ReminderDBManager {
                     .beginTransaction();
             if (insertCVs.size() > 0) {
                 for (ContentValues cv : insertCVs) {
-                    WKIMApplication.getInstance().getDbHelper().insert(tab, cv);
+                    WKIMApplication.getInstance().getDbHelper().insert(reminders, cv);
                 }
             }
             if (updateCVs.size() > 0) {
@@ -173,7 +173,7 @@ public class ReminderDBManager {
                     String[] update = new String[1];
                     update[0] = cv.getAsString("reminder_id");
                     WKIMApplication.getInstance().getDbHelper()
-                            .update(tab, cv, "reminder_id=?", update);
+                            .update(reminders, cv, "reminder_id=?", update);
                 }
             }
             WKIMApplication.getInstance().getDbHelper().getDb()

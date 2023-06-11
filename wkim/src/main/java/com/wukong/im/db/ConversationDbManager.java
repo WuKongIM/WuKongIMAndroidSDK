@@ -1,5 +1,10 @@
 package com.wukong.im.db;
 
+import static com.wukong.im.db.WKDBColumns.TABLE.channel;
+import static com.wukong.im.db.WKDBColumns.TABLE.conversation;
+import static com.wukong.im.db.WKDBColumns.TABLE.conversationExtra;
+import static com.wukong.im.db.WKDBColumns.TABLE.message;
+
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.text.TextUtils;
@@ -13,7 +18,6 @@ import com.wukong.im.entity.WKConversationMsgExtra;
 import com.wukong.im.entity.WKMsg;
 import com.wukong.im.entity.WKUIConversationMsg;
 import com.wukong.im.manager.ConversationManager;
-import com.wukong.im.utils.WKLoggerUtils;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -28,10 +32,6 @@ import java.util.List;
  * 最近会话
  */
 public class ConversationDbManager {
-    private final String message = "message";
-    private final String conversation = "conversation";
-    private final String conversationExtra = "conversation_extra";
-    private final String channel = "channel";
     private final String extraCols = "IFNULL(" + conversationExtra + ".browse_to,0) AS browse_to,IFNULL(" + conversationExtra + ".keep_message_seq,0) AS keep_message_seq,IFNULL(" + conversationExtra + ".keep_offset_y,0) AS keep_offset_y,IFNULL(" + conversationExtra + ".draft,'') AS draft,IFNULL(" + conversationExtra + ".version,0) AS extra_version";
     private final String channelCols = channel + ".channel_remark," +
             channel + ".channel_name," +
@@ -75,7 +75,6 @@ public class ConversationDbManager {
                 + conversation + ".channel_id = " + channel + ".channel_id AND "
                 + conversation + ".channel_type = " + channel + ".channel_type LEFT JOIN " + conversationExtra + " ON " + conversation + ".channel_id=" + conversationExtra + ".channel_id AND " + conversation + ".channel_type=" + conversationExtra + ".channel_type where " + conversation + ".is_deleted=0 order by "
                 + WKDBColumns.WKCoverMessageColumns.last_msg_timestamp + " desc";
-
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper()
@@ -83,7 +82,6 @@ public class ConversationDbManager {
             if (cursor == null) {
                 return list;
             }
-
             for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
                 WKConversationMsg msg = serializeMsg(cursor);
                 if (msg.isDeleted == 0) {

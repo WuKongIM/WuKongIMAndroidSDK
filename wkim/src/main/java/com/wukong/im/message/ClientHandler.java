@@ -34,7 +34,7 @@ class ClientHandler implements IDataHandler, IConnectHandler,
     @Override
     public boolean onConnectException(INonBlockingConnection iNonBlockingConnection, IOException e) {
         WKLoggerUtils.getInstance().e("连接异常");
-        ConnectionHandler.getInstance().reconnection();
+        ConnectionHandler.getInstance().forcedReconnection();
         close(iNonBlockingConnection);
         return true;
     }
@@ -47,7 +47,7 @@ class ClientHandler implements IDataHandler, IConnectHandler,
         if (ConnectionHandler.getInstance().connection != null && iNonBlockingConnection != null) {
             if (!ConnectionHandler.getInstance().connection.getId().equals(iNonBlockingConnection.getId())) {
                 close(iNonBlockingConnection);
-                ConnectionHandler.getInstance().reconnection();
+                ConnectionHandler.getInstance().forcedReconnection();
             } else {
                 //连接成功
                 isConnectSuccess = true;
@@ -57,7 +57,7 @@ class ClientHandler implements IDataHandler, IConnectHandler,
         } else {
             close(iNonBlockingConnection);
             WKLoggerUtils.getInstance().e("连接成功连接对象为空");
-            ConnectionHandler.getInstance().reconnection();
+            ConnectionHandler.getInstance().forcedReconnection();
         }
         return false;
     }
@@ -66,7 +66,7 @@ class ClientHandler implements IDataHandler, IConnectHandler,
     public boolean onConnectionTimeout(INonBlockingConnection iNonBlockingConnection) {
         if (!isConnectSuccess) {
             WKLoggerUtils.getInstance().e("连接超时");
-            ConnectionHandler.getInstance().reconnection();
+            ConnectionHandler.getInstance().forcedReconnection();
         }
         return true;
     }
@@ -84,7 +84,7 @@ class ClientHandler implements IDataHandler, IConnectHandler,
                     e.printStackTrace();
                 }
 
-                ConnectionHandler.getInstance().reconnection();
+                ConnectionHandler.getInstance().forcedReconnection();
                 return true;
             }
         }
@@ -124,7 +124,7 @@ class ClientHandler implements IDataHandler, IConnectHandler,
     public boolean onDisconnect(INonBlockingConnection iNonBlockingConnection) {
         WKLoggerUtils.getInstance().e("连接断开");
         if (WKIMApplication.getInstance().isCanConnect) {
-            ConnectionHandler.getInstance().reconnection();
+            ConnectionHandler.getInstance().forcedReconnection();
         }else {
             WKLoggerUtils.getInstance().e("不能重连-->");
         }
@@ -136,7 +136,7 @@ class ClientHandler implements IDataHandler, IConnectHandler,
     public boolean onIdleTimeout(INonBlockingConnection iNonBlockingConnection) {
         if (!isConnectSuccess) {
             WKLoggerUtils.getInstance().e("Idle连接超时");
-            ConnectionHandler.getInstance().reconnection();
+            ConnectionHandler.getInstance().forcedReconnection();
             close(iNonBlockingConnection);
         }
         return true;

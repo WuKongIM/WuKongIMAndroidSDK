@@ -5,5 +5,5 @@ package com.wukong.im.interfaces;
  * 同步频道消息
  */
 public interface ISyncChannelMsgListener {
-    void syncChannelMsgs(String channelID, byte channelType, long minMessageSeq, long maxMesageSeq, int limit, boolean reverse, ISyncChannelMsgBack iSyncChannelMsgBack);
+    void syncChannelMsgs(String channelID, byte channelType, long startMessageSeq, long endMessageSeq, int limit, int pullMode, ISyncChannelMsgBack iSyncChannelMsgBack);
 }
