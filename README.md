@@ -23,8 +23,8 @@ allprojects {
 ```
 **混淆**
 ```
--dontwarn com.wukong.im.**
--keep class com.wukong.im.**{*;}
+-dontwarn com.xinbida.wukongim.**
+-keep class com.xinbida.wukongim.**{*;}
 ```
 **初始化sdk**
 ```

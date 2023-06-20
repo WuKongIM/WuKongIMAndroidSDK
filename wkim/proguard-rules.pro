@@ -24,21 +24,21 @@
 -dontwarn org.xsocket.**
 -keep class org.xsocket.** { *; }
 -keep class javax.ws.rs.** { *; }
--keep class com.wukong.im.WKIM {*;}
--keep class com.wukong.im.protocol.WKMessageContent {*;}
--keep class com.wukong.im.protocol.WKMsgEntity {*;}
--keep class com.wukong.im.message.type.WKMsgContentType { *; }
--keep class com.wukong.im.entity.WKChannelType { *; }
--keep class com.wukong.im.message.type.WKSendMsgResult { *; }
--keep class com.wukong.im.message.type.WKConnectStatus { *; }
--keep class com.wukong.im.message.type.WKConnectReason { *; }
+-keep class com.xinbida.wukongim.WKIM {*;}
+-keep class com.xinbida.wukongim.protocol.WKMessageContent {*;}
+-keep class com.xinbida.wukongim.protocol.WKMsgEntity {*;}
+-keep class com.xinbida.wukongim.message.type.WKMsgContentType { *; }
+-keep class com.xinbida.wukongim.entity.WKChannelType { *; }
+-keep class com.xinbida.wukongim.message.type.WKSendMsgResult { *; }
+-keep class com.xinbida.wukongim.message.type.WKConnectStatus { *; }
+-keep class com.xinbida.wukongim.message.type.WKConnectReason { *; }
 
--keep class com.wukong.im.entity.* { *; }
--keep class com.wukong.im.interfaces.** { *; }
--keep class com.wukong.im.msgmodel.** { *; }
--keep class com.wukong.im.manager.** { *; }
+-keep class com.xinbida.wukongim.entity.* { *; }
+-keep class com.xinbida.wukongim.interfaces.** { *; }
+-keep class com.xinbida.wukongim.msgmodel.** { *; }
+-keep class com.xinbida.wukongim.manager.** { *; }
 -keep class org.whispersystems.curve25519.** { *; }
--keepclassmembers class com.wukong.im.db.WKDBHelper$DatabaseHelper {
+-keepclassmembers class com.xinbida.wukongim.db.WKDBHelper$DatabaseHelper {
    public *;
 }
 # sqlcipher

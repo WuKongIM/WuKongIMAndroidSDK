@@ -9,7 +9,7 @@ afterEvaluate {
         publications {
             maven(MavenPublication) {
                 afterEvaluate { artifact(tasks.getByName("bundleReleaseAar")) }
-                groupId = 'com.wukong.im'
+                groupId = 'com.xinbida.wukongim'
                 artifactId = 'WKIMLib_loca'
                 version = '1.0.1'
             }
@@ -45,7 +45,7 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
-    namespace 'com.wukong.im'
+    namespace 'com.xinbida.wukongim'
 }
 
 dependencies {
