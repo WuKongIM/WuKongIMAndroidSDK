@@ -41,6 +41,12 @@
 -keepclassmembers class com.xinbida.wukongim.db.WKDBHelper$DatabaseHelper {
    public *;
 }
+
+#--------- 混淆dh curve25519-------
+-keep class org.whispersystems.curve25519.**{*;}
+-keep class org.whispersystems.** { *; }
+-keep class org.thoughtcrime.securesms.** { *; }
+
 # sqlcipher
 -keep,includedescriptorclasses class net.sqlcipher.** { *; }
 -keep,includedescriptorclasses interface net.sqlcipher.** { *; }
