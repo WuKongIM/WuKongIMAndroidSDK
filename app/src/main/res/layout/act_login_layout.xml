@@ -33,7 +33,7 @@
         android:layout_marginStart="30dp"
         android:layout_marginTop="30dp"
         android:layout_marginEnd="30dp"
-        android:hint="API基地址" />
+        android:hint="API基地址（https://api.githubim.com）" />
 
     <EditText
         android:id="@+id/uidET"

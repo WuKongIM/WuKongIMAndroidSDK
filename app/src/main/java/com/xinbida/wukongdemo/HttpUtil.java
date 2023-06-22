@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class HttpUtil {
-    public final String apiURL = "https://api.githubim.com";
+    public String apiURL = "https://api.githubim.com";
 
     private static class HttpUtilTypeClass {
         private static final HttpUtil instance = new HttpUtil();

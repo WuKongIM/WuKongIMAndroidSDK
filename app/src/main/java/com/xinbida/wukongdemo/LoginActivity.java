@@ -29,7 +29,11 @@ public class LoginActivity extends AppCompatActivity {
 
     private void onListener() {
         EditText urlET = findViewById(R.id.urlET);
-        urlET.setText(HttpUtil.getInstance().apiURL);
+        String url = urlET.getText().toString();
+        if (!TextUtils.isEmpty(url)){
+            HttpUtil.getInstance().apiURL = url;
+        }
+
         findViewById(R.id.loginBtn).setOnClickListener(v -> {
             String uid = ((EditText) findViewById(R.id.uidET)).getText().toString();
             String token = ((EditText) findViewById(R.id.tokenET)).getText().toString();
