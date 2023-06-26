@@ -8,6 +8,7 @@ import static com.xinbida.wukongim.db.WKDBColumns.TABLE.messageExtra;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.WKIMApplication;
@@ -59,7 +60,6 @@ public class MsgDbManager {
     public void getOrSyncHistoryMessages(String channelId, byte channelType, long oldestOrderSeq, boolean contain, int pullMode, int limit, final IGetOrSyncHistoryMsgBack iGetOrSyncHistoryMsgBack) {
         //获取原始数据
         List<WKMsg> list = getMessages(channelId, channelType, oldestOrderSeq, contain, pullMode, limit);
-
         //业务判断数据
         List<WKMsg> tempList = new ArrayList<>();
         for (int i = 0, size = list.size(); i < size; i++) {
@@ -80,18 +80,10 @@ public class MsgDbManager {
                     minMessageSeq = tempList.get(i).messageSeq;
             }
         }
-
         //是否同步消息
         boolean isSyncMsg = false;
-        //reverse false：从区间大值开始拉取true：从区间小值开始拉取
-        boolean reverse = false;
         long startMsgSeq = 0;
         long endMsgSeq = 0;
-        //同步消息的最大messageSeq
-//        long syncMaxMsgSeq = 0;
-        //同步消息最小messageSeq,
-//        long syncMinMsgSeq = 0;
-
         //判断页与页之间是否连续
         long oldestMsgSeq;
 
@@ -103,21 +95,15 @@ public class MsgDbManager {
             //下拉获取消息
             if (maxMessageSeq != 0 && oldestMsgSeq != 0 && oldestMsgSeq - maxMessageSeq > 1) {
                 isSyncMsg = true;
-//                syncMaxMsgSeq = oldestMsgSeq;
-//                syncMinMsgSeq = maxMessageSeq;
                 startMsgSeq = maxMessageSeq;
                 endMsgSeq = oldestMsgSeq;
-                reverse = false;//区间大值开始获取
             }
         } else {
             //上拉获取消息
             if (minMessageSeq != 0 && oldestMsgSeq != 0 && minMessageSeq - oldestMsgSeq > 1) {
                 isSyncMsg = true;
-//                syncMaxMsgSeq = minMessageSeq;
-//                syncMinMsgSeq = oldestMsgSeq;
-                startMsgSeq = minMessageSeq;
-                endMsgSeq = oldestMsgSeq;
-                reverse = true;//区间小值开始获取
+                startMsgSeq = oldestMsgSeq;
+                endMsgSeq = minMessageSeq;
             }
         }
 
@@ -169,48 +155,15 @@ public class MsgDbManager {
             if (pullMode == 0) {
                 //如果下拉获取数据
                 isSyncMsg = true;
-                reverse = false;//从区间大值开始获取数据
-//                syncMinMsgSeq = 0;
-//                syncMaxMsgSeq = oldestMsgSeq;
                 startMsgSeq = oldestMsgSeq;
                 endMsgSeq = 0;
             } else {
                 //如果上拉获取数据
                 isSyncMsg = true;
-                reverse = true;//从区间小值开始获取数据
-//                syncMaxMsgSeq = 0;
-//                syncMinMsgSeq = maxMessageSeq;
                 startMsgSeq = oldestMsgSeq;
                 endMsgSeq = 0;
             }
         }
-//        if (!isContain) {
-//            isSyncMsg = true;
-//            if (dropDown) {
-//                reverse = false;//从区间大值开始获取数据
-//                syncMinMsgSeq = 0;
-//                syncMaxMsgSeq = oldestMsgSeq;
-//            }else {
-//                reverse = true;//从区间小值开始获取数据
-//                syncMaxMsgSeq = 0;
-//                syncMinMsgSeq = oldestMsgSeq;
-//            }
-//        }
-        // 如果提醒的某条消息未在本地同步消息范围内，则将该范围缩小到需要同步到消息序号上
-//        if (oldestMsgSeq != 0) {
-//            if (reverse) {
-//                // 从大开始同步
-//                if (oldestMsgSeq < syncMaxMsgSeq - limit) {
-//                    syncMaxMsgSeq = oldestMsgSeq + 3;
-//                }
-//            } else {
-//                // 从小开始同步
-//                if (oldestMsgSeq > syncMinMsgSeq + limit) {
-//                    syncMinMsgSeq = oldestMsgSeq - 3;
-//                }
-//            }
-//        }
-
         if (isSyncMsg && startMsgSeq != endMsgSeq && requestCount < 5) {
             //同步消息
             requestCount++;
