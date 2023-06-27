@@ -1,14 +1,12 @@
 package com.xinbida.wukongim.db;
 
 import static com.xinbida.wukongim.db.WKDBColumns.TABLE.channel;
-import static com.xinbida.wukongim.db.WKDBColumns.TABLE.channelMembers;
 import static com.xinbida.wukongim.db.WKDBColumns.TABLE.message;
 import static com.xinbida.wukongim.db.WKDBColumns.TABLE.messageExtra;
 
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.WKIMApplication;
@@ -118,8 +116,6 @@ public class MsgDbManager {
                         int num = getDeletedCount(tempList.get(i).messageSeq, tempList.get(nextIndex).messageSeq, channelId, channelType);
                         if (num < (tempList.get(nextIndex).messageSeq - tempList.get(i).messageSeq) - 1) {
                             isSyncMsg = true;
-//                            syncMaxMsgSeq = tempList.get(nextIndex).messageSeq;
-//                            syncMinMsgSeq = tempList.get(i).messageSeq;
                             long max = tempList.get(nextIndex).messageSeq;
                             long min = tempList.get(i).messageSeq;
                             if (tempList.get(nextIndex).messageSeq < tempList.get(i).messageSeq) {
@@ -134,8 +130,6 @@ public class MsgDbManager {
                                 startMsgSeq = min;
                                 endMsgSeq = max;
                             }
-//                            if (pullMode == 0) reverse = false;//区间大值开始获取
-//                            else reverse = true;//区间小值开始获取
                             break;
                         }
                     }
