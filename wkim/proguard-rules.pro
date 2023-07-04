@@ -37,7 +37,6 @@
 -keep class com.xinbida.wukongim.interfaces.** { *; }
 -keep class com.xinbida.wukongim.msgmodel.** { *; }
 -keep class com.xinbida.wukongim.manager.** { *; }
--keep class org.whispersystems.curve25519.** { *; }
 -keepclassmembers class com.xinbida.wukongim.db.WKDBHelper$DatabaseHelper {
    public *;
 }

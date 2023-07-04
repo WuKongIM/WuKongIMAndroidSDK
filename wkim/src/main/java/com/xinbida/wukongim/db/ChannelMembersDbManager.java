@@ -490,7 +490,12 @@ public class ChannelMembersDbManager {
         if (!TextUtils.isEmpty(channelName)) channelMember.memberName = channelName;
         channelMember.remark = WKCursor.readString(cursor, WKDBColumns.WKChannelColumns.channel_remark);
         channelMember.memberAvatar = WKCursor.readString(cursor, WKDBColumns.WKChannelColumns.avatar);
-        channelMember.memberAvatarCacheKey = WKCursor.readString(cursor, WKDBColumns.WKChannelMembersColumns.memberAvatarCacheKey);
+        String avatarCache = WKCursor.readString(cursor, WKDBColumns.WKChannelColumns.avatar_cache_key);
+        if (!TextUtils.isEmpty(avatarCache)) {
+            channelMember.memberAvatarCacheKey = avatarCache;
+        } else {
+            channelMember.memberAvatarCacheKey = WKCursor.readString(cursor, WKDBColumns.WKChannelMembersColumns.memberAvatarCacheKey);
+        }
         String extra = WKCursor.readString(cursor, WKDBColumns.WKChannelMembersColumns.extra);
         if (!TextUtils.isEmpty(extra)) {
             HashMap<String, Object> hashMap = new HashMap<>();
