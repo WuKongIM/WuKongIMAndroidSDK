@@ -152,7 +152,7 @@ public class MessageHandler {
             int red_dot = WKTypeUtils.getInstance().getBit(lastMsgBytes[0], 1);
             //是否只同步一次
             int sync_once = WKTypeUtils.getInstance().getBit(lastMsgBytes[0], 2);
-            WKLoggerUtils.getInstance().e("是否持久化：" + no_persist + "是否显示红点：" + red_dot + "是否只同步一次：" + sync_once);
+            WKLoggerUtils.getInstance().e("是否不存储：" + no_persist + "是否显示红点：" + red_dot + "是否只同步一次：" + sync_once);
             WKLoggerUtils.getInstance().e("消息类型" + packetType);
             if (packetType == WKMsgType.PONG) {
                 //心跳ack
