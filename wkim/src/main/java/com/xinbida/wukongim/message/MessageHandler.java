@@ -153,7 +153,7 @@ public class MessageHandler {
             //是否只同步一次
             int sync_once = WKTypeUtils.getInstance().getBit(lastMsgBytes[0], 2);
             WKLoggerUtils.getInstance().e("是否不存储：" + no_persist + "是否显示红点：" + red_dot + "是否只同步一次：" + sync_once);
-            WKLoggerUtils.getInstance().e("消息类型" + packetType);
+            WKLoggerUtils.getInstance().e("消息包类型" + packetType);
             if (packetType == WKMsgType.PONG) {
                 //心跳ack
                 mIReceivedMsgListener.heartbeatMsg(new WKPongMsg());
@@ -312,14 +312,16 @@ public class MessageHandler {
      */
     public synchronized void saveSyncMsg(List<WKSyncMsg> list) {
         List<WKMsg> saveMsgList = new ArrayList<>();
+        List<WKMsg> allList = new ArrayList<>();
         for (WKSyncMsg mMsg : list) {
             if (mMsg.no_persist == 0 && mMsg.sync_once == 0) {
                 saveMsgList.add(mMsg.wkMsg);
             }
+            allList.add(mMsg.wkMsg);
         }
         MsgDbManager.getInstance().insertMsgList1(saveMsgList);
         //将消息push给UI
-        WKIM.getInstance().getMsgManager().pushNewMsg(saveMsgList);
+        WKIM.getInstance().getMsgManager().pushNewMsg(allList);
         groupMsg(list);
     }
 

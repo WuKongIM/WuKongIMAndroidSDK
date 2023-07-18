@@ -27,7 +27,7 @@ public class WKChannelExtras {
     // 是否被拉入黑名单
     public final static String beBlacklist = "be_blacklist";
     // 是否允许新成员查看历史消息
-    public final static String allowNewMemberViewHistoryMsg = "allow_new_member_view_history_msg";
+    public final static String allowViewHistoryMsg = "allow_view_history_msg";
     // 群类型
     public final static String groupType = "group_type";
 }
