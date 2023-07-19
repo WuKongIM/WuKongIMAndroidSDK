@@ -295,8 +295,10 @@ public class MsgManager extends BaseManager {
             long maxMsgSeq = getMaxMessageSeq(channelId, channelType);
             long aroundMsgSeq = getOrNearbyMsgSeq(aroundMsgOrderSeq);
             if (maxMsgSeq >= aroundMsgSeq && maxMsgSeq - aroundMsgSeq <= limit) {
-                oldestOrderSeq = 0;
-                contain = false;
+                // 显示最后一页数据
+//                oldestOrderSeq = 0;
+                oldestOrderSeq = getMessageOrderSeq(maxMsgSeq,channelId,channelType);
+                contain = true;
                 pullMode = 0;
             } else {
                 long minOrderSeq = MsgDbManager.getInstance().getOrderSeq(channelId, channelType, aroundMsgOrderSeq, 3);

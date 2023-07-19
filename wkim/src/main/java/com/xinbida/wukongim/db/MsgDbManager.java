@@ -93,15 +93,15 @@ public class MsgDbManager {
             //下拉获取消息
             if (maxMessageSeq != 0 && oldestMsgSeq != 0 && oldestMsgSeq - maxMessageSeq > 1) {
                 isSyncMsg = true;
-                startMsgSeq = maxMessageSeq;
-                endMsgSeq = oldestMsgSeq;
+                startMsgSeq = oldestMsgSeq;
+                endMsgSeq = maxMessageSeq;
             }
         } else {
             //上拉获取消息
             if (minMessageSeq != 0 && oldestMsgSeq != 0 && minMessageSeq - oldestMsgSeq > 1) {
                 isSyncMsg = true;
-                startMsgSeq = oldestMsgSeq;
-                endMsgSeq = minMessageSeq;
+                startMsgSeq = minMessageSeq;
+                endMsgSeq = oldestMsgSeq;
             }
         }
 
@@ -229,7 +229,11 @@ public class MsgDbManager {
             sql = "SELECT * FROM (SELECT " + messageCols + "," + extraCols + " FROM " + message + " LEFT JOIN " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".channel_id='" + channelId + "' and " + message + ".channel_type=" + channelType + " and " + message + ".type<>0 and " + message + ".type<>99) where is_deleted=0 and is_mutual_deleted=0 order by order_seq desc limit 0," + limit;
         } else {
             if (pullMode == 0) {
-                sql = "SELECT * FROM (SELECT " + messageCols + "," + extraCols + " FROM " + message + " LEFT JOIN " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".channel_id='" + channelId + "' and " + message + ".channel_type=" + channelType + " and " + message + ".type<>0 and " + message + ".type<>99 AND " + message + ".order_seq<" + oldestOrderSeq + ") where is_deleted=0 and is_mutual_deleted=0 order by order_seq desc limit 0," + limit;
+                if (contain) {
+                    sql = "SELECT * FROM (SELECT " + messageCols + "," + extraCols + " FROM " + message + " LEFT JOIN " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".channel_id='" + channelId + "' and " + message + ".channel_type=" + channelType + " and " + message + ".type<>0 and " + message + ".type<>99 AND " + message + ".order_seq<=" + oldestOrderSeq + ") where is_deleted=0 and is_mutual_deleted=0 order by order_seq desc limit 0," + limit;
+                } else {
+                    sql = "SELECT * FROM (SELECT " + messageCols + "," + extraCols + " FROM " + message + " LEFT JOIN " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".channel_id='" + channelId + "' and " + message + ".channel_type=" + channelType + " and " + message + ".type<>0 and " + message + ".type<>99 AND " + message + ".order_seq<" + oldestOrderSeq + ") where is_deleted=0 and is_mutual_deleted=0 order by order_seq desc limit 0," + limit;
+                }
             } else {
                 if (contain) {
                     sql = "SELECT * FROM (SELECT " + messageCols + "," + extraCols + " FROM " + message + " LEFT JOIN " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".channel_id='" + channelId + "' and " + message + ".channel_type=" + channelType + " and " + message + ".type<>0 and " + message + ".type<>99 AND " + message + ".order_seq>=" + oldestOrderSeq + ") where is_deleted=0 and is_mutual_deleted=0 order by order_seq asc limit 0," + limit;
