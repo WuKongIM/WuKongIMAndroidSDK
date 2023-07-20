@@ -23,6 +23,7 @@ import com.xinbida.wukongim.interfaces.IGetOrSyncHistoryMsgBack;
 import com.xinbida.wukongim.manager.MsgManager;
 import com.xinbida.wukongim.message.type.WKSendMsgResult;
 import com.xinbida.wukongim.protocol.WKMessageContent;
+import com.xinbida.wukongim.utils.WKLoggerUtils;
 import com.xinbida.wukongim.utils.WKTypeUtils;
 
 import org.json.JSONException;
@@ -58,11 +59,14 @@ public class MsgDbManager {
     public void getOrSyncHistoryMessages(String channelId, byte channelType, long oldestOrderSeq, boolean contain, int pullMode, int limit, final IGetOrSyncHistoryMsgBack iGetOrSyncHistoryMsgBack) {
         //获取原始数据
         List<WKMsg> list = getMessages(channelId, channelType, oldestOrderSeq, contain, pullMode, limit);
+
         //业务判断数据
         List<WKMsg> tempList = new ArrayList<>();
         for (int i = 0, size = list.size(); i < size; i++) {
             tempList.add(list.get(i));
         }
+        WKLoggerUtils.getInstance().e("查询参数oldestOrderSeq:" + oldestOrderSeq + ",contain:" + contain + ",pullMode" + pullMode + ",limit:" + limit + ",查询到的总数：" + tempList.size());
+
         //先通过message_seq排序
         if (tempList.size() > 0)
             Collections.sort(tempList, (o1, o2) -> (o1.messageSeq - o2.messageSeq));
@@ -89,21 +93,37 @@ public class MsgDbManager {
         if (oldestOrderSeq % 1000 != 0)
             oldestMsgSeq = getMsgSeq(channelId, channelType, oldestOrderSeq, pullMode);
         else oldestMsgSeq = oldestOrderSeq / 1000;
+        WKLoggerUtils.getInstance().e("计算出的最大seq:" + maxMessageSeq + "最小seq:" + minMessageSeq + "及oldestMsgSeq：" + oldestMsgSeq);
         if (pullMode == 0) {
             //下拉获取消息
-            if (maxMessageSeq != 0 && oldestMsgSeq != 0 && oldestMsgSeq - maxMessageSeq > 1) {
+            if (maxMessageSeq != 0 && oldestMsgSeq != 0) {
                 isSyncMsg = true;
-                startMsgSeq = oldestMsgSeq;
-                endMsgSeq = maxMessageSeq;
+                // 从大往小同步
+                if (oldestMsgSeq - maxMessageSeq > 1) {
+                    startMsgSeq = oldestMsgSeq;
+                    endMsgSeq = maxMessageSeq;
+                } else {
+                    startMsgSeq = maxMessageSeq;
+                    endMsgSeq = oldestMsgSeq;
+                }
+
             }
         } else {
             //上拉获取消息
-            if (minMessageSeq != 0 && oldestMsgSeq != 0 && minMessageSeq - oldestMsgSeq > 1) {
+            if (minMessageSeq != 0 && oldestMsgSeq != 0) {
                 isSyncMsg = true;
-                startMsgSeq = minMessageSeq;
-                endMsgSeq = oldestMsgSeq;
+                // 从小往大同步
+                if (minMessageSeq - oldestMsgSeq > 1) {
+                    startMsgSeq = oldestMsgSeq;
+                    endMsgSeq = minMessageSeq;
+                } else {
+                    startMsgSeq = minMessageSeq;
+                    endMsgSeq = oldestMsgSeq;
+                }
+
             }
         }
+        WKLoggerUtils.getInstance().e("第一次计算同步信息isSyncMsg:" + isSyncMsg + "最大seq:" + maxMessageSeq + "，最小seq：" + minMessageSeq + "及oldestMsgSeq：" + oldestMsgSeq);
 
         if (!isSyncMsg) {
             //判断当前页是否连续
@@ -136,6 +156,7 @@ public class MsgDbManager {
                 }
             }
         }
+        WKLoggerUtils.getInstance().e("判断连续性同步信息isSyncMsg:" + isSyncMsg + "最大seq:" + maxMessageSeq + "，最小seq：" + minMessageSeq + "及oldestMsgSeq：" + oldestMsgSeq);
 
         if (!isSyncMsg) {
             if (minMessageSeq == 1) {
@@ -158,6 +179,8 @@ public class MsgDbManager {
                 endMsgSeq = 0;
             }
         }
+        WKLoggerUtils.getInstance().e("计算本地消息总数小于limit后同步信息isSyncMsg:" + isSyncMsg + "最大seq:" + maxMessageSeq + "，最小seq：" + minMessageSeq + "及oldestMsgSeq：" + oldestMsgSeq);
+
         if (isSyncMsg && startMsgSeq != endMsgSeq && requestCount < 5) {
             //同步消息
             requestCount++;
