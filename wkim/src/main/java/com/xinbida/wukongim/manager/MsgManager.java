@@ -294,6 +294,7 @@ public class MsgManager extends BaseManager {
         if (aroundMsgOrderSeq != 0) {
             long maxMsgSeq = getMaxMessageSeq(channelId, channelType);
             long aroundMsgSeq = getOrNearbyMsgSeq(aroundMsgOrderSeq);
+
             if (maxMsgSeq >= aroundMsgSeq && maxMsgSeq - aroundMsgSeq <= limit) {
                 // 显示最后一页数据
 //                oldestOrderSeq = 0;

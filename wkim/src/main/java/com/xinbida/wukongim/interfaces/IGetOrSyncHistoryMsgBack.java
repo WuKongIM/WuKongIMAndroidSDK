@@ -10,5 +10,6 @@ import java.util.List;
  * 获取或同步消息返回
  */
 public interface IGetOrSyncHistoryMsgBack {
+    void onSyncing();
     void onResult(List<WKMsg> msgs);
 }
