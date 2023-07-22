@@ -1,4 +1,6 @@
 # 悟空IM Android sdk 源码
+![](https://img.shields.io/badge/platform-android-blue.svg)  ![](https://img.shields.io/badge/compileSdkVersion-33-blue.svg) ![](https://img.shields.io/badge/minSdkVersion-19-blue.svg) ![](https://img.shields.io/hexpm/l/plug.svg)
+
 该项目是一个完全自定义协议的即时通讯sdk。
 
 ## [详细文档](http://githubim.com "文档")
