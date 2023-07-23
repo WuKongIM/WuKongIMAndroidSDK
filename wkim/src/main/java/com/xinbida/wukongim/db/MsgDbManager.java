@@ -1129,7 +1129,7 @@ public class MsgDbManager {
 
     public WKMsg getMsgWithMessageID(String messageID, boolean isGetMsgReaction) {
         WKMsg msg = null;
-        String sql = "select " + messageCols + "," + extraCols + " from " + message + " LEFT JOIN " + messageExtra + " ON " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".message_id=" + "'" + messageID + "'";
+        String sql = "select " + messageCols + "," + extraCols + " from " + message + " LEFT JOIN " + messageExtra + " ON " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".message_id=" + "'" + messageID + "' and " + message + ".is_deleted=0";
 
         try (Cursor cursor = WKIMApplication
                 .getInstance()
