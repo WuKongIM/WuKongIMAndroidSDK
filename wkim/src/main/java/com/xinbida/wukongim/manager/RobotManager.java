@@ -48,13 +48,13 @@ public class RobotManager extends BaseManager {
 
     public void saveOrUpdateRobots(List<WKRobot> list) {
         if (list != null && list.size() > 0) {
-            RobotDBManager.getInstance().insertOrUpdate(list);
+            RobotDBManager.getInstance().insertOrUpdateRobots(list);
         }
     }
 
     public void saveOrUpdateRobotMenus(List<WKRobotMenu> list) {
         if (list != null && list.size() > 0) {
-            RobotDBManager.getInstance().insertOrUpdateMenu(list);
+            RobotDBManager.getInstance().insertOrUpdateMenus(list);
         }
         setRefreshRobotMenu();
     }

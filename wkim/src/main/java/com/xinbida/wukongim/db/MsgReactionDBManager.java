@@ -31,7 +31,7 @@ class MsgReactionDBManager {
         return MessageReactionDBManagerBinder.manager;
     }
 
-    public void insertReaction(List<WKMsgReaction> list) {
+    public void insertReactions(List<WKMsgReaction> list) {
         if (list == null || list.size() == 0) return;
         for (int i = 0, size = list.size(); i < size; i++) {
             insertOrUpdate(list.get(i));
@@ -80,7 +80,7 @@ class MsgReactionDBManager {
         return isExist;
     }
 
-    public List<WKMsgReaction> queryReactions(String messageID) {
+    public List<WKMsgReaction> queryWithMessageId(String messageID) {
         List<WKMsgReaction> list = new ArrayList<>();
         String sql = "select * from " + messageReaction + " where message_id=" + "\"" + messageID + "\"" + " and is_deleted=0 ORDER BY created_at desc";
         try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql)) {
@@ -138,7 +138,7 @@ class MsgReactionDBManager {
         return list;
     }
 
-    public WKMsgReaction queryReaction(String messageID, String uid, String emoji) {
+    public WKMsgReaction queryWithMsgIdAndUIDAndText(String messageID, String uid, String emoji) {
         WKMsgReaction reaction = null;
         String sql = "select * from " + messageReaction
                 + " where message_id=" + "\"" + messageID + "\""
@@ -157,7 +157,7 @@ class MsgReactionDBManager {
         return reaction;
     }
 
-    public WKMsgReaction queryReaction(String messageID, String uid) {
+    public WKMsgReaction queryWithMsgIdAndUID(String messageID, String uid) {
         WKMsgReaction reaction = null;
         String sql = "select * from " + messageReaction
                 + " where message_id=" + "\"" + messageID + "\""
@@ -176,7 +176,7 @@ class MsgReactionDBManager {
         return reaction;
     }
 
-    public long getMaxSeqWithChannel(String channelID, byte channelType) {
+    public long queryMaxSeqWithChannel(String channelID, byte channelType) {
         int maxSeq = 0;
         String sql = "select max(seq) seq from " + messageReaction
                 + " where channel_id=" + "\"" + channelID + "\"" + " and channel_type=" + channelType + " limit 0, 1";

@@ -31,7 +31,7 @@ public class ReminderDBManager {
         return ReminderDBManagerBinder.binder;
     }
 
-    public long getMaxVersion() {
+    public long queryMaxVersion() {
         String sql = "select * from " + reminders + " order by version desc limit 1";
         long version = 0;
         try (Cursor cursor = WKIMApplication
@@ -47,7 +47,7 @@ public class ReminderDBManager {
         return version;
     }
 
-    public List<WKReminder> queryWithChannel(String channelID, byte channelType, int done) {
+    public List<WKReminder> queryWithChannelAndDone(String channelID, byte channelType, int done) {
         String sql = "select * from " + reminders + " where channel_id='" + channelID + "' and channel_type=" + channelType + " and done=" + done + " order by message_seq desc";
         List<WKReminder> list = new ArrayList<>();
         try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql)) {
@@ -62,7 +62,7 @@ public class ReminderDBManager {
         return list;
     }
 
-    public List<WKReminder> queryWithChannelAndType(String channelID, byte channelType, int done, int type) {
+    public List<WKReminder> queryWithChannelAndTypeAndDone(String channelID, byte channelType,  int type,int done) {
         String sql = "select * from " + reminders + " where channel_id='" + channelID + "' and channel_type=" + channelType + " and done=" + done + " and type =" + type + " order by message_seq desc";
         List<WKReminder> list = new ArrayList<>();
         try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql)) {
@@ -129,7 +129,7 @@ public class ReminderDBManager {
         return list;
     }
 
-    public List<WKReminder> saveReminders(List<WKReminder> list) {
+    public List<WKReminder> insertOrUpdateReminders(List<WKReminder> list) {
         List<Long> ids = new ArrayList<>();
         List<String> channelIds = new ArrayList<>();
         for (int i = 0, size = list.size(); i < size; i++) {

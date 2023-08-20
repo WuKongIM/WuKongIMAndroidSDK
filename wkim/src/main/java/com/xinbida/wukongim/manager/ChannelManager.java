@@ -53,7 +53,7 @@ public class ChannelManager extends BaseManager {
             }
         }
         if (wkChannel == null) {
-            wkChannel = ChannelDBManager.getInstance().getChannel(channelID, channelType);
+            wkChannel = ChannelDBManager.getInstance().query(channelID, channelType);
             if (wkChannel != null) {
                 wkChannelList.add(wkChannel);
             }
@@ -66,10 +66,10 @@ public class ChannelManager extends BaseManager {
         if (TextUtils.isEmpty(channelID)) return;
         WKChannel channel = getChannel(channelID, channelType, wkChannel -> {
             if (wkChannel != null)
-                addOrUpdateChannel(wkChannel);
+                saveOrUpdateChannel(wkChannel);
         });
         if (channel != null) {
-            addOrUpdateChannel(channel);
+            saveOrUpdateChannel(channel);
         }
     }
 
@@ -83,12 +83,12 @@ public class ChannelManager extends BaseManager {
         this.iGetChannelInfo = iGetChannelInfoListener;
     }
 
-    public void addOrUpdateChannel(WKChannel channel) {
+    public void saveOrUpdateChannel(WKChannel channel) {
         if (channel == null) return;
         //先更改内存数据
         updateChannel(channel);
         setRefreshChannel(channel, true);
-        ChannelDBManager.getInstance().insertOrUpdateChannel(channel);
+        ChannelDBManager.getInstance().insertOrUpdate(channel);
     }
 
 
@@ -217,14 +217,14 @@ public class ChannelManager extends BaseManager {
      *
      * @param list 频道数据
      */
-    public void addOrUpdateChannels(List<WKChannel> list) {
+    public void saveOrUpdateChannels(List<WKChannel> list) {
         if (list == null || list.size() == 0) return;
         // 先修改内存数据
         for (int i = 0, size = list.size(); i < size; i++) {
             updateChannel(list.get(i));
             setRefreshChannel(list.get(i), i == list.size() - 1);
         }
-        ChannelDBManager.getInstance().saveList(list);
+        ChannelDBManager.getInstance().insertChannels(list);
     }
 
     /**
@@ -236,7 +236,7 @@ public class ChannelManager extends BaseManager {
      */
     public void updateStatus(String channelID, byte channelType, int status) {
         updateChannel(channelID, channelType, WKDBColumns.WKChannelColumns.status, status);
-        ChannelDBManager.getInstance().updateChannel(channelID, channelType, WKDBColumns.WKChannelColumns.status, String.valueOf(status));
+        ChannelDBManager.getInstance().updateWithField(channelID, channelType, WKDBColumns.WKChannelColumns.status, String.valueOf(status));
     }
 
 
@@ -249,7 +249,7 @@ public class ChannelManager extends BaseManager {
      */
     public void updateName(String channelID, byte channelType, String name) {
         updateChannel(channelID, channelType, WKDBColumns.WKChannelColumns.channel_name, name);
-        ChannelDBManager.getInstance().updateChannel(channelID, channelType, WKDBColumns.WKChannelColumns.channel_name, name);
+        ChannelDBManager.getInstance().updateWithField(channelID, channelType, WKDBColumns.WKChannelColumns.channel_name, name);
     }
 
     /**
@@ -259,8 +259,8 @@ public class ChannelManager extends BaseManager {
      * @param status      状态
      * @return List<WKChannel>
      */
-    public List<WKChannel> getChannelsWithStatus(byte channelType, int status) {
-        return ChannelDBManager.getInstance().queryAllByStatus(channelType, status);
+    public List<WKChannel> getWithStatus(byte channelType, int status) {
+        return ChannelDBManager.getInstance().queryWithStatus(channelType, status);
     }
 
     public List<WKChannel> getWithChannelIdsAndChannelType(List<String> channelIds, byte channelType) {
@@ -273,8 +273,8 @@ public class ChannelManager extends BaseManager {
      * @param keyword 关键字
      * @return List<WKChannelSearchResult>
      */
-    public List<WKChannelSearchResult> searchChannel(String keyword) {
-        return ChannelDBManager.getInstance().searchChannelInfo(keyword);
+    public List<WKChannelSearchResult> search(String keyword) {
+        return ChannelDBManager.getInstance().search(keyword);
     }
 
     /**
@@ -284,12 +284,12 @@ public class ChannelManager extends BaseManager {
      * @param channelType 频道类型
      * @return List<WKChannel>
      */
-    public List<WKChannel> searchChannelsByChannelType(String keyword, byte channelType) {
-        return ChannelDBManager.getInstance().searchChannels(keyword, channelType);
+    public List<WKChannel> searchWithChannelType(String keyword, byte channelType) {
+        return ChannelDBManager.getInstance().searchWithChannelType(keyword, channelType);
     }
 
-    public List<WKChannel> searchChannelsByChannelType(String keyword, byte channelType, int follow) {
-        return ChannelDBManager.getInstance().searchChannels(keyword, channelType, follow);
+    public List<WKChannel> searchWithChannelTypeAndFollow(String keyword, byte channelType, int follow) {
+        return ChannelDBManager.getInstance().searchWithChannelTypeAndFollow(keyword, channelType, follow);
     }
 
     /**
@@ -299,8 +299,8 @@ public class ChannelManager extends BaseManager {
      * @param follow      关注状态
      * @return List<WKChannel>
      */
-    public List<WKChannel> getChannelsWithFollow(byte channelType, int follow) {
-        return ChannelDBManager.getInstance().queryAllByFollow(channelType, follow);
+    public List<WKChannel> getWithChannelTypeAndFollow(byte channelType, int follow) {
+        return ChannelDBManager.getInstance().queryWithChannelTypeAndFollow(channelType, follow);
     }
 
     /**
@@ -312,7 +312,7 @@ public class ChannelManager extends BaseManager {
      */
     public void updateMute(String channelID, byte channelType, int isMute) {
         updateChannel(channelID, channelType, WKDBColumns.WKChannelColumns.mute, isMute);
-        ChannelDBManager.getInstance().updateChannel(channelID, channelType, WKDBColumns.WKChannelColumns.mute, String.valueOf(isMute));
+        ChannelDBManager.getInstance().updateWithField(channelID, channelType, WKDBColumns.WKChannelColumns.mute, String.valueOf(isMute));
     }
 
     /**
@@ -333,7 +333,7 @@ public class ChannelManager extends BaseManager {
                     e.printStackTrace();
                 }
             }
-            ChannelDBManager.getInstance().updateChannel(channelID, channelType, WKDBColumns.WKChannelColumns.localExtra, jsonObject.toString());
+            ChannelDBManager.getInstance().updateWithField(channelID, channelType, WKDBColumns.WKChannelColumns.localExtra, jsonObject.toString());
         }
     }
 
@@ -346,7 +346,7 @@ public class ChannelManager extends BaseManager {
      */
     public void updateSave(String channelID, byte channelType, int isSave) {
         updateChannel(channelID, channelType, WKDBColumns.WKChannelColumns.save, isSave);
-        ChannelDBManager.getInstance().updateChannel(channelID, channelType, WKDBColumns.WKChannelColumns.save, String.valueOf(isSave));
+        ChannelDBManager.getInstance().updateWithField(channelID, channelType, WKDBColumns.WKChannelColumns.save, String.valueOf(isSave));
     }
 
     /**
@@ -358,7 +358,7 @@ public class ChannelManager extends BaseManager {
      */
     public void updateShowNick(String channelID, byte channelType, int showNick) {
         updateChannel(channelID, channelType, WKDBColumns.WKChannelColumns.show_nick, showNick);
-        ChannelDBManager.getInstance().updateChannel(channelID, channelType, WKDBColumns.WKChannelColumns.show_nick, String.valueOf(showNick));
+        ChannelDBManager.getInstance().updateWithField(channelID, channelType, WKDBColumns.WKChannelColumns.show_nick, String.valueOf(showNick));
     }
 
     /**
@@ -370,7 +370,7 @@ public class ChannelManager extends BaseManager {
      */
     public void updateTop(String channelID, byte channelType, int top) {
         updateChannel(channelID, channelType, WKDBColumns.WKChannelColumns.top, top);
-        ChannelDBManager.getInstance().updateChannel(channelID, channelType, WKDBColumns.WKChannelColumns.top, String.valueOf(top));
+        ChannelDBManager.getInstance().updateWithField(channelID, channelType, WKDBColumns.WKChannelColumns.top, String.valueOf(top));
     }
 
     /**
@@ -382,7 +382,7 @@ public class ChannelManager extends BaseManager {
      */
     public void updateRemark(String channelID, byte channelType, String remark) {
         updateChannel(channelID, channelType, WKDBColumns.WKChannelColumns.channel_remark, remark);
-        ChannelDBManager.getInstance().updateChannel(channelID, channelType, WKDBColumns.WKChannelColumns.channel_remark, remark);
+        ChannelDBManager.getInstance().updateWithField(channelID, channelType, WKDBColumns.WKChannelColumns.channel_remark, remark);
     }
 
     /**
@@ -394,7 +394,7 @@ public class ChannelManager extends BaseManager {
      */
     public void updateFollow(String channelID, byte channelType, int follow) {
         updateChannel(channelID, channelType, WKDBColumns.WKChannelColumns.follow, follow);
-        ChannelDBManager.getInstance().updateChannel(channelID, channelType, WKDBColumns.WKChannelColumns.follow, String.valueOf(follow));
+        ChannelDBManager.getInstance().updateWithField(channelID, channelType, WKDBColumns.WKChannelColumns.follow, String.valueOf(follow));
     }
 
     /**
@@ -405,13 +405,13 @@ public class ChannelManager extends BaseManager {
      * @param status      状态 正常或黑名单
      * @return list
      */
-    public List<WKChannel> getChannelsWithFollowAndStatus(byte channelType, int follow, int status) {
-        return ChannelDBManager.getInstance().queryAllByFollowAndStatus(channelType, follow, status);
+    public List<WKChannel> getWithFollowAndStatus(byte channelType, int follow, int status) {
+        return ChannelDBManager.getInstance().queryWithFollowAndStatus(channelType, follow, status);
     }
 
     public void updateAvatarCacheKey(String channelID, byte channelType, String avatar) {
         updateChannel(channelID, channelType, WKDBColumns.WKChannelColumns.avatar_cache_key, avatar);
-        ChannelDBManager.getInstance().updateChannel(channelID, channelType, WKDBColumns.WKChannelColumns.avatar_cache_key, avatar);
+        ChannelDBManager.getInstance().updateWithField(channelID, channelType, WKDBColumns.WKChannelColumns.avatar_cache_key, avatar);
     }
 
     public void addOnRefreshChannelAvatar(IRefreshChannelAvatar iRefreshChannelAvatar) {

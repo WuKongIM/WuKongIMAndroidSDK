@@ -292,17 +292,17 @@ public class MsgManager extends BaseManager {
      */
     public void getOrSyncHistoryMessages(String channelId, byte channelType, long oldestOrderSeq, boolean contain, int pullMode, int limit, long aroundMsgOrderSeq, final IGetOrSyncHistoryMsgBack iGetOrSyncHistoryMsgBack) {
         if (aroundMsgOrderSeq != 0) {
-            long maxMsgSeq = getMaxMessageSeq(channelId, channelType);
+            long maxMsgSeq = getMaxMessageSeqWithChannel(channelId, channelType);
             long aroundMsgSeq = getOrNearbyMsgSeq(aroundMsgOrderSeq);
 
             if (maxMsgSeq >= aroundMsgSeq && maxMsgSeq - aroundMsgSeq <= limit) {
                 // 显示最后一页数据
 //                oldestOrderSeq = 0;
-                oldestOrderSeq = getMessageOrderSeq(maxMsgSeq,channelId,channelType);
+                oldestOrderSeq = getMessageOrderSeq(maxMsgSeq, channelId, channelType);
                 contain = true;
                 pullMode = 0;
             } else {
-                long minOrderSeq = MsgDbManager.getInstance().getOrderSeq(channelId, channelType, aroundMsgOrderSeq, 3);
+                long minOrderSeq = MsgDbManager.getInstance().queryOrderSeq(channelId, channelType, aroundMsgOrderSeq, 3);
                 if (minOrderSeq == 0) {
                     oldestOrderSeq = aroundMsgOrderSeq;
                 } else {
@@ -314,7 +314,7 @@ public class MsgManager extends BaseManager {
 //                        oldestOrderSeq = aroundMsgOrderSeq;
                     } else {
                         // todo 这里只会查询3条数据  oldestOrderSeq = minOrderSeq
-                        long startOrderSeq = MsgDbManager.getInstance().getOrderSeq(channelId, channelType, aroundMsgOrderSeq, limit);
+                        long startOrderSeq = MsgDbManager.getInstance().queryOrderSeq(channelId, channelType, aroundMsgOrderSeq, limit);
                         if (startOrderSeq == 0) {
                             oldestOrderSeq = aroundMsgOrderSeq;
                         } else
@@ -325,10 +325,10 @@ public class MsgManager extends BaseManager {
                 contain = true;
             }
         }
-        MsgDbManager.getInstance().getOrSyncHistoryMessages(channelId, channelType, oldestOrderSeq, contain, pullMode, limit, iGetOrSyncHistoryMsgBack);
+        MsgDbManager.getInstance().queryOrSyncHistoryMessages(channelId, channelType, oldestOrderSeq, contain, pullMode, limit, iGetOrSyncHistoryMsgBack);
     }
 
-    public List<WKMsg> queryAll() {
+    public List<WKMsg> getAll() {
         return MsgDbManager.getInstance().queryAll();
     }
 
@@ -341,7 +341,7 @@ public class MsgManager extends BaseManager {
      *
      * @param clientMsgNos 消息编号集合
      */
-    public void deleteWithClientMsgNO(List<String> clientMsgNos) {
+    public void deleteWithClientMsgNos(List<String> clientMsgNos) {
         if (clientMsgNos == null || clientMsgNos.size() == 0) return;
         List<WKMsg> list = new ArrayList<>();
         try {
@@ -349,7 +349,7 @@ public class MsgManager extends BaseManager {
                     .beginTransaction();
             if (clientMsgNos.size() > 0) {
                 for (int i = 0, size = clientMsgNos.size(); i < size; i++) {
-                    WKMsg msg = MsgDbManager.getInstance().deleteMsgWithClientMsgNo(clientMsgNos.get(i));
+                    WKMsg msg = MsgDbManager.getInstance().deleteWithClientMsgNo(clientMsgNos.get(i));
                     if (msg != null) {
                         list.add(msg);
                     }
@@ -378,7 +378,7 @@ public class MsgManager extends BaseManager {
             if (isAdd) deleteMsgList.add(list.get(i));
         }
         for (int i = 0, size = deleteMsgList.size(); i < size; i++) {
-            WKMsg msg = MsgDbManager.getInstance().getMsgMaxOrderSeqWithChannel(deleteMsgList.get(i).channelID, deleteMsgList.get(i).channelType);
+            WKMsg msg = MsgDbManager.getInstance().queryMaxOrderSeqMsgWithChannel(deleteMsgList.get(i).channelID, deleteMsgList.get(i).channelType);
             if (msg != null) {
                 WKUIConversationMsg uiMsg = WKIM.getInstance().getConversationManager().updateWithWKMsg(msg);
                 if (uiMsg != null) {
@@ -395,7 +395,7 @@ public class MsgManager extends BaseManager {
      * @param client_seq 客户端序列号
      */
     public boolean deleteWithClientSeq(long client_seq) {
-        return MsgDbManager.getInstance().deleteMsgWithClientSeq(client_seq);
+        return MsgDbManager.getInstance().deleteWithClientSeq(client_seq);
     }
 
     /**
@@ -406,25 +406,25 @@ public class MsgManager extends BaseManager {
      * @param clientMsgNo 客户端消息ID
      * @return int
      */
-    public int getMsgRowNoWithClientMsgNO(String channelID, byte channelType, String clientMsgNo) {
-        WKMsg msg = MsgDbManager.getInstance().getMsgWithClientMsgNo(clientMsgNo);
-        return MsgDbManager.getInstance().getMsgRowNoWithOrderSeq(channelID, channelType, msg == null ? 0 : msg.orderSeq);
+    public int getRowNoWithOrderSeq(String channelID, byte channelType, String clientMsgNo) {
+        WKMsg msg = MsgDbManager.getInstance().queryWithClientMsgNo(clientMsgNo);
+        return MsgDbManager.getInstance().queryRowNoWithOrderSeq(channelID, channelType, msg == null ? 0 : msg.orderSeq);
     }
 
-    public int getMsgRowNoWithMessageID(String channelID, byte channelType, String messageID) {
-        WKMsg msg = MsgDbManager.getInstance().getMsgWithMessageID(messageID, false);
-        return MsgDbManager.getInstance().getMsgRowNoWithOrderSeq(channelID, channelType, msg == null ? 0 : msg.orderSeq);
+    public int getRowNoWithMessageID(String channelID, byte channelType, String messageID) {
+        WKMsg msg = MsgDbManager.getInstance().queryWithMessageID(messageID, false);
+        return MsgDbManager.getInstance().queryRowNoWithOrderSeq(channelID, channelType, msg == null ? 0 : msg.orderSeq);
     }
 
     public void deleteWithClientMsgNO(String clientMsgNo) {
-        WKMsg msg = MsgDbManager.getInstance().deleteMsgWithClientMsgNo(clientMsgNo);
+        WKMsg msg = MsgDbManager.getInstance().deleteWithClientMsgNo(clientMsgNo);
         if (msg != null) {
             setDeleteMsg(msg);
-            WKConversationMsg conversationMsg = WKIM.getInstance().getConversationManager().getMsg(msg.channelID, msg.channelType);
+            WKConversationMsg conversationMsg = WKIM.getInstance().getConversationManager().getWithChannel(msg.channelID, msg.channelType);
             if (conversationMsg != null && conversationMsg.lastClientMsgNO.equals(clientMsgNo)) {
-                WKMsg tempMsg = MsgDbManager.getInstance().getMsgMaxOrderSeqWithChannel(msg.channelID, msg.channelType);
+                WKMsg tempMsg = MsgDbManager.getInstance().queryMaxOrderSeqMsgWithChannel(msg.channelID, msg.channelType);
                 if (tempMsg != null) {
-                    WKUIConversationMsg uiMsg = ConversationDbManager.getInstance().saveOrUpdateWithMsg(tempMsg, 0);
+                    WKUIConversationMsg uiMsg = ConversationDbManager.getInstance().insertOrUpdateWithMsg(tempMsg, 0);
                     WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsg, true, "deleteWithClientMsgNO");
                 }
             }
@@ -433,11 +433,11 @@ public class MsgManager extends BaseManager {
 
 
     public boolean deleteWithMessageID(String messageID) {
-        return MsgDbManager.getInstance().deleteMsgWithMessageID(messageID);
+        return MsgDbManager.getInstance().deleteWithMessageID(messageID);
     }
 
     public WKMsg getWithMessageID(String messageID) {
-        return MsgDbManager.getInstance().getMsgWithMessageID(messageID, true);
+        return MsgDbManager.getInstance().queryWithMessageID(messageID, true);
     }
 
     public int isDeletedMsg(JSONObject jsonObject) {
@@ -465,7 +465,7 @@ public class MsgManager extends BaseManager {
 
     public long getMessageOrderSeq(long messageSeq, String channelID, byte channelType) {
         if (messageSeq == 0) {
-            long tempOrderSeq = MsgDbManager.getInstance().getMaxOrderSeq(channelID, channelType);
+            long tempOrderSeq = MsgDbManager.getInstance().queryMaxOrderSeqWithChannel(channelID, channelType);
             return tempOrderSeq + 1;
         }
         return messageSeq * wkOrderSeqFactor;
@@ -518,19 +518,19 @@ public class MsgManager extends BaseManager {
     }
 
     public int getMaxMessageSeq() {
-        return MsgDbManager.getInstance().getMaxMessageSeq();
+        return MsgDbManager.getInstance().queryMaxMessageSeqWithChannel();
     }
 
-    public int getMaxMessageSeq(String channelID, byte channelType) {
-        return MsgDbManager.getInstance().getMaxMessageSeq(channelID, channelType);
+    public int getMaxMessageSeqWithChannel(String channelID, byte channelType) {
+        return MsgDbManager.getInstance().queryMaxMessageSeqWithChannel(channelID, channelType);
     }
 
-    public int getMaxMessageOrderSeq(String channelID, byte channelType) {
-        return MsgDbManager.getInstance().getMaxMessageOrderSeq(channelID, channelType);
+    public int getMaxOrderSeqWithChannel(String channelID, byte channelType) {
+        return MsgDbManager.getInstance().queryMaxMessageOrderSeqWithChannel(channelID, channelType);
     }
 
-    public int getMinMessageSeq(String channelID, byte channelType) {
-        return MsgDbManager.getInstance().getMinMessageSeq(channelID, channelType);
+    public int getMinMessageSeqWithChannel(String channelID, byte channelType) {
+        return MsgDbManager.getInstance().queryMinMessageSeqWithChannel(channelID, channelType);
     }
 
 
@@ -556,7 +556,7 @@ public class MsgManager extends BaseManager {
 
 
     public synchronized long getClientSeq() {
-        return MsgDbManager.getInstance().getMaxMessageSeq();
+        return MsgDbManager.getInstance().queryMaxMessageSeqWithChannel();
     }
 
     /**
@@ -575,7 +575,7 @@ public class MsgManager extends BaseManager {
                     e.printStackTrace();
                 }
             }
-            return MsgDbManager.getInstance().updateMsgWithClientMsgNo(clientMsgNo, WKDBColumns.WKMessageColumns.extra, jsonObject.toString(), true);
+            return MsgDbManager.getInstance().updateFieldWithClientMsgNo(clientMsgNo, WKDBColumns.WKMessageColumns.extra, jsonObject.toString(), true);
         }
 
         return false;
@@ -589,17 +589,17 @@ public class MsgManager extends BaseManager {
      * @return List<WKMessageGroupByDate>
      */
     public List<WKMessageGroupByDate> getMessageGroupByDateWithChannel(String channelID, byte channelType) {
-        return MsgDbManager.getInstance().getMessageGroupByDateWithChannel(channelID, channelType);
+        return MsgDbManager.getInstance().queryMessageGroupByDateWithChannel(channelID, channelType);
     }
 
     public void clearAll() {
         MsgDbManager.getInstance().clearEmpty();
     }
 
-    public void insertMsg(WKMsg msg) {
+    public void saveMsg(WKMsg msg) {
         int refreshType = 0;
         if (!TextUtils.isEmpty(msg.clientMsgNO)) {
-            WKMsg tempMsg = MsgDbManager.getInstance().getMsgWithClientMsgNo(msg.clientMsgNO);
+            WKMsg tempMsg = MsgDbManager.getInstance().queryWithClientMsgNo(msg.clientMsgNO);
             if (tempMsg != null) {
                 refreshType = 1;
             }
@@ -608,7 +608,7 @@ public class MsgManager extends BaseManager {
             long tempOrderSeq = getMessageOrderSeq(0, msg.channelID, msg.channelType);
             msg.orderSeq = tempOrderSeq + 1;
         }
-        msg.clientSeq = MsgDbManager.getInstance().insertMsg(msg);
+        msg.clientSeq = MsgDbManager.getInstance().insert(msg);
         if (refreshType == 0)
             pushNewMsg(msg);
         else setRefreshMsg(msg, true);
@@ -620,10 +620,10 @@ public class MsgManager extends BaseManager {
      * @param wkMsg      消息对象
      * @param addRedDots 是否显示红点
      */
-    public void insertAndUpdateConversationMsg(WKMsg wkMsg, boolean addRedDots) {
+    public void saveAndUpdateConversationMsg(WKMsg wkMsg, boolean addRedDots) {
         int refreshType = 0;
         if (!TextUtils.isEmpty(wkMsg.clientMsgNO)) {
-            WKMsg tempMsg = MsgDbManager.getInstance().getMsgWithClientMsgNo(wkMsg.clientMsgNO);
+            WKMsg tempMsg = MsgDbManager.getInstance().queryWithClientMsgNo(wkMsg.clientMsgNO);
             if (tempMsg != null) {
                 refreshType = 1;
             }
@@ -632,11 +632,11 @@ public class MsgManager extends BaseManager {
             long tempOrderSeq = getMessageOrderSeq(0, wkMsg.channelID, wkMsg.channelType);
             wkMsg.orderSeq = tempOrderSeq + 1;
         }
-        wkMsg.clientSeq = MsgDbManager.getInstance().insertMsg(wkMsg);
+        wkMsg.clientSeq = MsgDbManager.getInstance().insert(wkMsg);
         if (refreshType == 0)
             pushNewMsg(wkMsg);
         else setRefreshMsg(wkMsg, true);
-        WKUIConversationMsg msg = ConversationDbManager.getInstance().saveOrUpdateWithMsg(wkMsg, addRedDots ? 1 : 0);
+        WKUIConversationMsg msg = ConversationDbManager.getInstance().insertOrUpdateWithMsg(wkMsg, addRedDots ? 1 : 0);
         WKIM.getInstance().getConversationManager().setOnRefreshMsg(msg, true, "insertAndUpdateConversationMsg");
     }
 
@@ -651,23 +651,23 @@ public class MsgManager extends BaseManager {
      * @return List<WKMsg>
      */
     public List<WKMsg> searchMsgWithChannelAndContentTypes(String channelID, byte channelType, long oldestOrderSeq, int limit, int[] contentTypes) {
-        return MsgDbManager.getInstance().searchChatMsgWithChannelAndTypes(channelID, channelType, oldestOrderSeq, limit, contentTypes);
+        return MsgDbManager.getInstance().searchWithChannelAndContentTypes(channelID, channelType, oldestOrderSeq, limit, contentTypes);
     }
 
     /**
      * 搜索某个频道到消息
      *
+     * @param searchKey   关键字
      * @param channelID   频道ID
      * @param channelType 频道类型
-     * @param searchKey   关键字
      * @return List<WKMsg>
      */
-    public List<WKMsg> searchWithChannel(String channelID, byte channelType, String searchKey) {
-        return MsgDbManager.getInstance().searchMessageWithChannel(channelID, channelType, searchKey);
+    public List<WKMsg> searchWithChannel(String searchKey, String channelID, byte channelType) {
+        return MsgDbManager.getInstance().searchWithChannel(searchKey, channelID, channelType);
     }
 
     public List<WKMessageSearchResult> search(String searchKey) {
-        return MsgDbManager.getInstance().searchMessage(searchKey);
+        return MsgDbManager.getInstance().search(searchKey);
     }
 
     /**
@@ -677,7 +677,7 @@ public class MsgManager extends BaseManager {
      * @param isReaded    1：已读
      */
     public boolean updateVoiceReadStatus(String clientMsgNo, int isReaded, boolean isRefreshUI) {
-        return MsgDbManager.getInstance().updateMsgWithClientMsgNo(clientMsgNo, WKDBColumns.WKMessageColumns.voice_status, String.valueOf(isReaded), isRefreshUI);
+        return MsgDbManager.getInstance().updateFieldWithClientMsgNo(clientMsgNo, WKDBColumns.WKMessageColumns.voice_status, String.valueOf(isReaded), isRefreshUI);
     }
 
     /**
@@ -686,8 +686,8 @@ public class MsgManager extends BaseManager {
      * @param channelId   频道ID
      * @param channelType 频道类型
      */
-    public boolean clear(String channelId, byte channelType) {
-        boolean result = MsgDbManager.getInstance().deleteMsgWithChannel(channelId, channelType);
+    public boolean clearWithChannel(String channelId, byte channelType) {
+        boolean result = MsgDbManager.getInstance().deleteWithChannel(channelId, channelType);
         if (result) {
             if (clearMsgMap != null && clearMsgMap.size() > 0) {
                 runOnMainThread(() -> {
@@ -701,8 +701,8 @@ public class MsgManager extends BaseManager {
         return result;
     }
 
-    public boolean clear(String channelId, byte channelType, String fromUID) {
-        boolean result = MsgDbManager.getInstance().deleteMsgWithChannel(channelId, channelType, fromUID);
+    public boolean clearWithChannelAndFromUID(String channelId, byte channelType, String fromUID) {
+        boolean result = MsgDbManager.getInstance().deleteWithChannelAndFromUID(channelId, channelType, fromUID);
         if (result) {
             if (clearMsgMap != null && clearMsgMap.size() > 0) {
                 runOnMainThread(() -> {
@@ -716,18 +716,9 @@ public class MsgManager extends BaseManager {
         return result;
     }
 
-    /**
-     * 修改消息内容体
-     *
-     * @param clientMsgNo    客户端ID
-     * @param messageContent 消息module
-     */
-    public boolean updateContent(String clientMsgNo, WKMessageContent messageContent) {
-        return MsgDbManager.getInstance().updateMsgWithClientMsgNo(clientMsgNo, WKDBColumns.WKMessageColumns.content, messageContent.encodeMsg().toString(), true);
-    }
 
-    public boolean updateContent(String clientMsgNo, WKMessageContent messageContent, boolean isRefreshUI) {
-        return MsgDbManager.getInstance().updateMsgWithClientMsgNo(clientMsgNo, WKDBColumns.WKMessageColumns.content, messageContent.encodeMsg().toString(), isRefreshUI);
+    public boolean updateContentAndRefresh(String clientMsgNo, WKMessageContent messageContent, boolean isRefreshUI) {
+        return MsgDbManager.getInstance().updateFieldWithClientMsgNo(clientMsgNo, WKDBColumns.WKMessageColumns.content, messageContent.encodeMsg().toString(), isRefreshUI);
     }
 
     public void updateViewedAt(int viewed, long viewedAt, String clientMsgNo) {
@@ -742,14 +733,14 @@ public class MsgManager extends BaseManager {
      * @param limit           数量
      * @return list
      */
-    public List<WKMsg> getMessagesWithType(int type, long oldestClientSeq, int limit) {
-        return MsgDbManager.getInstance().getMessagesWithType(type, oldestClientSeq, limit);
+    public List<WKMsg> getWithContentType(int type, long oldestClientSeq, int limit) {
+        return MsgDbManager.getInstance().queryWithContentType(type, oldestClientSeq, limit);
     }
 
-    public void insertAndUpdateConversationMsg(WKMsg msg) {
+    public void saveAndUpdateConversationMsg(WKMsg msg) {
         int refreshType = 0;
         if (!TextUtils.isEmpty(msg.clientMsgNO)) {
-            WKMsg tempMsg = MsgDbManager.getInstance().getMsgWithClientMsgNo(msg.clientMsgNO);
+            WKMsg tempMsg = MsgDbManager.getInstance().queryWithClientMsgNo(msg.clientMsgNO);
             if (tempMsg != null) {
                 refreshType = 1;
             }
@@ -758,20 +749,20 @@ public class MsgManager extends BaseManager {
             long tempOrderSeq = getMessageOrderSeq(0, msg.channelID, msg.channelType);
             msg.orderSeq = tempOrderSeq + 1;
         }
-        MsgDbManager.getInstance().insertMsg(msg);
+        MsgDbManager.getInstance().insert(msg);
         if (refreshType == 0)
             pushNewMsg(msg);
         else setRefreshMsg(msg, true);
-        ConversationDbManager.getInstance().saveOrUpdateWithMsg(msg, 0);
+        ConversationDbManager.getInstance().insertOrUpdateWithMsg(msg, 0);
     }
 
 
-    public long getMsgMaxExtraVersionWithChannel(String channelID, byte channelType) {
-        return MsgDbManager.getInstance().getMsgMaxExtraVersionWithChannel(channelID, channelType);
+    public long getMsgExtraMaxVersionWithChannel(String channelID, byte channelType) {
+        return MsgDbManager.getInstance().queryMsgExtraMaxVersionWithChannel(channelID, channelType);
     }
 
     public WKMsg getWithClientMsgNO(String clientMsgNo) {
-        return MsgDbManager.getInstance().getMsgWithClientMsgNo(clientMsgNo);
+        return MsgDbManager.getInstance().queryWithClientMsgNo(clientMsgNo);
     }
 
 
@@ -787,7 +778,7 @@ public class MsgManager extends BaseManager {
             extraList.add(extra);
             messageIds.add(list.get(i).message_id);
         }
-        List<WKMsg> updatedMsgList = MsgDbManager.getInstance().saveOrUpdateMsgExtras(extraList);
+        List<WKMsg> updatedMsgList = MsgDbManager.getInstance().insertOrUpdateMsgExtras(extraList);
         getMsgReactionsAndRefreshMsg(messageIds, updatedMsgList);
     }
 
@@ -826,7 +817,7 @@ public class MsgManager extends BaseManager {
 
 
     void saveMsgReactions(List<WKMsgReaction> list) {
-        MsgDbManager.getInstance().saveMsgReaction(list);
+        MsgDbManager.getInstance().insertMsgReactions(list);
     }
 
 
@@ -907,10 +898,10 @@ public class MsgManager extends BaseManager {
             }
         }
         if (msgExtraList.size() > 0) {
-            MsgDbManager.getInstance().saveOrUpdateMsgExtras(msgExtraList);
+            MsgDbManager.getInstance().insertOrUpdateMsgExtras(msgExtraList);
         }
         if (msgList.size() > 0) {
-            MsgDbManager.getInstance().insertMsgList(msgList);
+            MsgDbManager.getInstance().insertMsgs(msgList);
         }
 
     }
@@ -1136,7 +1127,7 @@ public class MsgManager extends BaseManager {
         wkMsgExtra.needUpload = 1;
         List<WKMsgExtra> list = new ArrayList<>();
         list.add(wkMsgExtra);
-        List<WKMsg> wkMsgs = MsgDbManager.getInstance().saveOrUpdateMsgExtras(list);
+        List<WKMsg> wkMsgs = MsgDbManager.getInstance().insertOrUpdateMsgExtras(list);
         List<String> messageIds = new ArrayList<>();
         messageIds.add(msgID);
         if (wkMsgs != null && wkMsgs.size() > 0) {

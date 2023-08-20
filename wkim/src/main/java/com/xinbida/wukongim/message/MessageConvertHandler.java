@@ -41,7 +41,6 @@ import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.HashMap;
 
 /**
  * 5/21/21 11:28 AM
@@ -542,16 +541,16 @@ class MessageConvertHandler {
         if (msg.setting == null) msg.setting = new WKMsgSetting();
         sendMsg.setting = msg.setting;
         msg.content = jsonObject.toString();
-        long tempOrderSeq = MsgDbManager.getInstance().getMaxOrderSeq(msg.channelID, msg.channelType);
+        long tempOrderSeq = MsgDbManager.getInstance().queryMaxOrderSeqWithChannel(msg.channelID, msg.channelType);
         msg.orderSeq = tempOrderSeq + 1;
         // 需要存储的消息入库后更改消息的clientSeq
         if (!sendMsg.no_persist) {
-            sendMsg.clientSeq = (int) (msg.clientSeq = (int) MsgDbManager.getInstance().insertMsg(msg));
+            sendMsg.clientSeq = (int) (msg.clientSeq = (int) MsgDbManager.getInstance().insert(msg));
             if (msg.clientSeq > 0) {
                 // TODO: 2022/4/27
                 WKUIConversationMsg uiMsg = WKIM.getInstance().getConversationManager().updateWithWKMsg(msg);
                 if (uiMsg != null) {
-                    long browseTo = WKIM.getInstance().getMsgManager().getMaxMessageSeq(uiMsg.channelID, uiMsg.channelType);
+                    long browseTo = WKIM.getInstance().getMsgManager().getMaxMessageSeqWithChannel(uiMsg.channelID, uiMsg.channelType);
                     if (uiMsg.getRemoteMsgExtra() == null) {
                         uiMsg.setRemoteMsgExtra(new WKConversationMsgExtra());
                     }

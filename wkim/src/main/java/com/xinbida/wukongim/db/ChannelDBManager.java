@@ -36,11 +36,6 @@ public class ChannelDBManager {
         return ChannelDBManagerBinder.channelDBManager;
     }
 
-    public WKChannel getChannel(String channelId, int channelType) {
-        return queryChannelByChannelId(channelId, channelType);
-    }
-
-
     public List<WKChannel> queryWithChannelIdsAndChannelType(List<String> channelIDs, byte channelType) {
         StringBuffer stringBuffer = new StringBuffer();
         for (int i = 0, size = channelIDs.size(); i < size; i++) {
@@ -69,7 +64,7 @@ public class ChannelDBManager {
         return list;
     }
 
-    private synchronized WKChannel queryChannelByChannelId(String channelId, int channelType) {
+    public synchronized WKChannel query(String channelId, int channelType) {
         String selection = WKDBColumns.WKChannelColumns.channel_id + "=? and " + WKDBColumns.WKChannelColumns.channel_type + "=?";
         String[] selectionArgs = new String[2];
         selectionArgs[0] = channelId;
@@ -118,7 +113,7 @@ public class ChannelDBManager {
         return isExist;
     }
 
-    public synchronized void saveList(List<WKChannel> list) {
+    public synchronized void insertChannels(List<WKChannel> list) {
         List<ContentValues> updateCVList = new ArrayList<>();
         List<ContentValues> newCVList = new ArrayList<>();
         for (WKChannel channel : list) {
@@ -155,15 +150,15 @@ public class ChannelDBManager {
         }
     }
 
-    public synchronized void insertOrUpdateChannel(WKChannel channel) {
+    public synchronized void insertOrUpdate(WKChannel channel) {
         if (isExist(channel.channelID, channel.channelType)) {
-            updateChannel(channel);
+            update(channel);
         } else {
-            insertChannel(channel);
+            insert(channel);
         }
     }
 
-    private synchronized void insertChannel(WKChannel wkChannel) {
+    private synchronized void insert(WKChannel wkChannel) {
         ContentValues cv = new ContentValues();
         try {
             cv = WKSqlContentValues.getContentValuesWithChannel(wkChannel);
@@ -174,7 +169,7 @@ public class ChannelDBManager {
                 .insert(channel, cv);
     }
 
-    public synchronized void updateChannel(WKChannel wkChannel) {
+    public synchronized void update(WKChannel wkChannel) {
         String[] update = new String[2];
         update[0] = wkChannel.channelID;
         update[1] = String.valueOf(wkChannel.channelType);
@@ -197,7 +192,7 @@ public class ChannelDBManager {
      * @param status      状态 正常或黑名单
      * @return List<WKChannel>
      */
-    public synchronized List<WKChannel> queryAllByFollowAndStatus(byte channelType, int follow, int status) {
+    public synchronized List<WKChannel> queryWithFollowAndStatus(byte channelType, int follow, int status) {
         String sql = "select * from " + channel + " where " + WKDBColumns.WKChannelColumns.channel_type + "=" + channelType + " and " + WKDBColumns.WKChannelColumns.follow + "=" + follow + " and " + WKDBColumns.WKChannelColumns.status + "=" + status + " and is_deleted=0";
         List<WKChannel> channels = new ArrayList<>();
         try (Cursor cursor = WKIMApplication
@@ -220,7 +215,7 @@ public class ChannelDBManager {
      * @param status      状态[sdk不维护状态]
      * @return List<WKChannel>
      */
-    public synchronized List<WKChannel> queryAllByStatus(byte channelType, int status) {
+    public synchronized List<WKChannel> queryWithStatus(byte channelType, int status) {
         String sql = "select * from " + channel + " where " + WKDBColumns.WKChannelColumns.channel_type + "=" + channelType + " and " + WKDBColumns.WKChannelColumns.status + "=" + status;
         List<WKChannel> channels = new ArrayList<>();
         try (Cursor cursor = WKIMApplication
@@ -236,7 +231,7 @@ public class ChannelDBManager {
         return channels;
     }
 
-    public synchronized List<WKChannelSearchResult> searchChannelInfo(String searchKey) {
+    public synchronized List<WKChannelSearchResult> search(String searchKey) {
         List<WKChannelSearchResult> list = new ArrayList<>();
         String sql = " select t.*,cm.member_name,cm.member_remark from (\n" +
                 " select " + channel + ".*,max(" + channelMembers + ".id) mid from " + channel + "," + channelMembers + " " +
@@ -274,7 +269,7 @@ public class ChannelDBManager {
         return list;
     }
 
-    public synchronized List<WKChannel> searchChannels(String searchKey, byte channelType) {
+    public synchronized List<WKChannel> searchWithChannelType(String searchKey, byte channelType) {
         List<WKChannel> list = new ArrayList<>();
 
         String sql = "select * from " + channel + " where (" + WKDBColumns.WKChannelColumns.channel_name + " LIKE \"%" + searchKey + "%\" or " + WKDBColumns.WKChannelColumns.channel_remark + " LIKE \"%" + searchKey + "%\") and " + WKDBColumns.WKChannelColumns.channel_type + "=" + channelType;
@@ -289,7 +284,7 @@ public class ChannelDBManager {
         return list;
     }
 
-    public synchronized List<WKChannel> searchChannels(String searchKey, byte channelType, int follow) {
+    public synchronized List<WKChannel> searchWithChannelTypeAndFollow(String searchKey, byte channelType, int follow) {
         List<WKChannel> list = new ArrayList<>();
 
         String sql = "select * from " + channel + " where (" + WKDBColumns.WKChannelColumns.channel_name + " LIKE \"%" + searchKey + "%\" or " + WKDBColumns.WKChannelColumns.channel_remark + " LIKE \"%" + searchKey + "%\") and " + WKDBColumns.WKChannelColumns.channel_type + "=" + channelType + " and " + WKDBColumns.WKChannelColumns.follow + "=" + follow;
@@ -304,7 +299,7 @@ public class ChannelDBManager {
         return list;
     }
 
-    public synchronized List<WKChannel> queryAllByFollow(byte channelType, int follow) {
+    public synchronized List<WKChannel> queryWithChannelTypeAndFollow(byte channelType, int follow) {
         String sql = "select * from " + channel + " where " + WKDBColumns.WKChannelColumns.channel_type + "=" + channelType + " and " + WKDBColumns.WKChannelColumns.follow + "=" + follow;
         List<WKChannel> channels = new ArrayList<>();
         try (Cursor cursor = WKIMApplication
@@ -320,7 +315,7 @@ public class ChannelDBManager {
         return channels;
     }
 
-    public synchronized void updateChannel(String channelID, byte channelType, String field, String value) {
+    public synchronized void updateWithField(String channelID, byte channelType, String field, String value) {
         String[] updateKey = new String[]{field};
         String[] updateValue = new String[]{value};
         String where = WKDBColumns.WKChannelColumns.channel_id + "=? and " + WKDBColumns.WKChannelColumns.channel_type + "=?";
@@ -370,10 +365,8 @@ public class ChannelDBManager {
     }
 
     public HashMap<String, Object> getChannelExtra(String extra) {
-
         HashMap<String, Object> hashMap = new HashMap<>();
         if (!TextUtils.isEmpty(extra)) {
-
             try {
                 JSONObject jsonObject = new JSONObject(extra);
                 Iterator<String> keys = jsonObject.keys();

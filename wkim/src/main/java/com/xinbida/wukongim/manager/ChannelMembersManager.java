@@ -52,11 +52,11 @@ public class ChannelMembersManager extends BaseManager {
     //最大版本成员
     @Deprecated
     public WKChannelMember getMaxVersionMember(String channelID, byte channelType) {
-        return ChannelMembersDbManager.getInstance().getMaxVersionMember(channelID, channelType);
+        return ChannelMembersDbManager.getInstance().queryMaxVersionMember(channelID, channelType);
     }
 
     public long getMaxVersion(String channelID, byte channelType) {
-        return ChannelMembersDbManager.getInstance().getMaxVersion(channelID, channelType);
+        return ChannelMembersDbManager.getInstance().queryMaxVersion(channelID, channelType);
     }
 
     public List<WKChannelMember> getRobotMembers(String channelID, byte channelType) {
@@ -123,7 +123,7 @@ public class ChannelMembersManager extends BaseManager {
             }
 
             // 先保存或修改成员
-            ChannelMembersDbManager.getInstance().insertList(list, existList);
+            ChannelMembersDbManager.getInstance().insertMembers(list, existList);
 
             if (addList.size() > 0) {
                 setOnAddChannelMember(addList);
@@ -146,7 +146,7 @@ public class ChannelMembersManager extends BaseManager {
      * @param list 频道成员
      */
     public void delete(List<WKChannelMember> list) {
-        runOnMainThread(() -> ChannelMembersDbManager.getInstance().deleteChannelMembers(list));
+        runOnMainThread(() -> ChannelMembersDbManager.getInstance().deleteMembers(list));
     }
 
     /**
@@ -158,7 +158,7 @@ public class ChannelMembersManager extends BaseManager {
      * @return List<>
      */
     public List<WKChannelMember> getWithStatus(String channelId, byte channelType, int status) {
-        return ChannelMembersDbManager.getInstance().queryChannelMembersByStatus(channelId, channelType, status);
+        return ChannelMembersDbManager.getInstance().queryWithStatus(channelId, channelType, status);
     }
 
     /**
@@ -170,7 +170,7 @@ public class ChannelMembersManager extends BaseManager {
      * @param remarkName  备注
      */
     public boolean updateRemarkName(String channelID, byte channelType, String uid, String remarkName) {
-        return ChannelMembersDbManager.getInstance().updateChannelMember(channelID, channelType, uid, WKDBColumns.WKChannelMembersColumns.member_remark, remarkName);
+        return ChannelMembersDbManager.getInstance().updateWithField(channelID, channelType, uid, WKDBColumns.WKChannelMembersColumns.member_remark, remarkName);
     }
 
     /**
@@ -182,7 +182,7 @@ public class ChannelMembersManager extends BaseManager {
      * @param name        名称
      */
     public boolean updateMemberName(String channelID, byte channelType, String uid, String name) {
-        return ChannelMembersDbManager.getInstance().updateChannelMember(channelID, channelType, uid, WKDBColumns.WKChannelMembersColumns.member_name, name);
+        return ChannelMembersDbManager.getInstance().updateWithField(channelID, channelType, uid, WKDBColumns.WKChannelMembersColumns.member_name, name);
     }
 
     /**
@@ -194,7 +194,7 @@ public class ChannelMembersManager extends BaseManager {
      * @param status      状态
      */
     public boolean updateMemberStatus(String channelId, byte channelType, String uid, int status) {
-        return ChannelMembersDbManager.getInstance().updateChannelMember(channelId, channelType, uid, WKDBColumns.WKChannelMembersColumns.status, String.valueOf(status));
+        return ChannelMembersDbManager.getInstance().updateWithField(channelId, channelType, uid, WKDBColumns.WKChannelMembersColumns.status, String.valueOf(status));
     }
 
     public void addOnGetChannelMembersListener(IGetChannelMemberList iGetChannelMemberList) {
@@ -237,7 +237,7 @@ public class ChannelMembersManager extends BaseManager {
         if (channelMember == null) return;
         List<WKChannelMember> list = new ArrayList<>();
         list.add(channelMember);
-        ChannelMembersDbManager.getInstance().insertChannelMember(list);
+        ChannelMembersDbManager.getInstance().insertMembers(list);
     }
 
     /**
@@ -302,7 +302,7 @@ public class ChannelMembersManager extends BaseManager {
 
     //成员数量
     public int getMemberCount(String channelID, byte channelType) {
-        return ChannelMembersDbManager.getInstance().getMembersCount(channelID, channelType);
+        return ChannelMembersDbManager.getInstance().queryCount(channelID, channelType);
     }
 
     public void addOnRefreshChannelMemberInfo(String key, IRefreshChannelMember iRefreshChannelMemberListener) {

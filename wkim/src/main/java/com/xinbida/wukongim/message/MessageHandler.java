@@ -316,7 +316,7 @@ public class MessageHandler {
             }
             allList.add(mMsg.wkMsg);
         }
-        MsgDbManager.getInstance().insertMsgList(saveMsgList);
+        MsgDbManager.getInstance().insertMsgs(saveMsgList);
         //将消息push给UI
         WKIM.getInstance().getMsgManager().pushNewMsg(allList);
         groupMsg(list);
@@ -377,7 +377,7 @@ public class MessageHandler {
             }
             if (isSave) {
                 //如果存在艾特情况直接将消息存储
-                WKUIConversationMsg conversationMsg = ConversationDbManager.getInstance().saveOrUpdateWithMsg(lastMsg, 1);
+                WKUIConversationMsg conversationMsg = ConversationDbManager.getInstance().insertOrUpdateWithMsg(lastMsg, 1);
                 WKIM.getInstance().getConversationManager().setOnRefreshMsg(conversationMsg, true, "cutData");
                 continue;
             }
@@ -398,7 +398,7 @@ public class MessageHandler {
         List<WKUIConversationMsg> refreshList = new ArrayList<>();
         // TODO: 4/27/21 这里未开事物是因为消息太多太快。事物来不及关闭
         for (Map.Entry<String, SavedMsg> entry : savedList.entrySet()) {
-            WKUIConversationMsg conversationMsg = ConversationDbManager.getInstance().saveOrUpdateWithMsg(entry.getValue().wkMsg, entry.getValue().redDot);
+            WKUIConversationMsg conversationMsg = ConversationDbManager.getInstance().insertOrUpdateWithMsg(entry.getValue().wkMsg, entry.getValue().redDot);
             if (conversationMsg != null) {
                 refreshList.add(conversationMsg);
             }

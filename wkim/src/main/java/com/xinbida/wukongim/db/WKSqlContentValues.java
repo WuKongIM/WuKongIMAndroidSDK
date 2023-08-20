@@ -2,7 +2,6 @@ package com.xinbida.wukongim.db;
 
 import android.content.ContentValues;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.xinbida.wukongim.entity.WKChannel;
 import com.xinbida.wukongim.entity.WKChannelMember;
@@ -21,12 +20,6 @@ import org.json.JSONObject;
 
 class WKSqlContentValues {
 
-    /**
-     * 获取会话数据表对应字段
-     *
-     * @param msg 会话消息
-     * @return ContentValues
-     */
     static ContentValues getContentValuesWithMsg(WKMsg msg) {
         ContentValues contentValues = new ContentValues();
         if (msg == null) {
@@ -65,12 +58,6 @@ class WKSqlContentValues {
         return contentValues;
     }
 
-    /**
-     * 会话记录表对应存储字段
-     *
-     * @param wkConversationMsg 会话消息
-     * @return ContentValues
-     */
     static ContentValues getContentValuesWithCoverMsg(WKConversationMsg wkConversationMsg, boolean isSync) {
         ContentValues contentValues = new ContentValues();
         if (wkConversationMsg == null) {
@@ -82,7 +69,6 @@ class WKSqlContentValues {
         contentValues.put(WKDBColumns.WKCoverMessageColumns.last_msg_timestamp, wkConversationMsg.lastMsgTimestamp);
         contentValues.put(WKDBColumns.WKCoverMessageColumns.last_msg_seq, wkConversationMsg.lastMsgSeq);
         contentValues.put(WKDBColumns.WKCoverMessageColumns.unread_count, wkConversationMsg.unreadCount);
-        Log.e("最近会话保存父channel：", wkConversationMsg.parentChannelID + "_" + wkConversationMsg.parentChannelType);
         contentValues.put(WKDBColumns.WKCoverMessageColumns.parent_channel_id, wkConversationMsg.parentChannelID);
         contentValues.put(WKDBColumns.WKCoverMessageColumns.parent_channel_type, wkConversationMsg.parentChannelType);
         if (isSync) {
@@ -93,12 +79,6 @@ class WKSqlContentValues {
         return contentValues;
     }
 
-    /**
-     * 频道表对应存储修改字段
-     *
-     * @param channel 频道信息
-     * @return ContentValues
-     */
     static ContentValues getContentValuesWithChannel(WKChannel channel) {
         ContentValues contentValues = new ContentValues();
         if (channel == null) {
@@ -145,12 +125,6 @@ class WKSqlContentValues {
         return contentValues;
     }
 
-    /**
-     * 频道成员
-     *
-     * @param channelMember 频道成员
-     * @return ContentValues
-     */
     static ContentValues getContentValuesWithChannelMember(WKChannelMember channelMember) {
         ContentValues contentValues = new ContentValues();
         if (channelMember == null) {
@@ -181,12 +155,6 @@ class WKSqlContentValues {
         return contentValues;
     }
 
-    /**
-     * 消息回应
-     *
-     * @param reaction WKMsgReaction
-     * @return ContentValues
-     */
     static ContentValues getContentValuesWithMsgReaction(WKMsgReaction reaction) {
         ContentValues contentValues = new ContentValues();
         if (reaction == null) {

@@ -41,7 +41,7 @@ public class WKUIConversationMsg {
 
     public WKMsg getWkMsg() {
         if (wkMsg == null) {
-            wkMsg = MsgDbManager.getInstance().getMsgWithClientMsgNo(clientMsgNo);
+            wkMsg = MsgDbManager.getInstance().queryWithClientMsgNo(clientMsgNo);
             if (wkMsg != null && wkMsg.isDeleted == 1) wkMsg = null;
         }
         return wkMsg;
@@ -64,7 +64,7 @@ public class WKUIConversationMsg {
 
     public List<WKReminder> getReminderList() {
         if (reminderList == null) {
-            reminderList = ReminderDBManager.getInstance().queryWithChannel(channelID, channelType, 0);
+            reminderList = ReminderDBManager.getInstance().queryWithChannelAndDone(channelID, channelType, 0);
         }
 
         return reminderList;

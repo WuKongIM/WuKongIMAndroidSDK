@@ -144,7 +144,7 @@ public class CMDManager extends BaseManager {
                 //语音已读
                 if (jsonObject.has("message_id")) {
                     String messageId = jsonObject.optString("message_id");
-                    MsgDbManager.getInstance().updateMsgWithMessageID(messageId, WKDBColumns.WKMessageColumns.voice_status, 1 + "");
+                    MsgDbManager.getInstance().updateFieldWithMessageID(messageId, WKDBColumns.WKMessageColumns.voice_status, 1 + "");
                 }
             } else if (cmd.equalsIgnoreCase(WKCMDKeys.wk_onlineStatus)) {
                 //对方是否在线
@@ -167,7 +167,7 @@ public class CMDManager extends BaseManager {
 //                    wkChannel.mainDeviceFlag = main_device_flag;
                     wkChannel.deviceFlag = main_device_flag;
 //                    wkChannel.deviceFlag = device_flag;
-                    WKIM.getInstance().getChannelManager().addOrUpdateChannel(wkChannel);
+                    WKIM.getInstance().getChannelManager().saveOrUpdateChannel(wkChannel);
                 }
             } else if (cmd.equals(WKCMDKeys.wk_syncMessageReaction)) {
                 if (jsonObject.has("channel_id") && jsonObject.has("channel_type")) {
@@ -189,11 +189,11 @@ public class CMDManager extends BaseManager {
                 if (!TextUtils.isEmpty(erase_type)) {
                     if (erase_type.equals("all")) {
                         if (!TextUtils.isEmpty(channelID)) {
-                            WKIM.getInstance().getMsgManager().clear(channelID, channelType);
+                            WKIM.getInstance().getMsgManager().clearWithChannel(channelID, channelType);
                         }
                     } else {
                         if (!TextUtils.isEmpty(from_uid)) {
-                            WKIM.getInstance().getMsgManager().clear(channelID, channelType, from_uid);
+                            WKIM.getInstance().getMsgManager().clearWithChannelAndFromUID(channelID, channelType, from_uid);
                         }
                     }
                 }
@@ -201,7 +201,7 @@ public class CMDManager extends BaseManager {
                 String channelID = jsonObject.optString("channel_id");
                 byte channelType = (byte) jsonObject.optInt("channel_type");
                 if (!TextUtils.isEmpty(channelID)) {
-                    ConversationDbManager.getInstance().deleteMsg(channelID, channelType, 1);
+                    ConversationDbManager.getInstance().deleteWithChannel(channelID, channelType, 1);
                 }
             }
             WKCMD wkcmd = new WKCMD(cmd, jsonObject);

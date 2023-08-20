@@ -2,6 +2,7 @@ package com.xinbida.wukongim.manager;
 
 import android.text.TextUtils;
 
+import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.db.ReminderDBManager;
 import com.xinbida.wukongim.entity.WKReminder;
 import com.xinbida.wukongim.interfaces.INewReminderListener;
@@ -76,22 +77,22 @@ public class ReminderManager extends BaseManager {
      * @return List<WKReminder>
      */
     public List<WKReminder> getReminders(String channelID, byte channelType) {
-        return ReminderDBManager.getInstance().queryWithChannel(channelID, channelType, 0);
+        return ReminderDBManager.getInstance().queryWithChannelAndDone(channelID, channelType, 0);
     }
 
     public List<WKReminder> getRemindersWithType(String channelID, byte channelType, int type) {
-        return ReminderDBManager.getInstance().queryWithChannelAndType(channelID, channelType, 0, type);
+        return ReminderDBManager.getInstance().queryWithChannelAndTypeAndDone(channelID, channelType, type,0);
     }
 
     public void saveOrUpdateReminders(List<WKReminder> reminderList) {
-        List<WKReminder> wkReminders = ReminderDBManager.getInstance().saveReminders(reminderList);
+        List<WKReminder> wkReminders = ReminderDBManager.getInstance().insertOrUpdateReminders(reminderList);
         if (wkReminders != null && wkReminders.size() > 0) {
             setNewReminders(reminderList);
         }
     }
 
     public long getMaxVersion() {
-        return ReminderDBManager.getInstance().getMaxVersion();
+        return ReminderDBManager.getInstance().queryMaxVersion();
     }
 
 }

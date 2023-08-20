@@ -63,7 +63,7 @@ public class ConversationManager extends BaseManager {
      * @return 最近会话集合
      */
     public List<WKUIConversationMsg> getAll() {
-        return ConversationDbManager.getInstance().getAll();
+        return ConversationDbManager.getInstance().queryAll();
     }
 
     public List<WKConversationMsg> getWithChannelType(byte channelType) {
@@ -81,12 +81,12 @@ public class ConversationManager extends BaseManager {
      * @param channelType 频道类型
      * @return WKConversationMsg
      */
-    public WKConversationMsg getMsg(String channelID, byte channelType) {
+    public WKConversationMsg getWithChannel(String channelID, byte channelType) {
         return ConversationDbManager.getInstance().queryWithChannel(channelID, channelType);
     }
 
     public void updateWithMsg(WKConversationMsg mConversationMsg) {
-        WKMsg msg = MsgDbManager.getInstance().getMsgMaxOrderSeqWithChannel(mConversationMsg.channelID, mConversationMsg.channelType);
+        WKMsg msg = MsgDbManager.getInstance().queryMaxOrderSeqMsgWithChannel(mConversationMsg.channelID, mConversationMsg.channelType);
         if (msg != null) {
             mConversationMsg.lastClientMsgNO = msg.clientMsgNO;
             mConversationMsg.lastMsgSeq = msg.messageSeq;
@@ -100,8 +100,8 @@ public class ConversationManager extends BaseManager {
      * @param channelId   频道ID
      * @param channelType 频道类型
      */
-    public boolean deleteMsg(String channelId, byte channelType) {
-        return ConversationDbManager.getInstance().deleteMsg(channelId, channelType, 1);
+    public boolean deleteWitchChannel(String channelId, byte channelType) {
+        return ConversationDbManager.getInstance().deleteWithChannel(channelId, channelType, 1);
     }
 
     /**
@@ -174,11 +174,11 @@ public class ConversationManager extends BaseManager {
     }
 
     public WKConversationMsgExtra getMsgExtraWithChannel(String channelID, byte channelType) {
-        return ConversationDbManager.getInstance().queryExtraMsgWithChannel(channelID, channelType);
+        return ConversationDbManager.getInstance().queryMsgExtraWithChannel(channelID, channelType);
     }
 
     public void updateMsgExtra(WKConversationMsgExtra extra) {
-        boolean result = ConversationDbManager.getInstance().insertOrUpdateExtra(extra);
+        boolean result = ConversationDbManager.getInstance().insertOrUpdateMsgExtra(extra);
         if (result) {
             WKUIConversationMsg msg = getUIConversationMsg(extra.channelID, extra.channelType);
             setOnRefreshMsg(msg, true, "updateMsgExtra");
@@ -187,7 +187,7 @@ public class ConversationManager extends BaseManager {
 
     public WKUIConversationMsg updateWithWKMsg(WKMsg msg) {
         if (msg == null || TextUtils.isEmpty(msg.channelID)) return null;
-        return ConversationDbManager.getInstance().saveOrUpdateWithMsg(msg, 0);
+        return ConversationDbManager.getInstance().insertOrUpdateWithMsg(msg, 0);
     }
 
     public WKUIConversationMsg getUIConversationMsg(String channelID, byte channelType) {
@@ -198,16 +198,16 @@ public class ConversationManager extends BaseManager {
         return ConversationDbManager.getInstance().getUIMsg(msg);
     }
 
-    public long getMaxExtraVersion() {
-        return ConversationDbManager.getInstance().queryMaxExtraVersion();
+    public long getMsgExtraMaxVersion() {
+        return ConversationDbManager.getInstance().queryMsgExtraMaxVersion();
     }
 
-    public void saveSyncMsgExtra(List<WKSyncConvMsgExtra> list) {
+    public void saveSyncMsgExtras(List<WKSyncConvMsgExtra> list) {
         List<WKConversationMsgExtra> msgExtraList = new ArrayList<>();
         for (WKSyncConvMsgExtra msg : list) {
             msgExtraList.add(syncConvMsgExtraToConvMsgExtra(msg));
         }
-        ConversationDbManager.getInstance().saveMsgExtras(msgExtraList);
+        ConversationDbManager.getInstance().insertMsgExtras(msgExtraList);
     }
 
     private WKConversationMsgExtra syncConvMsgExtraToConvMsgExtra(WKSyncConvMsgExtra extra) {
@@ -230,8 +230,8 @@ public class ConversationManager extends BaseManager {
 
     public void setSyncConversationListener(ISyncConversationChatBack iSyncConversationChatBack) {
         if (iSyncConversationChat != null) {
-            long version = ConversationDbManager.getInstance().getMaxVersion();
-            String lastMsgSeqStr = ConversationDbManager.getInstance().getLastMsgSeqs();
+            long version = ConversationDbManager.getInstance().queryMaxVersion();
+            String lastMsgSeqStr = ConversationDbManager.getInstance().queryLastMsgSeqs();
             runOnMainThread(() -> iSyncConversationChat.syncConversationChat(lastMsgSeqStr, 20, version, syncChat -> {
                 new Thread(() -> saveSyncChat(syncChat, () -> iSyncConversationChatBack.onBack(syncChat))).start();
             }));
@@ -294,12 +294,12 @@ public class ConversationManager extends BaseManager {
             }
         }
         if (msgExtraList.size() > 0) {
-            MsgDbManager.getInstance().saveOrUpdateMsgExtras(msgExtraList);
+            MsgDbManager.getInstance().insertOrUpdateMsgExtras(msgExtraList);
         }
         List<WKUIConversationMsg> uiMsgList = new ArrayList<>();
         if (conversationMsgList.size() > 0 || msgList.size() > 0) {
             if (msgList.size() > 0) {
-                MsgDbManager.getInstance().insertMsgList(msgList);
+                MsgDbManager.getInstance().insertMsgs(msgList);
             }
             try {
                 if (conversationMsgList.size() > 0) {

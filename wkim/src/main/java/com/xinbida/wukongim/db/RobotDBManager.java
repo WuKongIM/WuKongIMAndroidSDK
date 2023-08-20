@@ -26,7 +26,7 @@ public class RobotDBManager {
         return RobotDBManagerBinder.db;
     }
 
-    public void insertOrUpdateMenu(List<WKRobotMenu> list) {
+    public void insertOrUpdateMenus(List<WKRobotMenu> list) {
         for (WKRobotMenu menu : list) {
             if (isExitMenu(menu.robotID, menu.cmd)) {
                 update(menu);
@@ -66,7 +66,7 @@ public class RobotDBManager {
                 .update(robotMenu, updateKey, updateValue, where, whereValue);
     }
 
-    public void insertOrUpdate(List<WKRobot> list) {
+    public void insertOrUpdateRobots(List<WKRobot> list) {
         for (WKRobot robot : list) {
             if (isExist(robot.robotID)) {
                 update(robot);

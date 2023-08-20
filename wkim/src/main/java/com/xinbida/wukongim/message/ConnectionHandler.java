@@ -465,13 +465,13 @@ public class ConnectionHandler {
             }
             if (hasAttached) {
                 msg.content = msg.baseContentMsgModel.encodeMsg().toString();
-                MsgDbManager.getInstance().insertMsg(msg);
+                MsgDbManager.getInstance().insert(msg);
             }
         }
         //获取发送者信息
         WKChannel from = WKIM.getInstance().getChannelManager().getChannel(WKIMApplication.getInstance().getUid(), WKChannelType.PERSONAL);
         if (from == null) {
-            WKIM.getInstance().getChannelManager().getChannel(WKIMApplication.getInstance().getUid(), WKChannelType.PERSONAL, channel -> WKIM.getInstance().getChannelManager().addOrUpdateChannel(channel));
+            WKIM.getInstance().getChannelManager().getChannel(WKIMApplication.getInstance().getUid(), WKChannelType.PERSONAL, channel -> WKIM.getInstance().getChannelManager().saveOrUpdateChannel(channel));
         } else {
             msg.setFrom(from);
         }

@@ -171,7 +171,7 @@ public class ChannelMembersDbManager {
         return wkChannelMember;
     }
 
-    public synchronized void insertMember(WKChannelMember channelMember) {
+    public synchronized void insert(WKChannelMember channelMember) {
         if (TextUtils.isEmpty(channelMember.channelID) || TextUtils.isEmpty(channelMember.memberUID))
             return;
         ContentValues cv = new ContentValues();
@@ -189,7 +189,7 @@ public class ChannelMembersDbManager {
      *
      * @param list List<WKChannelMember>
      */
-    public void insertChannelMember(List<WKChannelMember> list) {
+    public void insertMembers(List<WKChannelMember> list) {
         List<ContentValues> updateCVList = new ArrayList<>();
         List<ContentValues> newCVList = new ArrayList<>();
         for (WKChannelMember member : list) {
@@ -230,7 +230,7 @@ public class ChannelMembersDbManager {
         }
     }
 
-    public void insertList(List<WKChannelMember> allMemberList, List<WKChannelMember> existList) {
+    public void insertMembers(List<WKChannelMember> allMemberList, List<WKChannelMember> existList) {
         List<ContentValues> insertCVList = new ArrayList<>();
         List<ContentValues> updateCVList = new ArrayList<>();
         for (WKChannelMember channelMember : allMemberList) {
@@ -273,12 +273,12 @@ public class ChannelMembersDbManager {
         }
     }
 
-    public void saveOrUpdateChannelMember(WKChannelMember channelMember) {
+    public void insertOrUpdate(WKChannelMember channelMember) {
         if (channelMember == null) return;
         if (isExist(channelMember.channelID, channelMember.channelType, channelMember.memberUID)) {
-            updateChannelMember(channelMember);
+            update(channelMember);
         } else {
-            insertMember(channelMember);
+            insert(channelMember);
         }
 
     }
@@ -288,7 +288,7 @@ public class ChannelMembersDbManager {
      *
      * @param channelMember 成员
      */
-    public synchronized void updateChannelMember(WKChannelMember channelMember) {
+    public synchronized void update(WKChannelMember channelMember) {
         String[] update = new String[3];
         update[0] = channelMember.channelID;
         update[1] = String.valueOf(channelMember.channelType);
@@ -312,7 +312,7 @@ public class ChannelMembersDbManager {
      * @param field       字段
      * @param value       值
      */
-    public synchronized boolean updateChannelMember(String channelID, byte channelType, String uid, String field, String value) {
+    public synchronized boolean updateWithField(String channelID, byte channelType, String uid, String field, String value) {
         String[] updateKey = new String[]{field};
         String[] updateValue = new String[]{value};
         String where = WKDBColumns.WKChannelMembersColumns.channel_id + "=? and " + WKDBColumns.WKChannelMembersColumns.channel_type + "=? and " + WKDBColumns.WKChannelMembersColumns.member_uid + "=?";
@@ -344,13 +344,13 @@ public class ChannelMembersDbManager {
      *
      * @param list 频道成员
      */
-    public synchronized void deleteChannelMembers(List<WKChannelMember> list) {
+    public synchronized void deleteMembers(List<WKChannelMember> list) {
         try {
             WKIMApplication.getInstance().getDbHelper().getDb()
                     .beginTransaction();
             if (list != null && list.size() > 0) {
                 for (int i = 0, size = list.size(); i < size; i++) {
-                    saveOrUpdateChannelMember(list.get(i));
+                    insertOrUpdate(list.get(i));
                 }
                 WKIMApplication.getInstance().getDbHelper().getDb()
                         .setTransactionSuccessful();
@@ -365,7 +365,7 @@ public class ChannelMembersDbManager {
         ChannelMembersManager.getInstance().setOnRemoveChannelMember(list);
     }
 
-    public long getMaxVersion(String channelID, byte channelType) {
+    public long queryMaxVersion(String channelID, byte channelType) {
         String sql = "select max(version) version from " + channelMembers + " where channel_id ='" + channelID + "' and channel_type=" + channelType + " limit 0, 1";
         long version = 0;
         try {
@@ -387,7 +387,7 @@ public class ChannelMembersDbManager {
     }
 
     @Deprecated
-    public synchronized WKChannelMember getMaxVersionMember(String channelID, byte channelType) {
+    public synchronized WKChannelMember queryMaxVersionMember(String channelID, byte channelType) {
         WKChannelMember channelMember = null;
         String sql = "select * from " + channelMembers + " where " + WKDBColumns.WKChannelMembersColumns.channel_id + "=" + "\"" + channelID + "\"" + " and " + WKDBColumns.WKChannelMembersColumns.channel_type + "=" + channelType + " order by " + WKDBColumns.WKChannelMembersColumns.version + " desc limit 0,1";
         try (Cursor cursor = WKIMApplication
@@ -435,7 +435,7 @@ public class ChannelMembersDbManager {
         return list;
     }
 
-    public synchronized List<WKChannelMember> queryChannelMembersByStatus(String channelId, byte channelType, int status) {
+    public synchronized List<WKChannelMember> queryWithStatus(String channelId, byte channelType, int status) {
         String sql = "select " + channelMembers + ".*," + channel + ".channel_name," + channel + ".channel_remark," + channel + ".avatar from " + channelMembers + " left Join " + channel + " where " + channelMembers + ".member_uid = " + channel + ".channel_id AND " + channel + ".channel_type=1 AND " + channelMembers + ".channel_id=" + "\"" + channelId + "\"" + " and " + channelMembers + ".channel_type=" + channelType + " and " + channelMembers + ".status=" + status + " order by " + channelMembers + ".role=1 desc," + channelMembers + ".role=2 desc," + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.created_at + " asc";
         Cursor cursor = WKIMApplication
                 .getInstance()
@@ -451,7 +451,7 @@ public class ChannelMembersDbManager {
         return list;
     }
 
-    public synchronized int getMembersCount(String channelID, byte channelType) {
+    public synchronized int queryCount(String channelID, byte channelType) {
         String sql = "select count(*) from " + channelMembers
                 + " where (" + WKDBColumns.WKChannelMembersColumns.channel_id + "=" + "\"" + channelID + "\"" + " and "
                 + WKDBColumns.WKChannelMembersColumns.channel_type + "=" + channelType + " and " + WKDBColumns.WKChannelMembersColumns.is_deleted + "=0 and " + WKDBColumns.WKChannelMembersColumns.status + "=1)";

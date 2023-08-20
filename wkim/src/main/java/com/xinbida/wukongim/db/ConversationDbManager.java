@@ -68,7 +68,7 @@ public class ConversationDbManager {
         return ConversationDbManagerBinder.db;
     }
 
-    public synchronized List<WKUIConversationMsg> getAll() {
+    public synchronized List<WKUIConversationMsg> queryAll() {
         List<WKUIConversationMsg> list = new ArrayList<>();
         String sql = "SELECT " + conversation + ".*," + channelCols + "," + extraCols + " FROM "
                 + conversation + " LEFT JOIN " + channel + " ON "
@@ -161,7 +161,7 @@ public class ConversationDbManager {
         return uiMsg;
     }
 
-    public long getMaxVersion() {
+    public long queryMaxVersion() {
         long maxVersion = 0;
         String sql = "select max(version) version from " + conversation + " limit 0, 1";
         Cursor cursor = WKIMApplication
@@ -185,7 +185,7 @@ public class ConversationDbManager {
         WKIMApplication.getInstance().getDbHelper().insertSql(conversation, cv);
     }
 
-    public synchronized String getLastMsgSeqs() {
+    public synchronized String queryLastMsgSeqs() {
         String lastMsgSeqs = "";
         String sql = "select GROUP_CONCAT(channel_id||':'||channel_type||':'|| last_seq,'|') synckey from (select *,(select max(message_seq) from " + message + " where " + message + ".channel_id=" + conversation + ".channel_id and " + message + ".channel_type=" + conversation + ".channel_type limit 1) last_seq from " + conversation + ") cn where channel_id<>'' AND is_deleted=0";
         Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql);
@@ -238,7 +238,7 @@ public class ConversationDbManager {
         return conversationMsg;
     }
 
-    public synchronized boolean deleteMsg(String channelID, byte channelType, int isDeleted) {
+    public synchronized boolean deleteWithChannel(String channelID, byte channelType, int isDeleted) {
         String[] update = new String[2];
         update[0] = channelID;
         update[1] = String.valueOf(channelType);
@@ -258,7 +258,7 @@ public class ConversationDbManager {
 
     }
 
-    public synchronized WKUIConversationMsg saveOrUpdateWithMsg(WKMsg msg, int unreadCount) {
+    public synchronized WKUIConversationMsg insertOrUpdateWithMsg(WKMsg msg, int unreadCount) {
         if (msg.channelID.equals(WKIMApplication.getInstance().getUid())) return null;
         WKConversationMsg wkConversationMsg = new WKConversationMsg();
         if (msg.channelType == WKChannelType.COMMUNITY_TOPIC && !TextUtils.isEmpty(msg.channelID)) {
@@ -275,12 +275,12 @@ public class ConversationDbManager {
         wkConversationMsg.lastClientMsgNO = msg.clientMsgNO;
         wkConversationMsg.lastMsgSeq = msg.messageSeq;
         wkConversationMsg.unreadCount = unreadCount;
-        return saveOrUpdateWithConvMsg(wkConversationMsg);// 插入消息列表数据表
+        return insertOrUpdateWithConvMsg(wkConversationMsg);// 插入消息列表数据表
     }
 
-    public synchronized WKUIConversationMsg saveOrUpdateWithConvMsg(WKConversationMsg conversationMsg) {
+    public synchronized WKUIConversationMsg insertOrUpdateWithConvMsg(WKConversationMsg conversationMsg) {
         boolean result;
-        WKConversationMsg lastMsg = queryMsgByMsgChannelId(conversationMsg.channelID, conversationMsg.channelType);
+        WKConversationMsg lastMsg = queryWithChannelId(conversationMsg.channelID, conversationMsg.channelType);
         if (lastMsg == null || TextUtils.isEmpty(lastMsg.channelID)) {
             //如果服务器自增id为0则表示是本地数据|直接保存
             result = insert(conversationMsg);
@@ -330,7 +330,7 @@ public class ConversationDbManager {
                 .update(conversation, cv, WKDBColumns.WKCoverMessageColumns.channel_id + "=? and " + WKDBColumns.WKCoverMessageColumns.channel_type + "=?", update);
     }
 
-    private synchronized WKConversationMsg queryMsgByMsgChannelId(String channelId, byte channelType) {
+    private synchronized WKConversationMsg queryWithChannelId(String channelId, byte channelType) {
         WKConversationMsg msg = null;
         String selection = WKDBColumns.WKCoverMessageColumns.channel_id + " = ? and " + WKDBColumns.WKCoverMessageColumns.channel_type + "=?";
         String[] selectionArgs = new String[]{channelId, channelType + ""};
@@ -354,7 +354,7 @@ public class ConversationDbManager {
                 .delete(conversation, null, null);
     }
 
-    public WKConversationMsgExtra queryExtraMsgWithChannel(String channelID, byte channelType) {
+    public WKConversationMsgExtra queryMsgExtraWithChannel(String channelID, byte channelType) {
         WKConversationMsgExtra msgExtra = null;
         String sql = "select * from " + conversationExtra + " where channel_id='" + channelID + "' and channel_type=" + channelType;
         Cursor cursor = WKIMApplication
@@ -369,7 +369,7 @@ public class ConversationDbManager {
         return msgExtra;
     }
 
-    private List<WKConversationMsgExtra> queryExtraWithChannelIds(List<String> channelIds) {
+    private List<WKConversationMsgExtra> queryWithExtraChannelIds(List<String> channelIds) {
         StringBuilder sb = new StringBuilder();
         sb.append("select * from " + conversationExtra + " where channel_id in (");
 
@@ -393,8 +393,8 @@ public class ConversationDbManager {
         return list;
     }
 
-    public synchronized boolean insertOrUpdateExtra(WKConversationMsgExtra extra) {
-        WKConversationMsgExtra msgExtra = queryExtraMsgWithChannel(extra.channelID, extra.channelType);
+    public synchronized boolean insertOrUpdateMsgExtra(WKConversationMsgExtra extra) {
+        WKConversationMsgExtra msgExtra = queryMsgExtraWithChannel(extra.channelID, extra.channelType);
         boolean isAdd = true;
         if (msgExtra != null) {
             extra.version = msgExtra.version;
@@ -407,7 +407,7 @@ public class ConversationDbManager {
         return WKIMApplication.getInstance().getDbHelper().update(conversationExtra, "channel_id='" + extra.channelID + "' and channel_type=" + extra.channelType, cv);
     }
 
-    public synchronized void saveMsgExtras(List<WKConversationMsgExtra> list) {
+    public synchronized void insertMsgExtras(List<WKConversationMsgExtra> list) {
         List<String> channelIds = new ArrayList<>();
         for (WKConversationMsgExtra extra : list) {
             boolean isAdd = true;
@@ -421,7 +421,7 @@ public class ConversationDbManager {
         }
         List<ContentValues> insertCVList = new ArrayList<>();
         List<ContentValues> updateCVList = new ArrayList<>();
-        List<WKConversationMsgExtra> existList = queryExtraWithChannelIds(channelIds);
+        List<WKConversationMsgExtra> existList = queryWithExtraChannelIds(channelIds);
         for (WKConversationMsgExtra extra : list) {
             boolean isAdd = true;
             for (WKConversationMsgExtra existExtra : existList) {
@@ -464,7 +464,7 @@ public class ConversationDbManager {
         }
     }
 
-    public long queryMaxExtraVersion() {
+    public long queryMsgExtraMaxVersion() {
         long maxVersion = 0;
         String sql = "select max(version) version from " + conversationExtra;
         Cursor cursor = WKIMApplication
