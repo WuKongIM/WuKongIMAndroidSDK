@@ -25,9 +25,8 @@ import com.xinbida.wukongim.protocol.WKReceivedAckMsg;
 import com.xinbida.wukongim.protocol.WKReceivedMsg;
 import com.xinbida.wukongim.protocol.WKSendAckMsg;
 import com.xinbida.wukongim.protocol.WKSendMsg;
-import com.xinbida.wukongim.utils.AESEncryptUtils;
 import com.xinbida.wukongim.utils.BigTypeUtils;
-import com.xinbida.wukongim.utils.Curve25519Utils;
+import com.xinbida.wukongim.utils.CryptoUtils;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
 import com.xinbida.wukongim.utils.WKTypeUtils;
 
@@ -42,6 +41,7 @@ import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.HashMap;
 
 /**
  * 5/21/21 11:28 AM
@@ -70,7 +70,7 @@ class MessageConvertHandler {
                 + WKIMApplication.getInstance().getToken().length()
                 + connectMsg.clientTimeStampLength
                 + connectMsg.clientKeyLength
-                + Curve25519Utils.getInstance().getPublicKey().length();
+                + CryptoUtils.getInstance().getPublicKey().length();
 
         byte[] remainingBytes = WKTypeUtils.getInstance().getRemainingLengthByte(remainingLength);
         int totalLen = 1 + remainingBytes.length
@@ -84,7 +84,7 @@ class MessageConvertHandler {
                 + WKIMApplication.getInstance().getToken().length()
                 + connectMsg.clientTimeStampLength
                 + connectMsg.clientKeyLength
-                + Curve25519Utils.getInstance().getPublicKey().length();
+                + CryptoUtils.getInstance().getPublicKey().length();
 
         byte[] bytes = new byte[totalLen];
         ByteBuffer buffer = ByteBuffer.allocate(totalLen).order(
@@ -102,8 +102,8 @@ class MessageConvertHandler {
             buffer.putShort((short) WKIMApplication.getInstance().getToken().length());
             buffer.put(WKTypeUtils.getInstance().stringToByte(WKIMApplication.getInstance().getToken()));
             buffer.putLong(connectMsg.clientTimestamp);
-            buffer.putShort((short) Curve25519Utils.getInstance().getPublicKey().length());
-            buffer.put(WKTypeUtils.getInstance().stringToByte(Curve25519Utils.getInstance().getPublicKey()));
+            buffer.putShort((short) CryptoUtils.getInstance().getPublicKey().length());
+            buffer.put(WKTypeUtils.getInstance().stringToByte(CryptoUtils.getInstance().getPublicKey()));
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -144,16 +144,16 @@ class MessageConvertHandler {
 
     byte[] enSendMsg(WKSendMsg sendMsg) {
         // 先加密内容
-        byte[] contentByte = AESEncryptUtils.aesEncrypt(sendMsg.payload, Curve25519Utils.getInstance().aesKey, Curve25519Utils.getInstance().salt);
-        String sendContent = AESEncryptUtils.base64Encode(contentByte);
+        byte[] contentByte = CryptoUtils.getInstance().aesEncrypt(sendMsg.payload);
+        String sendContent = CryptoUtils.getInstance().base64Encode(contentByte);
         String msgKey = sendMsg.clientSeq
                 + sendMsg.clientMsgNo
                 + sendMsg.channelId
                 + sendMsg.channelType
                 + sendContent;
-        byte[] msgKeyByte = AESEncryptUtils.aesEncrypt(msgKey, Curve25519Utils.getInstance().aesKey, Curve25519Utils.getInstance().salt);
-        String msgKeyContent = AESEncryptUtils.base64Encode(msgKeyByte);
-        msgKeyContent = AESEncryptUtils.digest(msgKeyContent);
+        byte[] msgKeyByte = CryptoUtils.getInstance().aesEncrypt(msgKey);
+        String msgKeyContent = CryptoUtils.getInstance().base64Encode(msgKeyByte);
+        msgKeyContent = CryptoUtils.getInstance().digestMD5(msgKeyContent);
 
         int topicLen = 0;
         if (sendMsg.setting.topic == 1) {
@@ -269,7 +269,7 @@ class MessageConvertHandler {
                 connectAckMsg.serverKey = serverKey;
                 connectAckMsg.salt = salt;
                 //保存公钥和安全码
-                Curve25519Utils.getInstance().setServerKeyAndSalt(connectAckMsg.serverKey, connectAckMsg.salt);
+                CryptoUtils.getInstance().setServerKeyAndSalt(connectAckMsg.serverKey, connectAckMsg.salt);
 
                 connectAckMsg.timeDiff = time;
                 connectAckMsg.remainingLength = remainingLength;
@@ -428,7 +428,7 @@ class MessageConvertHandler {
                 if (read == -1) return receivedMsg;
 
                 String content = WKTypeUtils.getInstance().bytesToString(payload);
-                receivedMsg.payload = AESEncryptUtils.aesDecrypt(AESEncryptUtils.base64Decode(content), Curve25519Utils.getInstance().aesKey, Curve25519Utils.getInstance().salt);
+                receivedMsg.payload = CryptoUtils.getInstance().aesDecrypt(CryptoUtils.getInstance().base64Decode(content));
                 String msgKey = receivedMsg.messageID
                         + receivedMsg.messageSeq
                         + receivedMsg.clientMsgNo
@@ -437,9 +437,9 @@ class MessageConvertHandler {
                         + receivedMsg.channelID
                         + receivedMsg.channelType
                         + content;
-                byte[] result = AESEncryptUtils.aesEncrypt(msgKey, Curve25519Utils.getInstance().aesKey, Curve25519Utils.getInstance().salt);
-                String base64Result = AESEncryptUtils.base64Encode(result);
-                String localMsgKey = AESEncryptUtils.digest(base64Result);
+                byte[] result = CryptoUtils.getInstance().aesEncrypt(msgKey);
+                String base64Result = CryptoUtils.getInstance().base64Encode(result);
+                String localMsgKey = CryptoUtils.getInstance().digestMD5(base64Result);
                 if (!localMsgKey.equals(receivedMsg.msgKey)) {
                     return null;
                 }

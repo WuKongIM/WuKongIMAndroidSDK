@@ -82,7 +82,7 @@ public class MsgManager extends BaseManager {
         return MsgManagerBinder.msgManager;
     }
 
-    private final long limOrderSeqFactor = 1000L;
+    private final long wkOrderSeqFactor = 1000L;
     // 消息修改
     private ConcurrentHashMap<String, IRefreshMsg> refreshMsgListenerMap;
     // 监听发送消息回调
@@ -272,10 +272,10 @@ public class MsgManager extends BaseManager {
     }
 
     private long getOrNearbyMsgSeq(long orderSeq) {
-        if (orderSeq % limOrderSeqFactor == 0) {
-            return orderSeq / limOrderSeqFactor;
+        if (orderSeq % wkOrderSeqFactor == 0) {
+            return orderSeq / wkOrderSeqFactor;
         }
-        return (orderSeq - orderSeq % limOrderSeqFactor) / limOrderSeqFactor;
+        return (orderSeq - orderSeq % wkOrderSeqFactor) / wkOrderSeqFactor;
     }
 
     /**
@@ -307,8 +307,8 @@ public class MsgManager extends BaseManager {
                     oldestOrderSeq = aroundMsgOrderSeq;
                 } else {
                     if (minOrderSeq + limit < aroundMsgOrderSeq) {
-                        if (aroundMsgOrderSeq % limOrderSeqFactor == 0) {
-                            oldestOrderSeq = (aroundMsgOrderSeq / limOrderSeqFactor - 3) * limOrderSeqFactor;
+                        if (aroundMsgOrderSeq % wkOrderSeqFactor == 0) {
+                            oldestOrderSeq = (aroundMsgOrderSeq / wkOrderSeqFactor - 3) * wkOrderSeqFactor;
                         } else
                             oldestOrderSeq = aroundMsgOrderSeq - 3;
 //                        oldestOrderSeq = aroundMsgOrderSeq;
@@ -468,18 +468,18 @@ public class MsgManager extends BaseManager {
             long tempOrderSeq = MsgDbManager.getInstance().getMaxOrderSeq(channelID, channelType);
             return tempOrderSeq + 1;
         }
-        return messageSeq * limOrderSeqFactor;
+        return messageSeq * wkOrderSeqFactor;
     }
 
     public long getMessageSeq(long messageOrderSeq) {
-        if (messageOrderSeq % limOrderSeqFactor == 0) {
-            return messageOrderSeq / limOrderSeqFactor;
+        if (messageOrderSeq % wkOrderSeqFactor == 0) {
+            return messageOrderSeq / wkOrderSeqFactor;
         }
         return 0;
     }
 
     public long getReliableMessageSeq(long messageOrderSeq) {
-        return messageOrderSeq / limOrderSeqFactor;
+        return messageOrderSeq / wkOrderSeqFactor;
     }
 
     public long getMaxSeqWithChannel(String channelID, byte channelType) {
@@ -910,7 +910,7 @@ public class MsgManager extends BaseManager {
             MsgDbManager.getInstance().saveOrUpdateMsgExtras(msgExtraList);
         }
         if (msgList.size() > 0) {
-            MsgDbManager.getInstance().insertMsgList1(msgList);
+            MsgDbManager.getInstance().insertMsgList(msgList);
         }
 
     }
@@ -1038,7 +1038,7 @@ public class MsgManager extends BaseManager {
         msg.clientMsgNO = wkSyncRecent.client_msg_no;
         msg.fromUID = wkSyncRecent.from_uid;
         msg.timestamp = wkSyncRecent.timestamp;
-        msg.orderSeq = msg.messageSeq * limOrderSeqFactor;
+        msg.orderSeq = msg.messageSeq * wkOrderSeqFactor;
         msg.voiceStatus = wkSyncRecent.voice_status;
         msg.isDeleted = wkSyncRecent.is_deleted;
         msg.status = WKSendMsgResult.send_success;

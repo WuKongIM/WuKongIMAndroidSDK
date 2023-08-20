@@ -1,9 +1,13 @@
 package com.xinbida.wukongim.utils;
 
+import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
 
 import com.xinbida.wukongim.WKIMApplication;
+
+import org.whispersystems.curve25519.Curve25519;
+import org.whispersystems.curve25519.Curve25519KeyPair;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -17,6 +21,7 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.Objects;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -25,57 +30,79 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+
 /**
- * 2/26/21 12:11 PM
+ * 2/25/21 6:20 PM
+ * 消息加密处理
  */
-public class AESEncryptUtils {
-
-    /**
-     * 加密算法
-     */
-    private static final String KEY_ALGORITHM = "AES";
-
-    /**
-     * AES 的 密钥长度，32 字节，范围：16 - 32 字节
-     */
-    public static final int SECRET_KEY_LENGTH = 32;
-
-    /**
-     * 字符编码
-     */
+public class CryptoUtils {
+    private byte[] privateKey, publicKey;
+    private byte[] serverKey;
+    private String aesKey;
+    private String salt;
     private static final Charset CHARSET_UTF8 = StandardCharsets.UTF_8;
-
-    /**
-     * 秘钥长度不足 16 个字节时，默认填充位数
-     */
-    private static final String DEFAULT_VALUE = "0";
-    /**
-     * 加解密算法/工作模式/填充方式
-     */
     private static final String CIPHER_ALGORITHM = "AES/CBC/PKCS7Padding";
 
+    private CryptoUtils() {
+    }
+
+    private static class CryptoUtilsBinder {
+        private final static CryptoUtils util = new CryptoUtils();
+    }
+
+    public static CryptoUtils getInstance() {
+        return CryptoUtilsBinder.util;
+    }
+
+    public void initKey() {
+        Curve25519KeyPair keyPair = Curve25519.getInstance(Curve25519.BEST).generateKeyPair();
+        privateKey = keyPair.getPrivateKey();
+        publicKey = keyPair.getPublicKey();
+    }
+
+    public String getPublicKey() {
+        return Base64.encodeToString(publicKey, Base64.NO_WRAP);
+    }
+
     /**
-     * aes加密
+     * 设置服务端公钥和安全码
      *
-     * @param sSrc 内容
-     * @param sKey key
-     * @param salt 安全码
-     * @return
-     * @throws Exception
+     * @param serverKey 公钥
+     * @param salt      安全码
      */
-    public static byte[] aesEncrypt(String sSrc, String sKey, String salt) {
+    public void setServerKeyAndSalt(String serverKey, String salt) {
+
+        if (TextUtils.isEmpty(serverKey) || TextUtils.isEmpty(salt)) {
+            this.serverKey = new byte[0];
+            this.salt = "";
+            return;
+        }
+        this.serverKey = base64Decode(serverKey);
+        this.salt = salt;
+
+        Curve25519 cipher = Curve25519.getInstance(Curve25519.BEST);
+        byte[] sharedSecret = cipher.calculateAgreement(this.serverKey, privateKey);
+        String key = digestMD5(base64Encode(sharedSecret));
+        if (!TextUtils.isEmpty(key) && key.length() > 16) {
+            aesKey = key.substring(0, 16);
+        }
+    }
+
+    public byte[] aesEncrypt(String sSrc) {
 
         Cipher cipher = null;
         byte[] encrypted = null;
         try {
             cipher = Cipher.getInstance(CIPHER_ALGORITHM);
-            byte[] raw = sKey.getBytes(CHARSET_UTF8);
+            byte[] raw = aesKey.getBytes(CHARSET_UTF8);
             SecretKeySpec skeySpec = new SecretKeySpec(raw, "AES");
             //使用CBC模式，需要一个向量iv，可增加加密算法的强度
             IvParameterSpec iv = new IvParameterSpec(salt.getBytes(CHARSET_UTF8));
             cipher.init(Cipher.ENCRYPT_MODE, skeySpec, iv);
             encrypted = cipher.doFinal(sSrc.getBytes());
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
+                 InvalidAlgorithmParameterException | IllegalBlockSizeException |
+                 BadPaddingException e) {
             e.printStackTrace();
             Log.e("加密错误：", "-->");
         }
@@ -90,12 +117,10 @@ public class AESEncryptUtils {
      * 解密
      *
      * @param sSrc 内容
-     * @param sKey 密钥
-     * @param salt 安全码
      * @return 内容
      */
-    public static String aesDecrypt(byte[] sSrc, String sKey, String salt) {
-        byte[] raw = sKey.getBytes(CHARSET_UTF8);
+    public String aesDecrypt(byte[] sSrc) {
+        byte[] raw = aesKey.getBytes(CHARSET_UTF8);
         SecretKeySpec skeySpec = new SecretKeySpec(raw, "AES");
         Cipher cipher;
         String content = "";
@@ -114,21 +139,18 @@ public class AESEncryptUtils {
         return content;
     }
 
-    /**
-     * 将 Base64 字符串 解码成 字节数组
-     */
-    public static byte[] base64Decode(String data) {
+    public byte[] base64Decode(String data) {
         return Base64.decode(data, Base64.NO_WRAP);
     }
 
     /**
      * 将 字节数组 转换成 Base64 编码
      */
-    public static String base64Encode(byte[] data) {
+    public String base64Encode(byte[] data) {
         return Base64.encodeToString(data, Base64.NO_WRAP);
     }
 
-    public static String digest(String password) {
+    public String digestMD5(String password) {
         try {
             MessageDigest digest = MessageDigest.getInstance("MD5");
             byte[] bytes = digest.digest(password.getBytes());
@@ -148,9 +170,8 @@ public class AESEncryptUtils {
         }
     }
 
-    public static boolean checkRSASign(String content, String sign) {
+    public boolean checkRSASign(String content, String sign) {
         try {
-
             String publicKey = WKIMApplication.getInstance().getRSAPublicKey();
             byte[] keyByte = base64Decode(publicKey);
             String key = new String(keyByte);
@@ -165,9 +186,10 @@ public class AESEncryptUtils {
             boolean result = signature.verify(base64Decode(sign));
             Log.e("校验结果", result + "");
             return result;
-        } catch (InvalidKeyException | NoSuchAlgorithmException | SignatureException | InvalidKeySpecException e) {
+        } catch (InvalidKeyException | NoSuchAlgorithmException | SignatureException |
+                 InvalidKeySpecException e) {
             e.printStackTrace();
-            Log.e("校验异常", e.getLocalizedMessage());
+            Log.e("校验异常", Objects.requireNonNull(e.getLocalizedMessage()));
             return false;
         }
     }

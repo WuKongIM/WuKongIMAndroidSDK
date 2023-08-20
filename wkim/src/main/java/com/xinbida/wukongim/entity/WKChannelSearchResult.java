@@ -5,7 +5,7 @@ import android.os.Parcelable;
 
 /**
  * 2020-05-10 19:16
- * 狸猫频道搜索结果
+ * 频道搜索结果
  */
 public class WKChannelSearchResult implements Parcelable {
     //频道信息

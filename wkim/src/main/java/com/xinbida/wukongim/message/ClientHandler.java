@@ -110,7 +110,9 @@ class ClientHandler implements IDataHandler, IConnectHandler,
                     }
                 }
                 byte[] buffBytes = iNonBlockingConnection.readBytesByLength(readLen);
-                ConnectionHandler.getInstance().receivedData(buffBytes.length, buffBytes);
+                if (buffBytes.length > 0) {
+                    ConnectionHandler.getInstance().receivedData(buffBytes);
+                }
             }
 
         } catch (IOException e) {
@@ -123,9 +125,20 @@ class ClientHandler implements IDataHandler, IConnectHandler,
     @Override
     public boolean onDisconnect(INonBlockingConnection iNonBlockingConnection) {
         WKLoggerUtils.getInstance().e("连接断开");
+        if (iNonBlockingConnection != null && !TextUtils.isEmpty(iNonBlockingConnection.getId()) && iNonBlockingConnection.getAttachment() != null) {
+            String id = iNonBlockingConnection.getId();
+            Object attachmentObject = iNonBlockingConnection.getAttachment();
+            if (attachmentObject instanceof String) {
+                String att = (String) attachmentObject;
+                String attStr = "close" + id;
+                if (att.equals(attStr)) {
+                    return true;
+                }
+            }
+        }
         if (WKIMApplication.getInstance().isCanConnect) {
             ConnectionHandler.getInstance().forcedReconnection();
-        }else {
+        } else {
             WKLoggerUtils.getInstance().e("不能重连-->");
         }
         close(iNonBlockingConnection);

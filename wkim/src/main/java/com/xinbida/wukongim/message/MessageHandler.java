@@ -120,11 +120,9 @@ public class MessageHandler {
     private List<WKSyncMsg> receivedMsgList;
     private byte[] cacheData = null;
 
-    synchronized void cutBytes(int available_len, byte[] available_bytes,
+    synchronized void cutBytes(byte[] available_bytes,
                                IReceivedMsgListener mIReceivedMsgListener) {
-        if (available_len == -1) {
-            return;
-        }
+
         if (cacheData == null || cacheData.length == 0) cacheData = available_bytes;
         else {
             //如果上次还存在未解析完的消息将新数据追加到缓存数据中
@@ -160,7 +158,6 @@ public class MessageHandler {
                 WKLoggerUtils.getInstance().e("pong...");
                 byte[] bytes = Arrays.copyOfRange(lastMsgBytes, 1, lastMsgBytes.length);
                 cacheData = lastMsgBytes = bytes;
-
             } else {
                 if (packetType < 10) {
                     // TODO: 2019-12-21 计算剩余长度
@@ -202,7 +199,7 @@ public class MessageHandler {
 
     private void acceptMsg(byte[] bytes, int no_persist, int sync_once, int red_dot,
                            IReceivedMsgListener mIReceivedMsgListener) {
-        // 字节数组转成消息数组
+
         if (bytes != null && bytes.length > 0) {
             WKBaseMsg g_msg;
             g_msg = MessageConvertHandler.getInstance().decodeMessage(bytes);
@@ -319,7 +316,7 @@ public class MessageHandler {
             }
             allList.add(mMsg.wkMsg);
         }
-        MsgDbManager.getInstance().insertMsgList1(saveMsgList);
+        MsgDbManager.getInstance().insertMsgList(saveMsgList);
         //将消息push给UI
         WKIM.getInstance().getMsgManager().pushNewMsg(allList);
         groupMsg(list);

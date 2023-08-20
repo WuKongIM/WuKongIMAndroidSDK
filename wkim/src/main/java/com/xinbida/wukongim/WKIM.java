@@ -12,7 +12,7 @@ import com.xinbida.wukongim.manager.MsgManager;
 import com.xinbida.wukongim.manager.ReminderManager;
 import com.xinbida.wukongim.manager.RobotManager;
 import com.xinbida.wukongim.message.MessageHandler;
-import com.xinbida.wukongim.utils.Curve25519Utils;
+import com.xinbida.wukongim.utils.CryptoUtils;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
 
 /**
@@ -70,7 +70,7 @@ public class WKIM {
         WKIMApplication.getInstance().setUid(uid);
         WKIMApplication.getInstance().setToken(token);
         // 初始化加密key
-        Curve25519Utils.getInstance().initKey();
+        CryptoUtils.getInstance().initKey();
         // 初始化默认消息类型
         getMsgManager().initNormalMsg();
         // 初始化数据库

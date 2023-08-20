@@ -34,6 +34,8 @@ class MessageAdapter extends BaseMultiItemQuickAdapter<UIMessageEntity, BaseView
         }
         String name = uiMessageEntity.msg.fromUID.substring(0, 1);
         nameTv.setText(name);
-        contentTv.setText(uiMessageEntity.msg.baseContentMsgModel.getDisplayContent());
+        if (uiMessageEntity.msg.baseContentMsgModel!=null){
+            contentTv.setText(uiMessageEntity.msg.baseContentMsgModel.getDisplayContent());
+        }
     }
 }

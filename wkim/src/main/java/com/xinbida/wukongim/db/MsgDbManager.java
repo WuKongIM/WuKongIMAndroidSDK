@@ -278,7 +278,9 @@ public class MsgDbManager {
             for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
                 WKMsg wkMsg = serializeMsg(cursor);
                 wkMsg.setChannelInfo(wkChannel);
-                messageIds.add(wkMsg.messageID);
+                if (!TextUtils.isEmpty(wkMsg.messageID)){
+                    messageIds.add(wkMsg.messageID);
+                }
                 if (wkMsg.baseContentMsgModel != null && wkMsg.baseContentMsgModel.reply != null && !TextUtils.isEmpty(wkMsg.baseContentMsgModel.reply.message_id)) {
                     replyMsgIds.add(wkMsg.baseContentMsgModel.reply.message_id);
                 }
@@ -473,7 +475,7 @@ public class MsgDbManager {
         return msg;
     }
 
-    public synchronized void insertMsgList1(List<WKMsg> list) {
+    public synchronized void insertMsgList(List<WKMsg> list) {
         if (list == null || list.size() == 0) return;
         if (list.size() == 1) {
             insertMsg(list.get(0));
@@ -1238,13 +1240,41 @@ public class MsgDbManager {
 
             for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
                 WKMsg msg = serializeMsg(cursor);
+                boolean isAdd = true;
                 if (msg.channelType == WKChannelType.GROUP) {
                     //查询群成员信息
-                    gChannelIds.add(msg.channelID);
+                    for (int i = 0; i < gChannelIds.size(); i++) {
+                        if (gChannelIds.get(i).equals(msg.fromUID)) {
+                            isAdd = false;
+                            break;
+                        }
+                    }
+                    if (isAdd) {
+                        gChannelIds.add(msg.fromUID);
+                    }
                 } else {
-                    pChannelIds.add(msg.channelID);
+                    for (int i = 0; i < pChannelIds.size(); i++) {
+                        if (pChannelIds.get(i).equals(msg.channelID)) {
+                            isAdd = false;
+                            break;
+                        }
+                    }
+                    if (isAdd) {
+                        pChannelIds.add(msg.channelID);
+                    }
+
                 }
-                fromChannelIds.add(msg.fromUID);
+                isAdd = true;
+                for (int i = 0; i < fromChannelIds.size(); i++) {
+                    if (fromChannelIds.get(i).equals(msg.fromUID)) {
+                        isAdd = false;
+                        break;
+                    }
+                }
+                if (isAdd) {
+                    fromChannelIds.add(msg.fromUID);
+                }
+
                 list.add(msg);
             }
 

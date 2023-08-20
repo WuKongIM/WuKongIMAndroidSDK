@@ -299,7 +299,7 @@ public class ConversationManager extends BaseManager {
         List<WKUIConversationMsg> uiMsgList = new ArrayList<>();
         if (conversationMsgList.size() > 0 || msgList.size() > 0) {
             if (msgList.size() > 0) {
-                MsgDbManager.getInstance().insertMsgList1(msgList);
+                MsgDbManager.getInstance().insertMsgList(msgList);
             }
             try {
                 if (conversationMsgList.size() > 0) {

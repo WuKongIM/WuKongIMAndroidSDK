@@ -81,6 +81,10 @@ public class ConnectionHandler {
     private final long requestIPTimeoutTime = 6;
     public String socketSingleID;
     private String lastRequestId;
+    private final long reconnectDelay = 1500;
+    public volatile Handler reconnectionHandler = new Handler(Objects.requireNonNull(Looper.myLooper()));
+
+    Runnable reconnectionRunnable = this::reconnection;
 
     public synchronized void forcedReconnection() {
         isReConnecting = false;
@@ -99,6 +103,7 @@ public class ConnectionHandler {
             return;
         }
         connectStatus = WKConnectStatus.fail;
+        reconnectionHandler.removeCallbacks(reconnectionRunnable);
         boolean isHaveNetwork = WKIMApplication.getInstance().isNetworkConnected();
         if (isHaveNetwork) {
             closeConnect();
@@ -109,18 +114,7 @@ public class ConnectionHandler {
             if (!ConnectionTimerHandler.getInstance().checkNetWorkTimerIsRunning) {
                 WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.noNetwork, WKConnectReason.NoNetwork);
                 isReConnecting = false;
-                new Thread() {
-                    @Override
-                    public void run() {
-                        super.run();
-                        try {
-                            Thread.sleep(1500);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        new Handler(Looper.getMainLooper()).post(() -> reconnection());
-                    }
-                }.start();
+                reconnectionHandler.postDelayed(reconnectionRunnable, reconnectDelay);
             }
         }
     }
@@ -128,7 +122,7 @@ public class ConnectionHandler {
     private synchronized void getIPAndPort() {
         if (!WKIMApplication.getInstance().isNetworkConnected()) {
             isReConnecting = false;
-            reconnection();
+            reconnectionHandler.postDelayed(reconnectionRunnable, reconnectDelay);
             return;
         }
         if (!WKIMApplication.getInstance().isCanConnect) {
@@ -144,7 +138,7 @@ public class ConnectionHandler {
             if (TextUtils.isEmpty(ip) || port == 0) {
                 WKLoggerUtils.getInstance().e("返回连接IP或port错误，" + String.format("ip:%s & port:%s", ip, port));
                 isReConnecting = false;
-                reconnection();
+                reconnectionHandler.postDelayed(reconnectionRunnable, reconnectDelay);
             } else {
                 if (lastRequestId.equals(requestId)) {
                     ConnectionHandler.this.ip = ip;
@@ -156,7 +150,7 @@ public class ConnectionHandler {
                 } else {
                     if (connectionIsNull()) {
                         WKLoggerUtils.getInstance().e("请求IP的编号不一致，重连中");
-                        reconnection();
+                        reconnectionHandler.postDelayed(reconnectionRunnable, reconnectDelay);
                     }
                 }
             }
@@ -190,8 +184,8 @@ public class ConnectionHandler {
         sendMessage(new WKConnectMsg());
     }
 
-    void receivedData(int length, byte[] data) {
-        MessageHandler.getInstance().cutBytes(length, data,
+    void receivedData(byte[] data) {
+        MessageHandler.getInstance().cutBytes( data,
                 new IReceivedMsgListener() {
 
                     public void sendAckMsg(
@@ -524,8 +518,9 @@ public class ConnectionHandler {
     private void closeConnect() {
         if (connection != null && connection.isOpen()) {
             try {
-                WKLoggerUtils.getInstance().e("stop connection" + connection.getId());
+                WKLoggerUtils.getInstance().e("stop connection:" + connection.getId());
 //                connection.flush();
+                connection.setAttachment("close" + connection.getId());
                 connection.close();
             } catch (IOException e) {
                 e.printStackTrace();

@@ -6,13 +6,11 @@ import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.WKIMApplication;
 import com.xinbida.wukongim.interfaces.IConnectionStatus;
 import com.xinbida.wukongim.interfaces.IGetIpAndPort;
-import com.xinbida.wukongim.interfaces.IGetSocketIpAndPortListener;
 import com.xinbida.wukongim.message.ConnectionHandler;
 import com.xinbida.wukongim.message.MessageHandler;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
 
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -34,7 +32,7 @@ public class ConnectionManager extends BaseManager {
 
 
     private IGetIpAndPort iGetIpAndPort;
-    private ConcurrentHashMap<String, IConnectionStatus> concurrentHashMap;
+    private ConcurrentHashMap<String, IConnectionStatus> connectionListenerMap;
 
     // 连接
     public void connection() {
@@ -100,9 +98,9 @@ public class ConnectionManager extends BaseManager {
     }
 
     public void setConnectionStatus(int status, String reason) {
-        if (concurrentHashMap != null && concurrentHashMap.size() > 0) {
+        if (connectionListenerMap != null && connectionListenerMap.size() > 0) {
             runOnMainThread(() -> {
-                for (Map.Entry<String, IConnectionStatus> entry : concurrentHashMap.entrySet()) {
+                for (Map.Entry<String, IConnectionStatus> entry : connectionListenerMap.entrySet()) {
                     entry.getValue().onStatus(status, reason);
                 }
             });
@@ -112,14 +110,14 @@ public class ConnectionManager extends BaseManager {
     // 监听连接状态
     public void addOnConnectionStatusListener(String key, IConnectionStatus iConnectionStatus) {
         if (iConnectionStatus == null || TextUtils.isEmpty(key)) return;
-        if (concurrentHashMap == null) concurrentHashMap = new ConcurrentHashMap<>();
-        concurrentHashMap.put(key, iConnectionStatus);
+        if (connectionListenerMap == null) connectionListenerMap = new ConcurrentHashMap<>();
+        connectionListenerMap.put(key, iConnectionStatus);
     }
 
     // 移除监听
     public void removeOnConnectionStatusListener(String key) {
-        if (!TextUtils.isEmpty(key) && concurrentHashMap != null) {
-            concurrentHashMap.remove(key);
+        if (!TextUtils.isEmpty(key) && connectionListenerMap != null) {
+            connectionListenerMap.remove(key);
         }
     }
 }

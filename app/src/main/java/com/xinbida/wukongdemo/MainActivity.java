@@ -3,6 +3,7 @@ package com.xinbida.wukongdemo;
 import android.content.Context;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -130,6 +131,7 @@ public class MainActivity extends AppCompatActivity {
                     JSONObject jsonObject = new JSONObject(data);
                     String tcp_addr = jsonObject.optString("tcp_addr");
                     String[] strings = tcp_addr.split(":");
+                    Log.e("获取连接的IP","-->"+data);
                     andPortListener.onGetSocketIpAndPort(strings[0], Integer.parseInt(strings[1]));
                 } catch (JSONException e) {
                     throw new RuntimeException(e);

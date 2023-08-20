@@ -490,6 +490,9 @@ public class ConversationDbManager {
         extra.browseTo = WKCursor.readLong(cursor, "browse_to");
         extra.draftUpdatedAt = WKCursor.readLong(cursor, "draft_updated_at");
         extra.version = WKCursor.readLong(cursor, "version");
+        if (cursor.getColumnIndex("extra_version") > 0) {
+            extra.version = WKCursor.readLong(cursor, "extra_version");
+        }
         return extra;
     }
 
