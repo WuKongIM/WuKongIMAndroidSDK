@@ -38,7 +38,7 @@ public class RobotDBManager {
 
     public boolean isExitMenu(String robotID, String cmd) {
         boolean isExist = false;
-        String sql = "select * from " + robotMenu + " where robot_id =" + "\"" + robotID + "\" and cmd=" + "\"" + cmd + "\"";
+        String sql = "select * from " + robotMenu + " where robot_id ='" + robotID + "' and cmd='" + cmd + "'";
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper().rawQuery(sql)) {
@@ -78,7 +78,7 @@ public class RobotDBManager {
 
     public boolean isExist(String robotID) {
         boolean isExist = false;
-        String sql = "select * from " + robot + " where robot_id =" + "\"" + robotID + "\"";
+        String sql = "select * from " + robot + " where robot_id ='" + robotID + "'";
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper().rawQuery(sql)) {
@@ -138,7 +138,7 @@ public class RobotDBManager {
 
     public WKRobot query(String robotID) {
         WKRobot wkRobot = null;
-        String sql = "select * from " + robot + " where robot_id = " + "\"" + robotID + "\"";
+        String sql = "select * from " + robot + " where robot_id ='" + robotID + "'";
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper().rawQuery(sql)) {
@@ -154,7 +154,7 @@ public class RobotDBManager {
 
     public WKRobot queryWithUsername(String username) {
         WKRobot wkRobot = null;
-        String sql = "select * from " + robot + " where username = " + "\"" + username + "\"";
+        String sql = "select * from " + robot + " where username ='" + username + "'";
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper().rawQuery(sql)) {
@@ -216,7 +216,7 @@ public class RobotDBManager {
 
     public List<WKRobotMenu> queryRobotMenus(String robotID) {
         List<WKRobotMenu> list = new ArrayList<>();
-        String sql = "select * from " + robotMenu + " where robot_id = " + "\"" + robotID + "\"";
+        String sql = "select * from " + robotMenu + " where robot_id ='" + robotID + "'";
 
         try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql)) {
             if (cursor == null) {

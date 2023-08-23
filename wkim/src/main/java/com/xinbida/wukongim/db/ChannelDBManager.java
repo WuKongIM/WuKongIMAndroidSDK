@@ -44,7 +44,7 @@ public class ChannelDBManager {
             if (!TextUtils.isEmpty(stringBuffer)) {
                 stringBuffer.append(",");
             }
-            stringBuffer.append("\"").append(channelIDs.get(i)).append("\"");
+            stringBuffer.append("'").append(channelIDs.get(i)).append("'");
         }
         String sql = "select * from " + channel + " where " + WKDBColumns.WKChannelColumns.channel_id + " in (" + stringBuffer + ") and " + WKDBColumns.WKChannelColumns.channel_type + "=" + channelType;
         List<WKChannel> list = new ArrayList<>();
@@ -272,7 +272,7 @@ public class ChannelDBManager {
     public synchronized List<WKChannel> searchWithChannelType(String searchKey, byte channelType) {
         List<WKChannel> list = new ArrayList<>();
 
-        String sql = "select * from " + channel + " where (" + WKDBColumns.WKChannelColumns.channel_name + " LIKE \"%" + searchKey + "%\" or " + WKDBColumns.WKChannelColumns.channel_remark + " LIKE \"%" + searchKey + "%\") and " + WKDBColumns.WKChannelColumns.channel_type + "=" + channelType;
+        String sql = "select * from " + channel + " where (" + WKDBColumns.WKChannelColumns.channel_name + " LIKE '%" + searchKey + "%' or " + WKDBColumns.WKChannelColumns.channel_remark + " LIKE '%" + searchKey + "%') and " + WKDBColumns.WKChannelColumns.channel_type + "=" + channelType;
         try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql)) {
             if (cursor == null) {
                 return list;
@@ -287,7 +287,7 @@ public class ChannelDBManager {
     public synchronized List<WKChannel> searchWithChannelTypeAndFollow(String searchKey, byte channelType, int follow) {
         List<WKChannel> list = new ArrayList<>();
 
-        String sql = "select * from " + channel + " where (" + WKDBColumns.WKChannelColumns.channel_name + " LIKE \"%" + searchKey + "%\" or " + WKDBColumns.WKChannelColumns.channel_remark + " LIKE \"%" + searchKey + "%\") and " + WKDBColumns.WKChannelColumns.channel_type + "=" + channelType + " and " + WKDBColumns.WKChannelColumns.follow + "=" + follow;
+        String sql = "select * from " + channel + " where (" + WKDBColumns.WKChannelColumns.channel_name + " LIKE '%" + searchKey + "%' or " + WKDBColumns.WKChannelColumns.channel_remark + " LIKE '%" + searchKey + "%') and " + WKDBColumns.WKChannelColumns.channel_type + "=" + channelType + " and " + WKDBColumns.WKChannelColumns.follow + "=" + follow;
         try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql)) {
             if (cursor == null) {
                 return list;

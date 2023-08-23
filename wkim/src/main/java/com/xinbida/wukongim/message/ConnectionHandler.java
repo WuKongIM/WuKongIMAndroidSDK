@@ -453,13 +453,13 @@ public class ConnectionHandler {
                 String localPath = ((WKMediaMessageContent) msg.baseContentMsgModel).localPath;
                 if (!TextUtils.isEmpty(localPath)) {
                     hasAttached = true;
-                    ((WKMediaMessageContent) msg.baseContentMsgModel).localPath = FileUtils.getInstance().saveFile(localPath, msg.channelID, msg.channelType, msg.clientSeq + "");
+//                    ((WKMediaMessageContent) msg.baseContentMsgModel).localPath = FileUtils.getInstance().saveFile(localPath, msg.channelID, msg.channelType, msg.clientSeq + "");
                 }
             }
             if (msg.baseContentMsgModel instanceof WKVideoContent) {
                 String coverLocalPath = ((WKVideoContent) msg.baseContentMsgModel).coverLocalPath;
                 if (!TextUtils.isEmpty(coverLocalPath)) {
-                    ((WKVideoContent) msg.baseContentMsgModel).coverLocalPath = FileUtils.getInstance().saveFile(coverLocalPath, msg.channelID, msg.channelType, msg.clientSeq + "_1");
+//                    ((WKVideoContent) msg.baseContentMsgModel).coverLocalPath = FileUtils.getInstance().saveFile(coverLocalPath, msg.channelID, msg.channelType, msg.clientSeq + "_1");
                     hasAttached = true;
                 }
             }

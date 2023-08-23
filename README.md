@@ -121,3 +121,5 @@ WKIM.getInstance().getCMDManager().addCmdListener("listener_key", new ICMDListen
             }
         });
 ```
+### 许可证
+悟空IM 使用 Apache 2.0 许可证。有关详情，请参阅 LICENSE 文件。

@@ -284,6 +284,7 @@ public class MsgManager extends BaseManager {
      * @param channelId                频道ID
      * @param channelType              频道类型
      * @param oldestOrderSeq           最后一次消息大orderSeq 第一次进入聊天传入0
+     * @param channelMaxMsgSeq         当前channel最大消息的seq，可传0
      * @param contain                  是否包含 oldestOrderSeq 这条消息
      * @param pullMode                 拉取模式 0:向下拉取 1:向上拉取
      * @param aroundMsgOrderSeq        查询此消息附近消息
