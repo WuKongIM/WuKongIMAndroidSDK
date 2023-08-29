@@ -2,8 +2,6 @@ package com.xinbida.wukongim.msgmodel;
 
 import android.os.Parcel;
 
-import com.xinbida.wukongim.protocol.WKMessageContent;
-
 /**
  * 2020-04-04 10:39
  * 多媒体消息。如果自定义消息带附件需继承该类

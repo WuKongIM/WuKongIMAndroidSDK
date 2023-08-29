@@ -16,8 +16,6 @@ public class WKSendAckMsg extends WKBaseMsg {
     public long messageSeq;
     //发送原因代码 1表示成功
     public byte reasonCode;
-    //客户端序号长度
-    public int clientSeqLength = 4;
 
     public WKSendAckMsg() {
         packetType = WKMsgType.SENDACK;

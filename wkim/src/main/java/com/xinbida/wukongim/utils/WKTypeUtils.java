@@ -162,6 +162,7 @@ public class WKTypeUtils {
         WKMsgSetting msgSetting = new WKMsgSetting();
         msgSetting.receipt = getBit(setting, 7);
         msgSetting.topic = getBit(setting, 3);
+        msgSetting.stream = getBit(setting, 2);
         return msgSetting;
     }
 

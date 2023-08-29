@@ -8,6 +8,8 @@ public class WKMsgSetting implements Parcelable {
     public int receipt;
     // 是否开启top
     public int topic;
+    // 是否未流消息
+    public int stream;
 
     public WKMsgSetting() {
     }
@@ -15,6 +17,7 @@ public class WKMsgSetting implements Parcelable {
     protected WKMsgSetting(Parcel in) {
         receipt = in.readInt();
         topic = in.readInt();
+        stream = in.readInt();
     }
 
     public static final Creator<WKMsgSetting> CREATOR = new Creator<WKMsgSetting>() {
@@ -38,5 +41,6 @@ public class WKMsgSetting implements Parcelable {
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeInt(receipt);
         dest.writeInt(topic);
+        dest.writeInt(stream);
     }
 }

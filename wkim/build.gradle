@@ -11,7 +11,7 @@ afterEvaluate {
                 afterEvaluate { artifact(tasks.getByName("bundleReleaseAar")) }
                 groupId = 'com.xinbida.wukongim'
                 artifactId = 'WKIMLib_loca'
-                version = '1.0.1'
+                version = '1.0.7'
             }
         }
         repositories {

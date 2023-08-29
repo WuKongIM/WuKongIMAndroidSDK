@@ -30,8 +30,53 @@ public class WKReceivedMsg extends WKBaseMsg {
     public String msgKey;
     // 消息设置
     public WKMsgSetting setting;
+    public String streamNO;
+    public int streamSeq;
+    public int streamFlag;
+
+    private final int settingLength = 1;
+    private final int msgKeyLength = 2;
+    public int msgKeyContentLength = 0;
+    private final int fromUIDLength = 2;
+    public int fromUIDContentLength = 0;
+    private final int channelTDLength = 2;
+    public int channelTDContentLength = 0;
+    private final int channelTypeLength = 1;
+    private final int clientMsgNoLength = 2;
+    public int clientMsgNoContentLength = 0;
+    private final int streamNOLength = 2;
+    public int streamNOContentLength = 0;
+    public int streamSeqLength = 4;
+    public int streamFlagLength = 1;
+    private final int messageIDLength = 8;
+    private final int messageSeqLength = 4;
+    private final int messageTimeLength = 4;
+    private final int topicIDLength = 2;
+    public int topicIDContentLength = 0;
 
     public WKReceivedMsg() {
         packetType = WKMsgType.RECVEIVED;
+    }
+
+    public int getPayloadLength(int remainingLength) {
+        int length = 0;
+        length += settingLength;
+        length += (msgKeyLength + msgKeyContentLength);
+        length += (fromUIDLength + fromUIDContentLength);
+        length += (channelTDLength + channelTDContentLength);
+        length += channelTypeLength;
+        length += (clientMsgNoLength + clientMsgNoContentLength);
+        if (setting.stream == 1) {
+            length += (streamNOLength + streamNOContentLength);
+            length += streamSeqLength;
+            length += streamFlagLength;
+        }
+        length += messageIDLength;
+        length += messageSeqLength;
+        length += messageTimeLength;
+        if (setting.topic == 1) {
+            length += (topicIDLength + topicIDContentLength);
+        }
+        return remainingLength - length;
     }
 }

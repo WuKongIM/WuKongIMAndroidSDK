@@ -21,7 +21,7 @@ public interface IReceivedMsgListener {
     /**
      * 心跳消息
      */
-    void heartbeatMsg(WKPongMsg msgHeartbeat);
+    void pongMsg(WKPongMsg pongMsg);
 
     /**
      * 被踢消息
@@ -34,13 +34,6 @@ public interface IReceivedMsgListener {
      * @param sendAckMsg ack
      */
     void sendAckMsg(WKSendAckMsg sendAckMsg);
-
-    /**
-     * 聊天消息
-     *
-     * @param msg 消息对象
-     */
-    void receiveMsg(WKMsg msg);
 
     /**
      * 重连

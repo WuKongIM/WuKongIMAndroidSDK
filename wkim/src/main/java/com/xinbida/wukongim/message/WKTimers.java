@@ -13,15 +13,15 @@ import java.util.TimerTask;
 /**
  * 5/21/21 11:19 AM
  */
-class ConnectionTimerHandler {
-    private ConnectionTimerHandler() {
+class WKTimers {
+    private WKTimers() {
     }
 
     private static class ConnectionTimerHandlerBinder {
-        static final ConnectionTimerHandler timeHandle = new ConnectionTimerHandler();
+        static final WKTimers timeHandle = new WKTimers();
     }
 
-    public static ConnectionTimerHandler getInstance() {
+    public static WKTimers getInstance() {
         return ConnectionTimerHandlerBinder.timeHandle;
     }
 
@@ -86,7 +86,7 @@ class ConnectionTimerHandler {
             @Override
             public void run() {
                 //发送心跳
-                ConnectionHandler.getInstance().sendMessage(new WKPingMsg());
+                WKConnection.getInstance().sendMessage(new WKPingMsg());
             }
         }, 0, heart_time * 1000);
     }
@@ -99,10 +99,10 @@ class ConnectionTimerHandler {
 
             @Override
             public void run() {
-                if (ConnectionHandler.getInstance().connection == null || heartBeatTimer == null) {
-                    ConnectionHandler.getInstance().reconnection();
+                if (WKConnection.getInstance().connection == null || heartBeatTimer == null) {
+                    WKConnection.getInstance().reconnection();
                 }
-                ConnectionHandler.getInstance().checkHeartIsTimeOut();
+                WKConnection.getInstance().checkHeartIsTimeOut();
             }
         }, 1000 * 7, 1000 * 7);
     }
@@ -119,14 +119,14 @@ class ConnectionTimerHandler {
                 if (!is_have_network) {
                     WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.noNetwork, WKConnectReason.NoNetwork);
                     WKLoggerUtils.getInstance().e("无网络连接...");
-                    ConnectionHandler.getInstance().checkSendingMsg();
+                    WKConnection.getInstance().checkSendingMsg();
                 } else {
                     //有网络
-                    if (ConnectionHandler.getInstance().connectionIsNull())
-                        ConnectionHandler.getInstance().reconnection();
+                    if (WKConnection.getInstance().connectionIsNull())
+                        WKConnection.getInstance().reconnection();
                 }
-                if (ConnectionHandler.getInstance().connection == null || !ConnectionHandler.getInstance().connection.isOpen()) {
-                    ConnectionHandler.getInstance().reconnection();
+                if (WKConnection.getInstance().connection == null || !WKConnection.getInstance().connection.isOpen()) {
+                    WKConnection.getInstance().reconnection();
                 }
                 checkNetWorkTimerIsRunning = true;
             }

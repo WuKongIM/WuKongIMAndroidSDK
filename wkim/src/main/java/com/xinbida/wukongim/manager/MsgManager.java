@@ -38,7 +38,7 @@ import com.xinbida.wukongim.interfaces.ISyncOfflineMsgListener;
 import com.xinbida.wukongim.interfaces.IUploadAttacResultListener;
 import com.xinbida.wukongim.interfaces.IUploadAttachmentListener;
 import com.xinbida.wukongim.interfaces.IUploadMsgExtraListener;
-import com.xinbida.wukongim.message.ConnectionHandler;
+import com.xinbida.wukongim.message.WKConnection;
 import com.xinbida.wukongim.message.MessageHandler;
 import com.xinbida.wukongim.message.type.WKMsgContentType;
 import com.xinbida.wukongim.message.type.WKSendMsgResult;
@@ -47,8 +47,8 @@ import com.xinbida.wukongim.msgmodel.WKReply;
 import com.xinbida.wukongim.msgmodel.WKTextContent;
 import com.xinbida.wukongim.msgmodel.WKVideoContent;
 import com.xinbida.wukongim.msgmodel.WKVoiceContent;
-import com.xinbida.wukongim.protocol.WKMessageContent;
-import com.xinbida.wukongim.protocol.WKMsgEntity;
+import com.xinbida.wukongim.msgmodel.WKMessageContent;
+import com.xinbida.wukongim.msgmodel.WKMsgEntity;
 import com.xinbida.wukongim.utils.DateUtils;
 import com.xinbida.wukongim.utils.WKTypeUtils;
 
@@ -1193,11 +1193,11 @@ public class MsgManager extends BaseManager {
 
 
     public void sendMessage(WKMessageContent messageContent, String channelID, byte channelType) {
-        ConnectionHandler.getInstance().sendMessage(messageContent, channelID, channelType);
+        WKConnection.getInstance().sendMessage(messageContent, channelID, channelType);
     }
 
     public void sendMessage(WKMessageContent messageContent, WKMsgSetting setting, String channelID, byte channelType) {
-        ConnectionHandler.getInstance().sendMessage(messageContent, setting, channelID, channelType);
+        WKConnection.getInstance().sendMessage(messageContent, setting, channelID, channelType);
     }
 
     /**
@@ -1206,7 +1206,7 @@ public class MsgManager extends BaseManager {
      * @param msg 消息对象
      */
     public void sendMessage(WKMsg msg) {
-        ConnectionHandler.getInstance().sendMessage(msg);
+        WKConnection.getInstance().sendMessage(msg);
     }
 
     public String createClientMsgNO() {

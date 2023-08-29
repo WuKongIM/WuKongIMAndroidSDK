@@ -27,13 +27,12 @@ import com.xinbida.wukongim.msgmodel.WKVideoContent;
 import com.xinbida.wukongim.protocol.WKBaseMsg;
 import com.xinbida.wukongim.protocol.WKConnectMsg;
 import com.xinbida.wukongim.protocol.WKDisconnectMsg;
-import com.xinbida.wukongim.protocol.WKMessageContent;
+import com.xinbida.wukongim.msgmodel.WKMessageContent;
 import com.xinbida.wukongim.protocol.WKPingMsg;
 import com.xinbida.wukongim.protocol.WKPongMsg;
 import com.xinbida.wukongim.protocol.WKSendAckMsg;
 import com.xinbida.wukongim.protocol.WKSendMsg;
 import com.xinbida.wukongim.utils.DateUtils;
-import com.xinbida.wukongim.utils.FileUtils;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
 
 import org.xsocket.connection.IConnection;
@@ -54,15 +53,15 @@ import java.util.concurrent.ConcurrentHashMap;
  * 5/21/21 10:51 AM
  * IM connect
  */
-public class ConnectionHandler {
-    private ConnectionHandler() {
+public class WKConnection {
+    private WKConnection() {
     }
 
     private static class ConnectHandleBinder {
-        private static final ConnectionHandler CONNECT = new ConnectionHandler();
+        private static final WKConnection CONNECT = new WKConnection();
     }
 
-    public static ConnectionHandler getInstance() {
+    public static WKConnection getInstance() {
         return ConnectHandleBinder.CONNECT;
     }
 
@@ -76,12 +75,13 @@ public class ConnectionHandler {
     private String ip;
     private int port;
     volatile INonBlockingConnection connection;
-    volatile ClientHandler clientHandler;
+    volatile ConnectionClient connectionClient;
     private long requestIPTime;
     private final long requestIPTimeoutTime = 6;
     public String socketSingleID;
     private String lastRequestId;
     private final long reconnectDelay = 1500;
+    private int unReceivePongCount = 0;
     public volatile Handler reconnectionHandler = new Handler(Objects.requireNonNull(Looper.myLooper()));
 
     Runnable reconnectionRunnable = this::reconnection;
@@ -111,7 +111,7 @@ public class ConnectionHandler {
             requestIPTime = DateUtils.getInstance().getCurrentSeconds();
             getIPAndPort();
         } else {
-            if (!ConnectionTimerHandler.getInstance().checkNetWorkTimerIsRunning) {
+            if (!WKTimers.getInstance().checkNetWorkTimerIsRunning) {
                 WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.noNetwork, WKConnectReason.NoNetwork);
                 isReConnecting = false;
                 reconnectionHandler.postDelayed(reconnectionRunnable, reconnectDelay);
@@ -141,11 +141,11 @@ public class ConnectionHandler {
                 reconnectionHandler.postDelayed(reconnectionRunnable, reconnectDelay);
             } else {
                 if (lastRequestId.equals(requestId)) {
-                    ConnectionHandler.this.ip = ip;
-                    ConnectionHandler.this.port = port;
+                    WKConnection.this.ip = ip;
+                    WKConnection.this.port = port;
                     WKLoggerUtils.getInstance().e("连接的IP和Port" + ip + ":" + port);
                     if (connectionIsNull()) {
-                        new Thread(ConnectionHandler.this::connSocket).start();
+                        new Thread(WKConnection.this::connSocket).start();
                     }
                 } else {
                     if (connectionIsNull()) {
@@ -161,9 +161,9 @@ public class ConnectionHandler {
         closeConnect();
         try {
             socketSingleID = UUID.randomUUID().toString().replace("-", "");
-            clientHandler = new ClientHandler();
+            connectionClient = new ConnectionClient();
 //            InetAddress inetAddress = InetAddress.getByName(ip);
-            connection = new NonBlockingConnection(ip, port, clientHandler);
+            connection = new NonBlockingConnection(ip, port, connectionClient);
             connection.setAttachment(socketSingleID);
             connection.setIdleTimeoutMillis(1000 * 3);
             connection.setConnectionTimeoutMillis(1000 * 3);
@@ -185,7 +185,7 @@ public class ConnectionHandler {
     }
 
     void receivedData(byte[] data) {
-        MessageHandler.getInstance().cutBytes( data,
+        MessageHandler.getInstance().cutBytes(data,
                 new IReceivedMsgListener() {
 
                     public void sendAckMsg(
@@ -198,10 +198,6 @@ public class ConnectionHandler {
                         }
                     }
 
-                    @Override
-                    public void receiveMsg(WKMsg message) {
-                        // 收到在线消息，回服务器ack
-                    }
 
                     @Override
                     public void reconnect() {
@@ -215,9 +211,10 @@ public class ConnectionHandler {
                     }
 
                     @Override
-                    public void heartbeatMsg(WKPongMsg msgHeartbeat) {
+                    public void pongMsg(WKPongMsg msgHeartbeat) {
                         // 心跳消息
                         lastMsgTime = DateUtils.getInstance().getCurrentSeconds();
+                        unReceivePongCount = 0;
                     }
 
                     @Override
@@ -265,7 +262,7 @@ public class ConnectionHandler {
         if (status == WKConnectStatus.success) {
             //等待中
             connectStatus = WKConnectStatus.success;
-            ConnectionTimerHandler.getInstance().startAll();
+            WKTimers.getInstance().startAll();
             resendMsg();
             WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.syncMsg, WKConnectReason.SyncMsg);
             // 判断同步模式
@@ -304,6 +301,9 @@ public class ConnectionHandler {
                 return;
             }
         }
+        if (mBaseMsg.packetType == WKMsgType.PING) {
+            unReceivePongCount++;
+        }
         if (connection == null || !connection.isOpen()) {
             reconnection();
             return;
@@ -317,6 +317,10 @@ public class ConnectionHandler {
 
     // 查看心跳是否超时
     void checkHeartIsTimeOut() {
+        if (unReceivePongCount >= 5) {
+            reconnectionHandler.postDelayed(reconnectionRunnable, reconnectDelay);
+            return;
+        }
         long nowTime = DateUtils.getInstance().getCurrentSeconds();
         if (nowTime - lastMsgTime >= 60) {
             sendMessage(new WKPingMsg());
@@ -441,7 +445,7 @@ public class ConnectionHandler {
             }
 
         }
-        WKBaseMsg base = MessageConvertHandler.getInstance().getSendBaseMsg(msg);
+        WKBaseMsg base = WKProto.getInstance().getSendBaseMsg(msg);
         if (base != null && msg.clientSeq != 0) {
             msg.clientSeq = ((WKSendMsg) base).clientSeq;
         }
@@ -483,7 +487,7 @@ public class ConnectionHandler {
                 if (isSuccess) {
                     if (!sendingMsgHashMap.containsKey((int) msg.clientSeq)) {
                         msg.baseContentMsgModel = messageContent;
-                        WKBaseMsg base1 = MessageConvertHandler.getInstance().getSendBaseMsg(msg);
+                        WKBaseMsg base1 = WKProto.getInstance().getSendBaseMsg(msg);
                         addSendingMsg((WKSendMsg) base1);
                         sendMessage(base1);
                     }
@@ -494,7 +498,7 @@ public class ConnectionHandler {
             });
         } else {
             if (base != null) {
-                if (msg.type != 9994) {
+                if (msg.header != null && !msg.header.noPersist) {
                     addSendingMsg((WKSendMsg) base);
                 }
                 sendMessage(base);
@@ -507,8 +511,8 @@ public class ConnectionHandler {
     }
 
     public void stopAll() {
-        clientHandler = null;
-        ConnectionTimerHandler.getInstance().stopAll();
+        connectionClient = null;
+        WKTimers.getInstance().stopAll();
         closeConnect();
         connectStatus = WKConnectStatus.fail;
         isReConnecting = false;

@@ -5,7 +5,6 @@ import android.os.Parcelable;
 import android.text.TextUtils;
 
 import com.xinbida.wukongim.message.type.WKMsgContentType;
-import com.xinbida.wukongim.protocol.WKMessageContent;
 
 import org.json.JSONException;
 import org.json.JSONObject;

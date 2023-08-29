@@ -6,7 +6,7 @@ import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.WKIMApplication;
 import com.xinbida.wukongim.interfaces.IConnectionStatus;
 import com.xinbida.wukongim.interfaces.IGetIpAndPort;
-import com.xinbida.wukongim.message.ConnectionHandler;
+import com.xinbida.wukongim.message.WKConnection;
 import com.xinbida.wukongim.message.MessageHandler;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
 
@@ -37,11 +37,12 @@ public class ConnectionManager extends BaseManager {
     // 连接
     public void connection() {
         if (TextUtils.isEmpty(WKIMApplication.getInstance().getToken()) || TextUtils.isEmpty(WKIMApplication.getInstance().getUid())) {
-            throw new NullPointerException("连接UID和Token不能为空");
+            WKLoggerUtils.getInstance().d("未初始化uid和token");
+            return;
         }
         WKIMApplication.getInstance().isCanConnect = true;
-        if (ConnectionHandler.getInstance().connectionIsNull()) {
-            ConnectionHandler.getInstance().reconnection();
+        if (WKConnection.getInstance().connectionIsNull()) {
+            WKConnection.getInstance().reconnection();
         }
     }
 
@@ -61,7 +62,7 @@ public class ConnectionManager extends BaseManager {
      */
     private void stopConnect() {
         WKIMApplication.getInstance().isCanConnect = false;
-        ConnectionHandler.getInstance().stopAll();
+        WKConnection.getInstance().stopAll();
     }
 
     /**
@@ -74,7 +75,7 @@ public class ConnectionManager extends BaseManager {
 
         WKIMApplication.getInstance().setToken("");
         MessageHandler.getInstance().updateLastSendingMsgFail();
-        ConnectionHandler.getInstance().stopAll();
+        WKConnection.getInstance().stopAll();
         WKIM.getInstance().getChannelManager().clearARMCache();
         WKIMApplication.getInstance().closeDbHelper();
     }

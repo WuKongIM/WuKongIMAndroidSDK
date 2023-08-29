@@ -22,7 +22,7 @@ import com.xinbida.wukongim.entity.WKMsgSetting;
 import com.xinbida.wukongim.interfaces.IGetOrSyncHistoryMsgBack;
 import com.xinbida.wukongim.manager.MsgManager;
 import com.xinbida.wukongim.message.type.WKSendMsgResult;
-import com.xinbida.wukongim.protocol.WKMessageContent;
+import com.xinbida.wukongim.msgmodel.WKMessageContent;
 import com.xinbida.wukongim.utils.WKTypeUtils;
 
 import org.json.JSONException;

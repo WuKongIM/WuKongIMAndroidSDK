@@ -3,7 +3,7 @@ package com.xinbida.wukongim.entity;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import com.xinbida.wukongim.protocol.WKMessageContent;
+import com.xinbida.wukongim.msgmodel.WKMessageContent;
 
 public class WKMsgExtra implements Parcelable {
     public String messageID;

@@ -1,4 +1,4 @@
-package com.xinbida.wukongim.protocol;
+package com.xinbida.wukongim.msgmodel;
 
 import android.os.Parcel;
 import android.os.Parcelable;

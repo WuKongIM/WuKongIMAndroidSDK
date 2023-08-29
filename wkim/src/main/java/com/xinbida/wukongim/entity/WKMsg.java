@@ -7,7 +7,7 @@ import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.manager.ChannelManager;
 import com.xinbida.wukongim.manager.ChannelMembersManager;
 import com.xinbida.wukongim.message.type.WKSendMsgResult;
-import com.xinbida.wukongim.protocol.WKMessageContent;
+import com.xinbida.wukongim.msgmodel.WKMessageContent;
 import com.xinbida.wukongim.utils.DateUtils;
 
 import org.json.JSONObject;

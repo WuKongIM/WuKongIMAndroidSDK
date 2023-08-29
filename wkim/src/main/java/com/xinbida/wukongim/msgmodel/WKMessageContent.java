@@ -1,10 +1,9 @@
-package com.xinbida.wukongim.protocol;
+package com.xinbida.wukongim.msgmodel;
 
 import android.os.Parcel;
 import android.os.Parcelable;
 
 import com.xinbida.wukongim.entity.WKMentionInfo;
-import com.xinbida.wukongim.msgmodel.WKReply;
 
 import org.json.JSONObject;
 

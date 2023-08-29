@@ -5,26 +5,23 @@ import android.text.TextUtils;
 import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.WKIMApplication;
 import com.xinbida.wukongim.db.ConversationDbManager;
-import com.xinbida.wukongim.db.WKDBColumns;
 import com.xinbida.wukongim.db.MsgDbManager;
+import com.xinbida.wukongim.db.WKDBColumns;
+import com.xinbida.wukongim.entity.WKChannelType;
 import com.xinbida.wukongim.entity.WKMsg;
 import com.xinbida.wukongim.entity.WKSyncMsg;
 import com.xinbida.wukongim.entity.WKUIConversationMsg;
 import com.xinbida.wukongim.interfaces.IReceivedMsgListener;
 import com.xinbida.wukongim.manager.CMDManager;
 import com.xinbida.wukongim.manager.ConversationManager;
-import com.xinbida.wukongim.entity.WKChannelType;
 import com.xinbida.wukongim.message.type.WKMsgContentType;
 import com.xinbida.wukongim.message.type.WKMsgType;
 import com.xinbida.wukongim.protocol.WKBaseMsg;
 import com.xinbida.wukongim.protocol.WKConnectAckMsg;
-import com.xinbida.wukongim.protocol.WKConnectMsg;
 import com.xinbida.wukongim.protocol.WKDisconnectMsg;
-import com.xinbida.wukongim.protocol.WKPingMsg;
 import com.xinbida.wukongim.protocol.WKPongMsg;
 import com.xinbida.wukongim.protocol.WKReceivedAckMsg;
 import com.xinbida.wukongim.protocol.WKSendAckMsg;
-import com.xinbida.wukongim.protocol.WKSendMsg;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
 import com.xinbida.wukongim.utils.WKTypeUtils;
 
@@ -64,23 +61,9 @@ public class MessageHandler {
         if (msg == null) {
             return 1;
         }
-        byte[] bytes;
-        if (msg.packetType == WKMsgType.CONNECT) {
-            // 连接
-            bytes = MessageConvertHandler.getInstance().enConnectMsg((WKConnectMsg) msg);
-        } else if (msg.packetType == WKMsgType.REVACK) {
-            // 收到消息回执
-            bytes = MessageConvertHandler.getInstance().enReceivedAckMsg((WKReceivedAckMsg) msg);
-        } else if (msg.packetType == WKMsgType.SEND) {
-            // 发送聊天消息
-            bytes = MessageConvertHandler.getInstance().enSendMsg((WKSendMsg) msg);
-        } else if (msg.packetType == WKMsgType.PING) {
-            // 发送心跳
-            bytes = MessageConvertHandler.getInstance().enPingMsg((WKPingMsg) msg);
-            WKLoggerUtils.getInstance().e("ping...");
-        } else {
-            // 其他消息
-            WKLoggerUtils.getInstance().e("发送未知消息类型");
+        byte[] bytes = WKProto.getInstance().encodeMsg(msg);
+        if (bytes == null || bytes.length == 0) {
+            WKLoggerUtils.getInstance().e("发送未知消息包:" + msg.packetType);
             return 1;
         }
 
@@ -154,13 +137,13 @@ public class MessageHandler {
             WKLoggerUtils.getInstance().e("消息包类型" + packetType);
             if (packetType == WKMsgType.PONG) {
                 //心跳ack
-                mIReceivedMsgListener.heartbeatMsg(new WKPongMsg());
+                mIReceivedMsgListener.pongMsg(new WKPongMsg());
                 WKLoggerUtils.getInstance().e("pong...");
                 byte[] bytes = Arrays.copyOfRange(lastMsgBytes, 1, lastMsgBytes.length);
                 cacheData = lastMsgBytes = bytes;
             } else {
                 if (packetType < 10) {
-                    // TODO: 2019-12-21 计算剩余长度
+                    // 2019-12-21 计算剩余长度
                     if (lastMsgBytes.length < 5) {
                         cacheData = lastMsgBytes;
                         break;
@@ -202,7 +185,7 @@ public class MessageHandler {
 
         if (bytes != null && bytes.length > 0) {
             WKBaseMsg g_msg;
-            g_msg = MessageConvertHandler.getInstance().decodeMessage(bytes);
+            g_msg = WKProto.getInstance().decodeMessage(bytes);
             if (g_msg != null) {
                 //连接ack
                 if (g_msg.packetType == WKMsgType.CONNACK) {
@@ -228,7 +211,7 @@ public class MessageHandler {
                             .sendAckMsg(talkSendStatus);
                 } else if (g_msg.packetType == WKMsgType.RECVEIVED) {
                     //收到消息
-                    WKMsg message = MessageConvertHandler.getInstance().baseMsg2WKMsg(g_msg);
+                    WKMsg message = WKProto.getInstance().baseMsg2WKMsg(g_msg);
                     message.header.noPersist = no_persist == 1;
                     message.header.redDot = red_dot == 1;
                     message.header.syncOnce = sync_once == 1;
@@ -239,7 +222,7 @@ public class MessageHandler {
                     WKDisconnectMsg disconnectMsg = (WKDisconnectMsg) g_msg;
                     mIReceivedMsgListener.kickMsg(disconnectMsg);
                 } else if (g_msg.packetType == WKMsgType.PONG) {
-                    mIReceivedMsgListener.heartbeatMsg((WKPongMsg) g_msg);
+                    mIReceivedMsgListener.pongMsg((WKPongMsg) g_msg);
                 }
             }
         }
@@ -284,7 +267,7 @@ public class MessageHandler {
     //回复消息ack
     private void sendAck(List<WKReceivedAckMsg> list) {
         if (list.size() == 1) {
-            ConnectionHandler.getInstance().sendMessage(list.get(0));
+            WKConnection.getInstance().sendMessage(list.get(0));
             return;
         }
         final Timer sendAckTimer = new Timer();
@@ -292,7 +275,7 @@ public class MessageHandler {
             @Override
             public void run() {
                 if (list.size() > 0) {
-                    ConnectionHandler.getInstance().sendMessage(list.get(0));
+                    WKConnection.getInstance().sendMessage(list.get(0));
                     list.remove(0);
                 } else {
                     sendAckTimer.cancel();
@@ -463,6 +446,4 @@ public class MessageHandler {
     public void updateLastSendingMsgFail() {
         MsgDbManager.getInstance().updateAllMsgSendFail();
     }
-
-
 }

@@ -12,9 +12,6 @@ public class WKReceivedAckMsg extends WKBaseMsg {
     public String messageID;
     //序列号
     public int messageSeq;
-    //消息id长度
-    public char messageIDLength = 2;
-
     public WKReceivedAckMsg() {
         packetType = WKMsgType.REVACK;
         remainingLength = 8;//序列号

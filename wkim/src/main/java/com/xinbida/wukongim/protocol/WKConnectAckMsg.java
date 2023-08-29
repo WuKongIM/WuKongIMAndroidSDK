@@ -11,8 +11,6 @@ public class WKConnectAckMsg extends WKBaseMsg {
     public long timeDiff;
     //连接原因码
     public short reasonCode;
-    //时间戳长度
-    public long timeDiffLength = 8;
     // 服务端公钥
     public String serverKey;
     // 安全码

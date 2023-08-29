@@ -1,7 +1,7 @@
 package com.xinbida.wukongim.interfaces;
 
 
-import com.xinbida.wukongim.protocol.WKMessageContent;
+import com.xinbida.wukongim.msgmodel.WKMessageContent;
 
 /**
  * 2019-11-10 16:12
