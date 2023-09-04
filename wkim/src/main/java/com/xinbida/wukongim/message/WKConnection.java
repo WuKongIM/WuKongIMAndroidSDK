@@ -11,9 +11,11 @@ import com.xinbida.wukongim.WKIMApplication;
 import com.xinbida.wukongim.db.MsgDbManager;
 import com.xinbida.wukongim.entity.WKChannel;
 import com.xinbida.wukongim.entity.WKChannelType;
+import com.xinbida.wukongim.entity.WKConversationMsgExtra;
 import com.xinbida.wukongim.entity.WKMsg;
 import com.xinbida.wukongim.entity.WKMsgSetting;
 import com.xinbida.wukongim.entity.WKSyncMsgMode;
+import com.xinbida.wukongim.entity.WKUIConversationMsg;
 import com.xinbida.wukongim.interfaces.IReceivedMsgListener;
 import com.xinbida.wukongim.manager.ConnectionManager;
 import com.xinbida.wukongim.message.type.WKConnectReason;
@@ -23,11 +25,11 @@ import com.xinbida.wukongim.message.type.WKSendMsgResult;
 import com.xinbida.wukongim.message.type.WKSendingMsg;
 import com.xinbida.wukongim.msgmodel.WKImageContent;
 import com.xinbida.wukongim.msgmodel.WKMediaMessageContent;
+import com.xinbida.wukongim.msgmodel.WKMessageContent;
 import com.xinbida.wukongim.msgmodel.WKVideoContent;
 import com.xinbida.wukongim.protocol.WKBaseMsg;
 import com.xinbida.wukongim.protocol.WKConnectMsg;
 import com.xinbida.wukongim.protocol.WKDisconnectMsg;
-import com.xinbida.wukongim.msgmodel.WKMessageContent;
 import com.xinbida.wukongim.protocol.WKPingMsg;
 import com.xinbida.wukongim.protocol.WKPongMsg;
 import com.xinbida.wukongim.protocol.WKSendAckMsg;
@@ -35,6 +37,7 @@ import com.xinbida.wukongim.protocol.WKSendMsg;
 import com.xinbida.wukongim.utils.DateUtils;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
 
+import org.json.JSONObject;
 import org.xsocket.connection.IConnection;
 import org.xsocket.connection.INonBlockingConnection;
 import org.xsocket.connection.NonBlockingConnection;
@@ -420,9 +423,7 @@ public class WKConnection {
                     }
                 } catch (Exception ignored) {
                 }
-
             }
-
         }
         //视频消息
         if (msg.baseContentMsgModel instanceof WKVideoContent) {
@@ -445,10 +446,11 @@ public class WKConnection {
             }
 
         }
-        WKBaseMsg base = WKProto.getInstance().getSendBaseMsg(msg);
-        if (base != null && msg.clientSeq != 0) {
-            msg.clientSeq = ((WKSendMsg) base).clientSeq;
-        }
+        saveSendMsg(msg);
+        WKSendMsg sendMsg = WKProto.getInstance().getSendBaseMsg(msg);
+//        if (base != null && msg.clientSeq == 0) {
+//            msg.clientSeq = base.clientSeq;
+//        }
 
         if (WKMediaMessageContent.class.isAssignableFrom(msg.baseContentMsgModel.getClass())) {
             //如果是多媒体消息类型说明存在附件
@@ -467,10 +469,10 @@ public class WKConnection {
                     hasAttached = true;
                 }
             }
-            if (hasAttached) {
-                msg.content = msg.baseContentMsgModel.encodeMsg().toString();
-                MsgDbManager.getInstance().insert(msg);
-            }
+//            if (hasAttached) {
+//                msg.content = msg.baseContentMsgModel.encodeMsg().toString();
+//                MsgDbManager.getInstance().insert(msg);
+//            }
         }
         //获取发送者信息
         WKChannel from = WKIM.getInstance().getChannelManager().getChannel(WKIMApplication.getInstance().getUid(), WKChannelType.PERSONAL);
@@ -487,21 +489,20 @@ public class WKConnection {
                 if (isSuccess) {
                     if (!sendingMsgHashMap.containsKey((int) msg.clientSeq)) {
                         msg.baseContentMsgModel = messageContent;
-                        WKBaseMsg base1 = WKProto.getInstance().getSendBaseMsg(msg);
-                        addSendingMsg((WKSendMsg) base1);
+                        WKSendMsg base1 = WKProto.getInstance().getSendBaseMsg(msg);
+                        addSendingMsg(base1);
                         sendMessage(base1);
                     }
                 } else {
-                    msg.status = WKSendMsgResult.send_fail;
-                    MsgDbManager.getInstance().updateMsgStatus(msg.clientSeq, msg.status);
+                    MsgDbManager.getInstance().updateMsgStatus(msg.clientSeq, WKSendMsgResult.send_fail);
                 }
             });
         } else {
-            if (base != null) {
+            if (sendMsg != null) {
                 if (msg.header != null && !msg.header.noPersist) {
-                    addSendingMsg((WKSendMsg) base);
+                    addSendingMsg(sendMsg);
                 }
-                sendMessage(base);
+                sendMessage(sendMsg);
             }
         }
     }
@@ -568,5 +569,29 @@ public class WKConnection {
                 }
             }
         }, 500, 1000L);
+    }
+
+    private WKMsg saveSendMsg(WKMsg msg) {
+        if (msg.setting == null) msg.setting = new WKMsgSetting();
+        JSONObject jsonObject = WKProto.getInstance().getSendPayload(msg);
+        msg.content = jsonObject.toString();
+        long tempOrderSeq = MsgDbManager.getInstance().queryMaxOrderSeqWithChannel(msg.channelID, msg.channelType);
+        msg.orderSeq = tempOrderSeq + 1;
+        // 需要存储的消息入库后更改消息的clientSeq
+        if (!msg.header.noPersist) {
+            msg.clientSeq = (int) MsgDbManager.getInstance().insert(msg);
+            if (msg.clientSeq > 0) {
+                WKUIConversationMsg uiMsg = WKIM.getInstance().getConversationManager().updateWithWKMsg(msg);
+                if (uiMsg != null) {
+                    long browseTo = WKIM.getInstance().getMsgManager().getMaxMessageSeqWithChannel(uiMsg.channelID, uiMsg.channelType);
+                    if (uiMsg.getRemoteMsgExtra() == null) {
+                        uiMsg.setRemoteMsgExtra(new WKConversationMsgExtra());
+                    }
+                    uiMsg.getRemoteMsgExtra().browseTo = browseTo;
+                    WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsg, true, "getSendBaseMsg");
+                }
+            }
+        }
+        return msg;
     }
 }

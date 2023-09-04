@@ -4,12 +4,8 @@ import android.text.TextUtils;
 
 import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.WKIMApplication;
-import com.xinbida.wukongim.db.MsgDbManager;
 import com.xinbida.wukongim.db.WKDBColumns;
-import com.xinbida.wukongim.entity.WKConversationMsgExtra;
 import com.xinbida.wukongim.entity.WKMsg;
-import com.xinbida.wukongim.entity.WKMsgSetting;
-import com.xinbida.wukongim.entity.WKUIConversationMsg;
 import com.xinbida.wukongim.message.type.WKMsgType;
 import com.xinbida.wukongim.message.type.WKSendMsgResult;
 import com.xinbida.wukongim.msgmodel.WKMediaMessageContent;
@@ -258,14 +254,7 @@ class WKProto {
         }
     }
 
-    /**
-     * 获取发送的消息
-     *
-     * @param msg 本地消息
-     * @return 网络消息
-     */
-    WKBaseMsg getSendBaseMsg(WKMsg msg) {
-        //发送消息
+    JSONObject getSendPayload(WKMsg msg) {
         JSONObject jsonObject = null;
         if (msg.baseContentMsgModel != null) {
             jsonObject = msg.baseContentMsgModel.encodeMsg();
@@ -274,9 +263,6 @@ class WKProto {
         }
         try {
             if (jsonObject == null) jsonObject = new JSONObject();
-            if (!jsonObject.has(WKDBColumns.WKMessageColumns.from_uid)) {
-                jsonObject.put(WKDBColumns.WKMessageColumns.from_uid, WKIMApplication.getInstance().getUid());
-            }
             jsonObject.put(WKDBColumns.WKMessageColumns.type, msg.type);
             //判断@情况
             if (msg.baseContentMsgModel.mentionInfo != null
@@ -327,6 +313,18 @@ class WKProto {
         } catch (JSONException e) {
             e.printStackTrace();
         }
+        return jsonObject;
+    }
+
+    /**
+     * 获取发送的消息
+     *
+     * @param msg 本地消息
+     * @return 网络消息
+     */
+    WKSendMsg getSendBaseMsg(WKMsg msg) {
+        //发送消息
+        JSONObject jsonObject = getSendPayload(msg);
         WKSendMsg sendMsg = new WKSendMsg();
         // 默认先设置clientSeq，因为有可能本条消息并不需要入库，UI上自己设置了clientSeq
         sendMsg.clientSeq = (int) msg.clientSeq;
@@ -337,27 +335,8 @@ class WKProto {
         sendMsg.channelId = msg.channelID;
         sendMsg.channelType = msg.channelType;
         sendMsg.topicID = msg.topicID;
-        if (msg.setting == null) msg.setting = new WKMsgSetting();
         sendMsg.setting = msg.setting;
-        msg.content = jsonObject.toString();
-        long tempOrderSeq = MsgDbManager.getInstance().queryMaxOrderSeqWithChannel(msg.channelID, msg.channelType);
-        msg.orderSeq = tempOrderSeq + 1;
-        // 需要存储的消息入库后更改消息的clientSeq
-        if (!sendMsg.no_persist) {
-            sendMsg.clientSeq = (int) (msg.clientSeq = (int) MsgDbManager.getInstance().insert(msg));
-            if (msg.clientSeq > 0) {
-                // 2022/4/27
-                WKUIConversationMsg uiMsg = WKIM.getInstance().getConversationManager().updateWithWKMsg(msg);
-                if (uiMsg != null) {
-                    long browseTo = WKIM.getInstance().getMsgManager().getMaxMessageSeqWithChannel(uiMsg.channelID, uiMsg.channelType);
-                    if (uiMsg.getRemoteMsgExtra() == null) {
-                        uiMsg.setRemoteMsgExtra(new WKConversationMsgExtra());
-                    }
-                    uiMsg.getRemoteMsgExtra().browseTo = browseTo;
-                    WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsg, true, "getSendBaseMsg");
-                }
-            }
-        }
+
         if (WKMediaMessageContent.class.isAssignableFrom(msg.baseContentMsgModel.getClass())) {
             //多媒体数据
             if (jsonObject.has("localPath")) {

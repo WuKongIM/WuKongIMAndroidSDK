@@ -6,6 +6,8 @@ import static com.xinbida.wukongim.db.WKDBColumns.TABLE.messageExtra;
 
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 
 import com.xinbida.wukongim.WKIM;
@@ -158,7 +160,7 @@ public class MsgDbManager {
         if (!isSyncMsg) {
             if (minMessageSeq == 1) {
                 requestCount = 0;
-                iGetOrSyncHistoryMsgBack.onResult(list);
+                new Handler(Looper.getMainLooper()).post(() -> iGetOrSyncHistoryMsgBack.onResult(list));
                 return;
             }
         }
@@ -172,7 +174,7 @@ public class MsgDbManager {
 
         if (isSyncMsg && startMsgSeq != endMsgSeq && requestCount < 5) {
             if (requestCount == 0) {
-                iGetOrSyncHistoryMsgBack.onSyncing();
+                new Handler(Looper.getMainLooper()).post(() -> iGetOrSyncHistoryMsgBack.onSyncing());
             }
             //同步消息
             requestCount++;
@@ -181,12 +183,12 @@ public class MsgDbManager {
                     queryOrSyncHistoryMessages(channelId, channelType, oldestOrderSeq, contain, pullMode, limit, iGetOrSyncHistoryMsgBack);
                 } else {
                     requestCount = 0;
-                    iGetOrSyncHistoryMsgBack.onResult(list);
+                    new Handler(Looper.getMainLooper()).post(() -> iGetOrSyncHistoryMsgBack.onResult(list));
                 }
             });
         } else {
             requestCount = 0;
-            iGetOrSyncHistoryMsgBack.onResult(list);
+            new Handler(Looper.getMainLooper()).post(() -> iGetOrSyncHistoryMsgBack.onResult(list));
         }
 
     }
@@ -1384,8 +1386,10 @@ public class MsgDbManager {
                 .update(message, updateKey, updateValue, where, whereValue);
         if (row > 0) {
             WKMsg msg = queryWithClientSeq(client_seq);
-            if (msg != null)
+            if (msg != null) {
+                msg.status = status;
                 WKIM.getInstance().getMsgManager().setRefreshMsg(msg, true);
+            }
         }
     }
 
