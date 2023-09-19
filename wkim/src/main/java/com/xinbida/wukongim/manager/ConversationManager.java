@@ -29,6 +29,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -332,14 +333,37 @@ public class ConversationManager extends BaseManager {
                 MsgManager.getInstance().saveMsgReactions(msgReactionList);
             }
             // fixme 离线消息应该不能push给UI
-            if (msgList.size() > 0 && msgList.size() < 20) {
-                Collections.sort(msgList, new Comparator<WKMsg>() {
-                    @Override
-                    public int compare(WKMsg o1, WKMsg o2) {
-                        return Long.compare(o1.messageSeq, o2.messageSeq);
+            if (msgList.size() > 0) {
+                HashMap<String, List<WKMsg>> allMsgMap = new HashMap<>();
+                for (WKMsg wkMsg : msgList) {
+                    if (TextUtils.isEmpty(wkMsg.channelID)) continue;
+                    List<WKMsg> list;
+                    if (allMsgMap.containsKey(wkMsg.channelID)) {
+                        list = allMsgMap.get(wkMsg.channelID);
+                        if (list == null) {
+                            list = new ArrayList<>();
+                        }
+                    } else {
+                        list = new ArrayList<>();
                     }
-                });
-                MsgManager.getInstance().pushNewMsg(msgList);
+                    list.add(wkMsg);
+                    allMsgMap.put(wkMsg.channelID, list);
+                }
+
+                for (Map.Entry<String, List<WKMsg>> entry : allMsgMap.entrySet()) {
+                    List<WKMsg> channelMsgList = entry.getValue();
+                    if (channelMsgList != null && channelMsgList.size() < 20) {
+                        Collections.sort(channelMsgList, new Comparator<WKMsg>() {
+                            @Override
+                            public int compare(WKMsg o1, WKMsg o2) {
+                                return Long.compare(o1.messageSeq, o2.messageSeq);
+                            }
+                        });
+                        MsgManager.getInstance().pushNewMsg(channelMsgList);
+                    }
+                }
+
+
             }
             if (uiMsgList.size() > 0) {
                 for (int i = 0, size = uiMsgList.size(); i < size; i++) {

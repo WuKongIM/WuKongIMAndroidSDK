@@ -146,7 +146,7 @@ public class WKConnection {
                 if (lastRequestId.equals(requestId)) {
                     WKConnection.this.ip = ip;
                     WKConnection.this.port = port;
-                    WKLoggerUtils.getInstance().e("连接的IP和Port" + ip + ":" + port);
+                    WKLoggerUtils.getInstance().e("连接地址" + ip + ":" + port);
                     if (connectionIsNull()) {
                         new Thread(WKConnection.this::connSocket).start();
                     }
@@ -487,8 +487,9 @@ public class WKConnection {
             //存在附件处理
             WKIM.getInstance().getMsgManager().setUploadAttachment(msg, (isSuccess, messageContent) -> {
                 if (isSuccess) {
+                    msg.baseContentMsgModel = messageContent;
+                    WKIM.getInstance().getMsgManager().updateContentAndRefresh(msg.clientMsgNO, msg.baseContentMsgModel, false);
                     if (!sendingMsgHashMap.containsKey((int) msg.clientSeq)) {
-                        msg.baseContentMsgModel = messageContent;
                         WKSendMsg base1 = WKProto.getInstance().getSendBaseMsg(msg);
                         addSendingMsg(base1);
                         sendMessage(base1);
