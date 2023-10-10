@@ -25,6 +25,7 @@ public class WKSyncRecent {
     public int readed;
     public int receipt;
     public int setting;
+    public int expire;
     public Map payload;
     public String signal_payload;
     public List<WKSyncMsgReaction> reactions;

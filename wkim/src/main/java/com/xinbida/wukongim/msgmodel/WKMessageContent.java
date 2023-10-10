@@ -14,7 +14,6 @@ import java.util.List;
  * 基础内容消息实体
  */
 public class WKMessageContent implements Parcelable {
-    public boolean isCheckForceSendMsg = true;
     //内容
     public String content;
     //发送者id
@@ -33,10 +32,11 @@ public class WKMessageContent implements Parcelable {
     public String searchableWord;
     //最近会话提示文字
     public String displayContent;
-    public int isDelete;
+//    public int isDelete;
     public String robotID;
     public int flame;
     public int flameSecond;
+    @Deprecated
     public String topicID;
     public List<WKMsgEntity> entities;
 
@@ -44,7 +44,6 @@ public class WKMessageContent implements Parcelable {
     }
 
     protected WKMessageContent(Parcel in) {
-        isCheckForceSendMsg = in.readByte() != 0;
         content = in.readString();
         fromUID = in.readString();
         fromName = in.readString();
@@ -55,7 +54,7 @@ public class WKMessageContent implements Parcelable {
         searchableWord = in.readString();
         displayContent = in.readString();
         reply = in.readParcelable(WKReply.class.getClassLoader());
-        isDelete = in.readInt();
+//        isDelete = in.readInt();
         robotID = in.readString();
         entities = in.createTypedArrayList(WKMsgEntity.CREATOR);
         flame = in.readInt();
@@ -65,7 +64,6 @@ public class WKMessageContent implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeByte((byte) (isCheckForceSendMsg ? 1 : 0));
         dest.writeString(content);
         dest.writeString(fromUID);
         dest.writeString(fromName);
@@ -75,7 +73,7 @@ public class WKMessageContent implements Parcelable {
         dest.writeString(searchableWord);
         dest.writeString(displayContent);
         dest.writeParcelable(reply, flags);
-        dest.writeInt(isDelete);
+//        dest.writeInt(isDelete);
         dest.writeString(robotID);
         dest.writeTypedList(entities);
         dest.writeInt(flame);

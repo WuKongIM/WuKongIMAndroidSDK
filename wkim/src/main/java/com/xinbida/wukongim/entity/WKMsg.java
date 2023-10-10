@@ -29,6 +29,8 @@ public class WKMsg implements Parcelable {
     public long clientSeq;
     //消息时间10位时间戳
     public long timestamp;
+    public int expireTime;
+    public long expireTimestamp;
     //消息来源发送者
     public String fromUID;
     //频道id
@@ -90,6 +92,8 @@ public class WKMsg implements Parcelable {
         this.createdAt = DateUtils.getInstance().time2DateStr(timestamp);
         this.updatedAt = DateUtils.getInstance().time2DateStr(timestamp);
         this.messageSeq = 0;
+        this.expireTime = 0;
+        this.expireTimestamp = 0;
         status = WKSendMsgResult.send_loading;
         clientMsgNO = WKIM.getInstance().getMsgManager().createClientMsgNO();
         header = new WKMsgHeader();
@@ -121,22 +125,17 @@ public class WKMsg implements Parcelable {
         from = in.readParcelable(WKChannel.class.getClassLoader());
         memberOfFrom = in.readParcelable(WKChannelMember.class.getClassLoader());
         channelInfo = in.readParcelable(WKChannelMember.class.getClassLoader());
-//        revoker = in.readString();
-//        extraVersion = in.readLong();
-//        readedCount = in.readInt();
-//        unreadCount = in.readInt();
-//        readed = in.readInt();
         setting = in.readParcelable(WKMsgSetting.class.getClassLoader());
         header = in.readParcelable(WKMsgHeader.class.getClassLoader());
         reactionList = in.createTypedArrayList(WKMsgReaction.CREATOR);
-//        editAt = in.readLong();
-//        contentEdit = in.readString();
-//        needUploadExtra = in.readInt();
+
         flame = in.readInt();
         flameSecond = in.readInt();
         viewed = in.readInt();
         viewedAt = in.readLong();
         topicID = in.readString();
+        expireTime = in.readInt();
+        expireTimestamp = in.readLong();
     }
 
     public static final Creator<WKMsg> CREATOR = new Creator<WKMsg>() {
@@ -181,23 +180,16 @@ public class WKMsg implements Parcelable {
         dest.writeParcelable(from, flags);
         dest.writeParcelable(memberOfFrom, flags);
         dest.writeParcelable(channelInfo, flags);
-//        dest.writeString(revoker);
-//        dest.writeLong(extraVersion);
-//        dest.writeInt(readedCount);
-//        dest.writeInt(unreadCount);
-//        dest.writeInt(readed);
         dest.writeParcelable(setting, flags);
         dest.writeParcelable(header, flags);
         dest.writeTypedList(reactionList);
-//        dest.writeLong(editAt);
-//        dest.writeString(contentEdit);
-//        dest.writeParcelable(contentEditMsgModel, flags);
-//        dest.writeInt(needUploadExtra);
         dest.writeInt(flame);
         dest.writeInt(flameSecond);
         dest.writeInt(viewed);
         dest.writeLong(viewedAt);
         dest.writeString(topicID);
+        dest.writeInt(expireTime);
+        dest.writeLong(expireTimestamp);
     }
 
     public String getLocalMapExtraString() {

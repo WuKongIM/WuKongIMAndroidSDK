@@ -33,7 +33,7 @@ public class WKReceivedMsg extends WKBaseMsg {
     public String streamNO;
     public int streamSeq;
     public int streamFlag;
-
+    public int expire;
     private final int settingLength = 1;
     private final int msgKeyLength = 2;
     public int msgKeyContentLength = 0;

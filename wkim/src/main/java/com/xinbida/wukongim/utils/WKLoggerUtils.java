@@ -24,11 +24,14 @@ public class WKLoggerUtils {
      * log TAG
      */
     private final String TAG = "WKLogger" + WKIM.getInstance().getVersion();
-    private final String ROOT = Objects.requireNonNull(WKIMApplication.getInstance().getContext().getExternalFilesDir(null)).getAbsolutePath() + "/";
     //Environment.getExternalStorageDirectory().getAbsolutePath() + "/";
-    private final String FILE_NAME = "wkLogger_" +  WKIM.getInstance().getVersion() + ".log";
+    private final String FILE_NAME = "wkLogger_" + WKIM.getInstance().getVersion() + ".log";
+
     //
-    private final String logFile = ROOT + FILE_NAME;
+    private String getLogFilePath() {
+        final String ROOT = Objects.requireNonNull(WKIMApplication.getInstance().getContext().getExternalFilesDir(null)).getAbsolutePath() + "/";
+        return ROOT + FILE_NAME;
+    }
 
     private WKLoggerUtils() {
 
@@ -236,7 +239,10 @@ public class WKLoggerUtils {
     @SuppressLint("SimpleDateFormat")
     private void writeLog(String content) {
         try {
-            File file = new File(logFile);
+            if (WKIMApplication.getInstance().getContext() == null || !WKIM.getInstance().isWriteLog()) {
+                return;
+            }
+            File file = new File(getLogFilePath());
             if (!file.exists()) {
                 file.createNewFile();
             }

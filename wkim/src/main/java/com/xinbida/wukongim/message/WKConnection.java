@@ -374,10 +374,6 @@ public class WKConnection {
 
     public void sendMessage(WKMessageContent baseContentModel, WKMsgSetting wkMsgSetting, String channelID, byte channelType) {
         final WKMsg wkMsg = new WKMsg();
-        if (!TextUtils.isEmpty(WKIMApplication.getInstance().getUid())) {
-            wkMsg.fromUID = WKIMApplication.getInstance().getUid();
-        }
-//        wkMsg.content = baseContentModel.content;
         wkMsg.type = baseContentModel.type;
         wkMsg.setting = wkMsgSetting;
         //设置会话信息
@@ -405,6 +401,12 @@ public class WKConnection {
     }
 
     public void sendMessage(WKMsg msg) {
+        if (TextUtils.isEmpty(msg.fromUID)) {
+            msg.fromUID = WKIMApplication.getInstance().getUid();
+        }
+        if (msg.expireTime > 0) {
+            msg.expireTimestamp = DateUtils.getInstance().getCurrentSeconds() + msg.expireTime;
+        }
         boolean hasAttached = false;
         //如果是图片消息
         if (msg.baseContentMsgModel instanceof WKImageContent) {

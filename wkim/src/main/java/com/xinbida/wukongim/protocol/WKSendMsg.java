@@ -3,6 +3,7 @@ package com.xinbida.wukongim.protocol;
 
 import android.text.TextUtils;
 
+import com.xinbida.wukongim.WKIMApplication;
 import com.xinbida.wukongim.entity.WKMsgSetting;
 import com.xinbida.wukongim.message.type.WKMsgType;
 import com.xinbida.wukongim.utils.CryptoUtils;
@@ -41,12 +42,15 @@ public class WKSendMsg extends WKBaseMsg {
     public short settingLength = 1;
     private String cryptoPayload;
     private String msgKey;
+    public int expire;
+    public int expireLength = 4;
 
     public WKSendMsg() {
         packetType = WKMsgType.SEND;
         remainingLength = 8 + 1;
         cryptoPayload = "";
         msgKey = "";
+        expire = 0;
     }
 
     public String getSendContent() {
@@ -75,8 +79,16 @@ public class WKSendMsg extends WKBaseMsg {
         return topicLen;
     }
 
+    private int getExpireLength() {
+        if (WKIMApplication.getInstance().protocolVersion >= 3) {
+            return expireLength;
+        }
+        return 0;
+    }
+
     public int getTotalLength() {
         int topicLen = getTopicLength();
+        int expireLen = getExpireLength();
         String msgKeyContent = getMsgKey();
         String sendContent = getSendContent();
         byte[] remainingBytes = WKTypeUtils.getInstance().getRemainingLengthByte(getRemainingLength());
@@ -88,6 +100,7 @@ public class WKSendMsg extends WKBaseMsg {
                 + channelIdLength
                 + channelId.length()
                 + channelTypeLength
+                + expireLen
                 + msgKeyLength
                 + msgKeyContent.length()
                 + topicLen
@@ -99,11 +112,13 @@ public class WKSendMsg extends WKBaseMsg {
         String sendContent = getSendContent();
         String msgKeyContent = getMsgKey();
         int topicLen = getTopicLength();
+        int expireLen = getExpireLength();
         remainingLength = settingLength
                 + clientSeqLength
                 + clientMsgNoLength + clientMsgNo.length()
                 + channelIdLength + channelId.length()
                 + channelTypeLength
+                + expireLen
                 + msgKeyLength + msgKeyContent.length()
                 + topicLen
                 + sendContent.getBytes().length;

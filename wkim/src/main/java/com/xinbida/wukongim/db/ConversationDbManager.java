@@ -223,7 +223,7 @@ public class ConversationDbManager {
     }
 
     public WKConversationMsg queryWithChannel(String channelID, byte channelType) {
-        String sql = "select " + conversation + ".*," + channelCols + "," + extraCols + " from " + conversation + " left join " + channel + " on " + conversation + ".channel_id=" + channel + ".channel_id and " + conversation + ".channel_type=" + channel + ".channel_type left join " + conversationExtra + " on " + conversation + ".channel_id=" + conversationExtra + ".channel_id and " + conversation + ".channel_type=" + conversationExtra + ".channel_type where " + conversation + ".channel_id='" + channelID + "' and " + conversation + ".channel_type=" + channelType;
+        String sql = "select " + conversation + ".*," + channelCols + "," + extraCols + " from " + conversation + " left join " + channel + " on " + conversation + ".channel_id=" + channel + ".channel_id and " + conversation + ".channel_type=" + channel + ".channel_type left join " + conversationExtra + " on " + conversation + ".channel_id=" + conversationExtra + ".channel_id and " + conversation + ".channel_type=" + conversationExtra + ".channel_type where " + conversation + ".channel_id='" + channelID + "' and " + conversation + ".channel_type=" + channelType + " and " + conversation + ".is_deleted=0";
         Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper()

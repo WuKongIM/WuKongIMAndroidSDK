@@ -298,7 +298,9 @@ public class MsgManager extends BaseManager {
                 long tempOldestOrderSeq = oldestOrderSeq;
                 boolean tempContain = contain;
                 if (aroundMsgOrderSeq != 0) {
-                    long maxMsgSeq = getMaxMessageSeqWithChannel(channelId, channelType);
+//                    long maxMsgSeq = getMaxMessageSeqWithChannel(channelId, channelType);
+                    long maxMsgSeq =
+                            MsgDbManager.getInstance().queryMaxMessageSeqNotDeletedWithChannel(channelId, channelType);
                     long aroundMsgSeq = getOrNearbyMsgSeq(aroundMsgOrderSeq);
 
                     if (maxMsgSeq >= aroundMsgSeq && maxMsgSeq - aroundMsgSeq <= limit) {
@@ -395,6 +397,11 @@ public class MsgManager extends BaseManager {
                 }
             }
         }
+    }
+
+    public List<WKMsg> getExpireMessages(int limit) {
+        long time = DateUtils.getInstance().getCurrentSeconds();
+        return MsgDbManager.getInstance().queryExpireMessages(time, limit);
     }
 
     /**
@@ -1047,6 +1054,8 @@ public class MsgManager extends BaseManager {
         msg.remoteExtra.unreadCount = wkSyncRecent.unread_count;
         msg.remoteExtra.readedCount = wkSyncRecent.readed_count;
         msg.remoteExtra.readed = wkSyncRecent.readed;
+        msg.expireTime = wkSyncRecent.expire;
+        msg.expireTimestamp = msg.expireTime + msg.timestamp;
         // msg.reactionList = wkSyncRecent.reactions;
         // msg.receipt = wkSyncRecent.receipt;
         msg.remoteExtra.extraVersion = wkSyncRecent.extra_version;

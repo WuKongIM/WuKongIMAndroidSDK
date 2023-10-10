@@ -166,6 +166,8 @@ public interface WKDBColumns {
         public static final String viewed_at = "viewed_at";
         // 话题ID
         public static final String topic_id = "topic_id";
+        public static final String expire_time = "expire_time";
+        public static final String expire_timestamp = "expire_timestamp";
     }
 
     //最近会话db字段

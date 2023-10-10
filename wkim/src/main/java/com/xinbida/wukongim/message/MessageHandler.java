@@ -191,24 +191,25 @@ public class MessageHandler {
                 if (g_msg.packetType == WKMsgType.CONNACK) {
                     WKConnectAckMsg loginStatusMsg = (WKConnectAckMsg) g_msg;
                     mIReceivedMsgListener.loginStatusMsg(loginStatusMsg.reasonCode);
+                    WKLoggerUtils.getInstance().e("头信息-->" + no_persist);
                 } else if (g_msg.packetType == WKMsgType.SENDACK) {
                     //发送ack
-                    WKSendAckMsg talkSendStatus = (WKSendAckMsg) g_msg;
+                    WKSendAckMsg sendAckMsg = (WKSendAckMsg) g_msg;
                     WKMsg wkMsg = null;
                     if (no_persist == 0) {
-                        wkMsg = MsgDbManager.getInstance().updateMsgSendStatus(talkSendStatus.clientSeq, talkSendStatus.messageSeq, talkSendStatus.messageID, talkSendStatus.reasonCode);
+                        wkMsg = MsgDbManager.getInstance().updateMsgSendStatus(sendAckMsg.clientSeq, sendAckMsg.messageSeq, sendAckMsg.messageID, sendAckMsg.reasonCode);
                     }
                     if (wkMsg == null) {
                         wkMsg = new WKMsg();
-                        wkMsg.clientSeq = talkSendStatus.clientSeq;
-                        wkMsg.messageID = talkSendStatus.messageID;
-                        wkMsg.status = talkSendStatus.reasonCode;
-                        wkMsg.messageSeq = (int) talkSendStatus.messageSeq;
+                        wkMsg.clientSeq = sendAckMsg.clientSeq;
+                        wkMsg.messageID = sendAckMsg.messageID;
+                        wkMsg.status = sendAckMsg.reasonCode;
+                        wkMsg.messageSeq = (int) sendAckMsg.messageSeq;
                     }
                     WKIM.getInstance().getMsgManager().setSendMsgAck(wkMsg);
 
                     mIReceivedMsgListener
-                            .sendAckMsg(talkSendStatus);
+                            .sendAckMsg(sendAckMsg);
                 } else if (g_msg.packetType == WKMsgType.RECVEIVED) {
                     //收到消息
                     WKMsg message = WKProto.getInstance().baseMsg2WKMsg(g_msg);

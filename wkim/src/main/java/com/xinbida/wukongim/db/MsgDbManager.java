@@ -42,7 +42,7 @@ import java.util.List;
  */
 public class MsgDbManager {
     private final String extraCols = "IFNULL(" + messageExtra + ".readed,0) as readed,IFNULL(" + messageExtra + ".readed_count,0) as readed_count,IFNULL(" + messageExtra + ".unread_count,0) as unread_count,IFNULL(" + messageExtra + ".revoke,0) as revoke,IFNULL(" + messageExtra + ".revoker,'') as revoker,IFNULL(" + messageExtra + ".extra_version,0) as extra_version,IFNULL(" + messageExtra + ".is_mutual_deleted,0) as is_mutual_deleted,IFNULL(" + messageExtra + ".content_edit,'') as content_edit,IFNULL(" + messageExtra + ".edited_at,0) as edited_at";
-    private final String messageCols = message + ".client_seq," + message + ".message_id," + message + ".message_seq," + message + ".channel_id," + message + ".channel_type," + message + ".timestamp," + message + ".from_uid," + message + ".type," + message + ".content," + message + ".status," + message + ".voice_status," + message + ".created_at," + message + ".updated_at," + message + ".searchable_word," + message + ".client_msg_no," + message + ".setting," + message + ".order_seq," + message + ".extra," + message + ".is_deleted," + message + ".flame," + message + ".flame_second," + message + ".viewed," + message + ".viewed_at";
+    private final String messageCols = message + ".client_seq," + message + ".message_id," + message + ".message_seq," + message + ".channel_id," + message + ".channel_type," + message + ".timestamp," + message + ".from_uid," + message + ".type," + message + ".content," + message + ".status," + message + ".voice_status," + message + ".created_at," + message + ".updated_at," + message + ".searchable_word," + message + ".client_msg_no," + message + ".setting," + message + ".order_seq," + message + ".extra," + message + ".is_deleted," + message + ".flame," + message + ".flame_second," + message + ".viewed," + message + ".viewed_at," + message + ".expire_time," + message + ".expire_timestamp";
 
     private MsgDbManager() {
     }
@@ -87,7 +87,6 @@ public class MsgDbManager {
         long endMsgSeq = 0;
         //判断页与页之间是否连续
         long oldestMsgSeq;
-
         //如果获取到的messageSeq为0说明oldestOrderSeq这条消息是本地消息则获取他上一条或下一条消息的messageSeq做为判断
         if (oldestOrderSeq % 1000 != 0)
             oldestMsgSeq = queryMsgSeq(channelId, channelType, oldestOrderSeq, pullMode);
@@ -156,7 +155,11 @@ public class MsgDbManager {
                 }
             }
         }
-
+        if (oldestOrderSeq == 0) {
+            isSyncMsg = true;
+            startMsgSeq = 0;
+            endMsgSeq = 0;
+        }
         if (!isSyncMsg) {
             if (minMessageSeq == 1) {
                 requestCount = 0;
@@ -170,16 +173,23 @@ public class MsgDbManager {
             startMsgSeq = oldestMsgSeq;
             endMsgSeq = 0;
         }
+        if (startMsgSeq == 0 && endMsgSeq == 0 && tempList.size() < limit) {
+            isSyncMsg = true;
+            endMsgSeq = oldestMsgSeq;
+            startMsgSeq = 0;
+        }
 
-
-        if (isSyncMsg && startMsgSeq != endMsgSeq && requestCount < 5) {
+        if (isSyncMsg && requestCount < 5) {
             if (requestCount == 0) {
-                new Handler(Looper.getMainLooper()).post(() -> iGetOrSyncHistoryMsgBack.onSyncing());
+                new Handler(Looper.getMainLooper()).post(iGetOrSyncHistoryMsgBack::onSyncing);
             }
             //同步消息
             requestCount++;
             MsgManager.getInstance().setSyncChannelMsgListener(channelId, channelType, startMsgSeq, endMsgSeq, limit, pullMode, syncChannelMsg -> {
                 if (syncChannelMsg != null && syncChannelMsg.messages != null && syncChannelMsg.messages.size() > 0) {
+                    if (oldestMsgSeq == 0) {
+                        requestCount = 5;
+                    }
                     queryOrSyncHistoryMessages(channelId, channelType, oldestOrderSeq, contain, pullMode, limit, iGetOrSyncHistoryMsgBack);
                 } else {
                     requestCount = 0;
@@ -365,6 +375,21 @@ public class MsgDbManager {
             }
         }
         return wkMsgs;
+    }
+
+    public List<WKMsg> queryExpireMessages(long timestamp, int limit) {
+        String sql = "SELECT * from " + message + " where is_deleted=0 and " + WKDBColumns.WKMessageColumns.expire_time + ">0 and " + WKDBColumns.WKMessageColumns.expire_timestamp + "<=" + timestamp + " order by order_seq desc limit 0," + limit;
+        List<WKMsg> list = new ArrayList<>();
+        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql)) {
+            if (cursor == null) {
+                return list;
+            }
+            for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
+                WKMsg wkMsg = serializeMsg(cursor);
+                list.add(wkMsg);
+            }
+        }
+        return list;
     }
 
     public List<WKMsg> queryWithFromUID(String channelID, byte channelType, String fromUID, long oldestOrderSeq, int limit) {
@@ -1158,6 +1183,22 @@ public class MsgDbManager {
         return orderSeq;
     }
 
+    public int queryMaxMessageSeqNotDeletedWithChannel(String channelID,byte channelType){
+        String sql = "SELECT max(message_seq) message_seq FROM " + message + " WHERE channel_id='" + channelID + "' AND channel_type=" + channelType +" AND is_deleted=0";
+        int messageSeq = 0;
+        try (Cursor cursor = WKIMApplication
+                .getInstance()
+                .getDbHelper().rawQuery(sql)) {
+            if (cursor == null) {
+                return 0;
+            }
+            if (cursor.moveToLast()) {
+                messageSeq = WKCursor.readInt(cursor, WKDBColumns.WKMessageColumns.message_seq);
+            }
+        }
+        return messageSeq;
+    }
+
     public int queryMaxMessageSeqWithChannel(String channelID, byte channelType) {
         String sql = "SELECT max(message_seq) message_seq FROM " + message + " WHERE channel_id='" + channelID + "' AND channel_type=" + channelType;
         int messageSeq = 0;
@@ -1494,6 +1535,8 @@ public class MsgDbManager {
         msg.viewed = WKCursor.readInt(cursor, WKDBColumns.WKMessageColumns.viewed);
         msg.viewedAt = WKCursor.readLong(cursor, WKDBColumns.WKMessageColumns.viewed_at);
         msg.topicID = WKCursor.readString(cursor, WKDBColumns.WKMessageColumns.topic_id);
+        msg.expireTime = WKCursor.readInt(cursor, WKDBColumns.WKMessageColumns.expire_time);
+        msg.expireTimestamp = WKCursor.readInt(cursor, WKDBColumns.WKMessageColumns.expire_timestamp);
         // 扩展表数据
         msg.remoteExtra = serializeMsgExtra(cursor);
 

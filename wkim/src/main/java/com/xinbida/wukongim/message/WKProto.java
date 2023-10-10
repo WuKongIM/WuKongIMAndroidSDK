@@ -70,13 +70,14 @@ class WKProto {
     }
 
     byte[] enConnectMsg(WKConnectMsg connectMsg) {
+        WKIMApplication.getInstance().protocolVersion = WKIMApplication.getInstance().defaultProtocolVersion;
         byte[] remainingBytes = WKTypeUtils.getInstance().getRemainingLengthByte(connectMsg.getRemainingLength());
         int totalLen = connectMsg.getTotalLen();
         WKWrite wkWrite = new WKWrite(totalLen);
         try {
             wkWrite.writeByte(WKTypeUtils.getInstance().getHeader(connectMsg.packetType, connectMsg.flag, 0, 0));
             wkWrite.writeBytes(remainingBytes);
-            wkWrite.writeByte(connectMsg.protocolVersion);
+            wkWrite.writeByte(WKIMApplication.getInstance().protocolVersion);
             wkWrite.writeByte(connectMsg.deviceFlag);
             wkWrite.writeString(connectMsg.deviceID);
             wkWrite.writeString(WKIMApplication.getInstance().getUid());
@@ -124,6 +125,9 @@ class WKProto {
             wkWrite.writeString(sendMsg.clientMsgNo);
             wkWrite.writeString(sendMsg.channelId);
             wkWrite.writeByte(sendMsg.channelType);
+            if (WKIMApplication.getInstance().protocolVersion >= 3) {
+                wkWrite.writeInt(sendMsg.expire);
+            }
             wkWrite.writeString(msgKeyContent);
             if (sendMsg.setting.topic == 1) {
                 wkWrite.writeString(sendMsg.topicID);
@@ -136,9 +140,15 @@ class WKProto {
         return wkWrite.getWriteBytes();
     }
 
-    private WKConnectAckMsg deConnectAckMsg(WKRead wkRead) {
+    private WKConnectAckMsg deConnectAckMsg(WKRead wkRead, int hasServerVersion) {
         WKConnectAckMsg connectAckMsg = new WKConnectAckMsg();
         try {
+            if (hasServerVersion == 1) {
+                byte serverVersion = wkRead.readByte();
+                if (serverVersion != 0) {
+                    WKIMApplication.getInstance().protocolVersion = (byte) Math.min(serverVersion, WKIMApplication.getInstance().protocolVersion);
+                }
+            }
             long time = wkRead.readLong();
             short reasonCode = wkRead.readByte();
             String serverKey = wkRead.readString();
@@ -193,6 +203,9 @@ class WKProto {
             receivedMsg.fromUID = wkRead.readString();
             receivedMsg.channelID = wkRead.readString();
             receivedMsg.channelType = wkRead.readByte();
+            if (WKIMApplication.getInstance().protocolVersion >= 3) {
+                receivedMsg.expire = wkRead.readInt();
+            }
             receivedMsg.clientMsgNo = wkRead.readString();
             if (receivedMsg.setting.stream == 1) {
                 receivedMsg.streamNO = wkRead.readString();
@@ -234,7 +247,8 @@ class WKProto {
             int packetType = wkRead.readPacketType();
             wkRead.readRemainingLength();
             if (packetType == WKMsgType.CONNACK) {
-                return deConnectAckMsg(wkRead);
+                int hasServerVersion = WKTypeUtils.getInstance().getBit(bytes[0], 0);
+                return deConnectAckMsg(wkRead, hasServerVersion);
             } else if (packetType == WKMsgType.SENDACK) {
                 return deSendAckMsg(wkRead);
             } else if (packetType == WKMsgType.DISCONNECT) {
@@ -336,7 +350,7 @@ class WKProto {
         sendMsg.channelType = msg.channelType;
         sendMsg.topicID = msg.topicID;
         sendMsg.setting = msg.setting;
-
+        sendMsg.expire = msg.expireTime;
         if (WKMediaMessageContent.class.isAssignableFrom(msg.baseContentMsgModel.getClass())) {
             //多媒体数据
             if (jsonObject.has("localPath")) {
@@ -366,7 +380,10 @@ class WKProto {
         msg.clientMsgNO = receivedMsg.clientMsgNo;
         msg.status = WKSendMsgResult.send_success;
         msg.topicID = receivedMsg.topicID;
-
+        msg.expireTime = receivedMsg.expire;
+        if (msg.expireTime > 0) {
+            msg.expireTimestamp = msg.expireTime + msg.timestamp;
+        }
         msg.orderSeq = WKIM.getInstance().getMsgManager().getMessageOrderSeq(msg.messageSeq, msg.channelID, msg.channelType);
         msg.isDeleted = isDelete(msg.content);
         return msg;

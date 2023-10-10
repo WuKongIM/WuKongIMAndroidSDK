@@ -1,5 +1,6 @@
 package com.xinbida.wukongim.protocol;
 
+import com.xinbida.wukongim.WKIMApplication;
 import com.xinbida.wukongim.message.type.WKMsgType;
 
 /**
@@ -9,8 +10,6 @@ import com.xinbida.wukongim.message.type.WKMsgType;
  * @see WKMsgType 对应packetType类型
  */
 public class WKBaseMsg {
-    //协议版本
-    public byte protocolVersion = 1;
     //报文类型
     public short packetType;
     //标示位（目前为固定值）

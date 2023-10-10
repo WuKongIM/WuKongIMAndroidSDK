@@ -49,6 +49,8 @@ class WKSqlContentValues {
         contentValues.put(WKDBColumns.WKMessageColumns.viewed, msg.viewed);
         contentValues.put(WKDBColumns.WKMessageColumns.viewed_at, msg.viewedAt);
         contentValues.put(WKDBColumns.WKMessageColumns.topic_id, msg.topicID);
+        contentValues.put(WKDBColumns.WKMessageColumns.expire_time, msg.expireTime);
+        contentValues.put(WKDBColumns.WKMessageColumns.expire_timestamp, msg.expireTimestamp);
         byte setting = WKTypeUtils.getInstance().getMsgSetting(msg.setting);
         contentValues.put(WKDBColumns.WKMessageColumns.setting, setting);
         if (msg.baseContentMsgModel != null) {

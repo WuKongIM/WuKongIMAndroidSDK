@@ -103,10 +103,16 @@ public class WKDBHelper {
 
 
     void insertSql(String tab, ContentValues cv) {
+        if (mDb == null) {
+            return;
+        }
         mDb.insertWithOnConflict(tab, "", cv, SQLiteDatabase.CONFLICT_REPLACE);
     }
 
     public Cursor rawQuery(String sql) {
+        if (mDb == null) {
+            return null;
+        }
         return mDb.rawQuery(sql, null);
     }
 

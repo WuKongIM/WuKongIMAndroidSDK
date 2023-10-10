@@ -48,6 +48,11 @@ public class ChannelDBManager {
         }
         String sql = "select * from " + channel + " where " + WKDBColumns.WKChannelColumns.channel_id + " in (" + stringBuffer + ") and " + WKDBColumns.WKChannelColumns.channel_type + "=" + channelType;
         List<WKChannel> list = new ArrayList<>();
+        if (WKIMApplication
+                .getInstance()
+                .getDbHelper() == null) {
+            return list;
+        }
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper()
@@ -71,6 +76,11 @@ public class ChannelDBManager {
         selectionArgs[1] = String.valueOf(channelType);
         Cursor cursor = null;
         WKChannel wkChannel = null;
+        if (WKIMApplication
+                .getInstance()
+                .getDbHelper() == null) {
+            return null;
+        }
         try {
             cursor = WKIMApplication
                     .getInstance()
@@ -98,6 +108,11 @@ public class ChannelDBManager {
         Cursor cursor = null;
         boolean isExist = false;
         try {
+            if (WKIMApplication
+                    .getInstance()
+                    .getDbHelper() == null) {
+                return false;
+            }
             cursor = WKIMApplication
                     .getInstance()
                     .getDbHelper()
@@ -123,6 +138,9 @@ public class ChannelDBManager {
             else newCVList.add(cv);
         }
         try {
+            if (WKIMApplication.getInstance().getDbHelper() == null){
+                return;
+            }
             WKIMApplication.getInstance().getDbHelper().getDb()
                     .beginTransaction();
             if (updateCVList.size() > 0) {
@@ -165,6 +183,9 @@ public class ChannelDBManager {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        if (WKIMApplication.getInstance().getDbHelper() == null){
+            return;
+        }
         WKIMApplication.getInstance().getDbHelper()
                 .insert(channel, cv);
     }
@@ -178,6 +199,9 @@ public class ChannelDBManager {
             cv = WKSqlContentValues.getContentValuesWithChannel(wkChannel);
         } catch (Exception e) {
             e.printStackTrace();
+        }
+        if (WKIMApplication.getInstance().getDbHelper() == null){
+            return;
         }
         WKIMApplication.getInstance().getDbHelper()
                 .update(channel, cv, WKDBColumns.WKChannelColumns.channel_id + "=? and " + WKDBColumns.WKChannelColumns.channel_type + "=?", update);
@@ -195,16 +219,21 @@ public class ChannelDBManager {
     public synchronized List<WKChannel> queryWithFollowAndStatus(byte channelType, int follow, int status) {
         String sql = "select * from " + channel + " where " + WKDBColumns.WKChannelColumns.channel_type + "=" + channelType + " and " + WKDBColumns.WKChannelColumns.follow + "=" + follow + " and " + WKDBColumns.WKChannelColumns.status + "=" + status + " and is_deleted=0";
         List<WKChannel> channels = new ArrayList<>();
-        try (Cursor cursor = WKIMApplication
+        if (WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql)) {
-            if (cursor == null) {
-                return channels;
-            }
-            for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
-                channels.add(serializableChannel(cursor));
+                .getDbHelper() != null) {
+            try (Cursor cursor = WKIMApplication
+                    .getInstance()
+                    .getDbHelper().rawQuery(sql)) {
+                if (cursor == null) {
+                    return channels;
+                }
+                for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
+                    channels.add(serializableChannel(cursor));
+                }
             }
         }
+
         return channels;
     }
 
@@ -218,6 +247,9 @@ public class ChannelDBManager {
     public synchronized List<WKChannel> queryWithStatus(byte channelType, int status) {
         String sql = "select * from " + channel + " where " + WKDBColumns.WKChannelColumns.channel_type + "=" + channelType + " and " + WKDBColumns.WKChannelColumns.status + "=" + status;
         List<WKChannel> channels = new ArrayList<>();
+        if (WKIMApplication.getInstance().getDbHelper() == null){
+           return channels;
+        }
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper().rawQuery(sql)) {

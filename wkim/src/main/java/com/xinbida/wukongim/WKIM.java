@@ -19,7 +19,7 @@ import com.xinbida.wukongim.utils.WKLoggerUtils;
  * 5/20/21 5:25 PM
  */
 public class WKIM {
-    private final String Version = "V1.0.7";
+    private final String Version = "V1.0.9";
 
     private WKIM() {
 
@@ -33,10 +33,19 @@ public class WKIM {
         return WKIMBinder.im;
     }
 
-    private boolean isDebug;
+    private boolean isDebug = false;
+    private boolean isWriteLog = false;
 
     public boolean isDebug() {
         return isDebug;
+    }
+
+    public boolean isWriteLog() {
+        return isWriteLog;
+    }
+
+    public void setWriteLog(boolean isWriteLog) {
+        this.isWriteLog = isWriteLog;
     }
 
     // debug模式会输出一些连接信息，发送消息情况等

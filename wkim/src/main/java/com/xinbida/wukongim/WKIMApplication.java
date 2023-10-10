@@ -20,6 +20,9 @@ import java.util.UUID;
  */
 public class WKIMApplication {
     private final String sharedName = "wk_account_config";
+    //协议版本
+    public final byte defaultProtocolVersion = 4;
+    public byte protocolVersion = 4;
 
     private WKIMApplication() {
     }
@@ -35,6 +38,9 @@ public class WKIMApplication {
     private WeakReference<Context> mContext;
 
     public Context getContext() {
+        if (mContext == null) {
+            return null;
+        }
         return mContext.get();
     }
 
