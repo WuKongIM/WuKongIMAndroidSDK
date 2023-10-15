@@ -35,6 +35,7 @@ import com.xinbida.wukongim.protocol.WKPongMsg;
 import com.xinbida.wukongim.protocol.WKSendAckMsg;
 import com.xinbida.wukongim.protocol.WKSendMsg;
 import com.xinbida.wukongim.utils.DateUtils;
+import com.xinbida.wukongim.utils.FileUtils;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
 
 import org.json.JSONObject;
@@ -461,20 +462,20 @@ public class WKConnection {
                 String localPath = ((WKMediaMessageContent) msg.baseContentMsgModel).localPath;
                 if (!TextUtils.isEmpty(localPath)) {
                     hasAttached = true;
-//                    ((WKMediaMessageContent) msg.baseContentMsgModel).localPath = FileUtils.getInstance().saveFile(localPath, msg.channelID, msg.channelType, msg.clientSeq + "");
+                    ((WKMediaMessageContent) msg.baseContentMsgModel).localPath = FileUtils.getInstance().saveFile(localPath, msg.channelID, msg.channelType, msg.clientSeq + "");
                 }
             }
             if (msg.baseContentMsgModel instanceof WKVideoContent) {
                 String coverLocalPath = ((WKVideoContent) msg.baseContentMsgModel).coverLocalPath;
                 if (!TextUtils.isEmpty(coverLocalPath)) {
-//                    ((WKVideoContent) msg.baseContentMsgModel).coverLocalPath = FileUtils.getInstance().saveFile(coverLocalPath, msg.channelID, msg.channelType, msg.clientSeq + "_1");
+                    ((WKVideoContent) msg.baseContentMsgModel).coverLocalPath = FileUtils.getInstance().saveFile(coverLocalPath, msg.channelID, msg.channelType, msg.clientSeq + "_1");
                     hasAttached = true;
                 }
             }
-//            if (hasAttached) {
-//                msg.content = msg.baseContentMsgModel.encodeMsg().toString();
-//                MsgDbManager.getInstance().insert(msg);
-//            }
+            if (hasAttached) {
+                msg.content = msg.baseContentMsgModel.encodeMsg().toString();
+                WKIM.getInstance().getMsgManager().updateContentAndRefresh(msg.clientMsgNO, msg.baseContentMsgModel, false);
+            }
         }
         //获取发送者信息
         WKChannel from = WKIM.getInstance().getChannelManager().getChannel(WKIMApplication.getInstance().getUid(), WKChannelType.PERSONAL);

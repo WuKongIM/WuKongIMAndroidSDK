@@ -52,11 +52,6 @@ public class FileUtils {
         return file.exists();
     }
 
-    private String getSDPath() {
-        return Objects.requireNonNull(WKIMApplication.getInstance().getContext().getExternalFilesDir(null)).getAbsolutePath();
-//        return Environment.getExternalStorageDirectory().getAbsolutePath();
-    }
-
     private void createFileDir(String path) {
         File file = new File(path);
         if (!file.exists()) {
@@ -88,7 +83,7 @@ public class FileUtils {
         String tempFileName = f.getName();
         String prefix = tempFileName.substring(tempFileName.lastIndexOf(".") + 1);
 
-        String filePath = String.format("%s/%s/%s/%s", getSDPath(), WKIMApplication.getInstance().getFileCacheDir(), channelType, channelId);
+        String filePath = String.format("%s/%s/%s",  WKIMApplication.getInstance().getFileCacheDir(), channelType, channelId);
         createFileDir(filePath);//创建文件夹
         String newFilePath = String.format("%s/%s.%s", filePath, fileName, prefix);
         createFile(newFilePath);//创建文件

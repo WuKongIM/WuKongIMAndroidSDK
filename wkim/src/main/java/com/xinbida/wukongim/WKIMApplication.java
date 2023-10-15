@@ -13,6 +13,7 @@ import com.xinbida.wukongim.entity.WKSyncMsgMode;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
 
 import java.lang.ref.WeakReference;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -246,12 +247,9 @@ public class WKIMApplication {
     }
 
     public String getFileCacheDir() {
-        if (TextUtils.isEmpty(fileDir))
+        if (TextUtils.isEmpty(fileDir)) {
             fileDir = "wkIM";
-
-        if (!TextUtils.isEmpty(getUid())) {
-            fileDir = String.format("%s/%s", fileDir, getUid());
         }
-        return fileDir;
+        return Objects.requireNonNull(getContext().getExternalFilesDir(fileDir)).getAbsolutePath();
     }
 }
