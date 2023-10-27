@@ -199,7 +199,6 @@ class MsgReactionDBManager {
         WKMsgReaction reaction = new WKMsgReaction();
         reaction.channelID = WKCursor.readString(cursor, "channel_id");
         reaction.channelType = (byte) WKCursor.readInt(cursor, "channel_type");
-        reaction.isDeleted = WKCursor.readInt(cursor, "is_deleted");
         reaction.uid = WKCursor.readString(cursor, "uid");
         reaction.name = WKCursor.readString(cursor, "name");
         reaction.messageID = WKCursor.readString(cursor, "message_id");

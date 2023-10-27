@@ -40,6 +40,7 @@ import com.xinbida.wukongim.interfaces.IUploadAttachmentListener;
 import com.xinbida.wukongim.interfaces.IUploadMsgExtraListener;
 import com.xinbida.wukongim.message.WKConnection;
 import com.xinbida.wukongim.message.MessageHandler;
+import com.xinbida.wukongim.message.WKRead;
 import com.xinbida.wukongim.message.type.WKMsgContentType;
 import com.xinbida.wukongim.message.type.WKSendMsgResult;
 import com.xinbida.wukongim.msgmodel.WKImageContent;
@@ -307,6 +308,9 @@ public class MsgManager extends BaseManager {
                         // 显示最后一页数据
 //                oldestOrderSeq = 0;
                         tempOldestOrderSeq = getMessageOrderSeq(maxMsgSeq, channelId, channelType);
+                        if (tempOldestOrderSeq < aroundMsgOrderSeq){
+                            tempOldestOrderSeq = aroundMsgOrderSeq;
+                        }
                         tempContain = true;
                         tempPullMode = 0;
                     } else {
@@ -904,12 +908,16 @@ public class MsgManager extends BaseManager {
         if (list == null || list.size() == 0) return;
         List<WKMsg> msgList = new ArrayList<>();
         List<WKMsgExtra> msgExtraList = new ArrayList<>();
+        List<WKMsgReaction> reactionList = new ArrayList<>();
         for (int j = 0, len = list.size(); j < len; j++) {
             WKMsg wkMsg = WKSyncRecent2WKMsg(list.get(j));
             msgList.add(wkMsg);
             if (list.get(j).message_extra != null) {
                 WKMsgExtra extra = WKSyncExtraMsg2WKMsgExtra(wkMsg.channelID, wkMsg.channelType, list.get(j).message_extra);
                 msgExtraList.add(extra);
+            }
+            if (wkMsg.reactionList != null && wkMsg.reactionList.size() > 0) {
+                reactionList.addAll(wkMsg.reactionList);
             }
         }
         if (msgExtraList.size() > 0) {
@@ -918,7 +926,9 @@ public class MsgManager extends BaseManager {
         if (msgList.size() > 0) {
             MsgDbManager.getInstance().insertMsgs(msgList);
         }
-
+        if (reactionList.size() > 0) {
+            MsgDbManager.getInstance().insertMsgReactions(reactionList);
+        }
     }
 
     public void addOnSendMsgAckListener(String key, ISendACK iSendACKListener) {

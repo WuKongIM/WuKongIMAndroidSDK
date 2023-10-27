@@ -44,22 +44,26 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
         if (WKConnection.getInstance().connection == null) {
             Log.e("连接信息为空", "--->");
         }
-        if (WKConnection.getInstance().connection != null && iNonBlockingConnection != null) {
-            if (!WKConnection.getInstance().connection.getId().equals(iNonBlockingConnection.getId())) {
-                close(iNonBlockingConnection);
-                WKConnection.getInstance().forcedReconnection();
+        try {
+            if (WKConnection.getInstance().connection != null && iNonBlockingConnection != null) {
+                if (!WKConnection.getInstance().connection.getId().equals(iNonBlockingConnection.getId())) {
+                    close(iNonBlockingConnection);
+                    WKConnection.getInstance().forcedReconnection();
+                } else {
+                    //连接成功
+                    isConnectSuccess = true;
+                    WKLoggerUtils.getInstance().e("连接成功");
+                    WKConnection.getInstance().sendConnectMsg();
+                }
             } else {
-                //连接成功
-                isConnectSuccess = true;
-                WKLoggerUtils.getInstance().e("连接成功");
-                WKConnection.getInstance().sendConnectMsg();
+                close(iNonBlockingConnection);
+                WKLoggerUtils.getInstance().e("连接成功连接对象为空");
+                WKConnection.getInstance().forcedReconnection();
             }
-        } else {
-            close(iNonBlockingConnection);
-            WKLoggerUtils.getInstance().e("连接成功连接对象为空");
-            WKConnection.getInstance().forcedReconnection();
+        } catch (Exception ignored) {
         }
         return false;
+
     }
 
     @Override
@@ -75,7 +79,7 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
     public boolean onData(INonBlockingConnection iNonBlockingConnection) throws BufferUnderflowException {
         Object id = iNonBlockingConnection.getAttachment();
         if (id instanceof String) {
-            if (id.toString().startsWith("close")){
+            if (id.toString().startsWith("close")) {
                 return true;
             }
             if (!TextUtils.isEmpty(WKConnection.getInstance().socketSingleID) && !WKConnection.getInstance().socketSingleID.equals(id)) {
@@ -129,23 +133,28 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
     @Override
     public boolean onDisconnect(INonBlockingConnection iNonBlockingConnection) {
         WKLoggerUtils.getInstance().e("连接断开");
-        if (iNonBlockingConnection != null && !TextUtils.isEmpty(iNonBlockingConnection.getId()) && iNonBlockingConnection.getAttachment() != null) {
-            String id = iNonBlockingConnection.getId();
-            Object attachmentObject = iNonBlockingConnection.getAttachment();
-            if (attachmentObject instanceof String) {
-                String att = (String) attachmentObject;
-                String attStr = "close" + id;
-                if (att.equals(attStr)) {
-                    return true;
+        try {
+            if (iNonBlockingConnection != null && !TextUtils.isEmpty(iNonBlockingConnection.getId()) && iNonBlockingConnection.getAttachment() != null) {
+                String id = iNonBlockingConnection.getId();
+                Object attachmentObject = iNonBlockingConnection.getAttachment();
+                if (attachmentObject instanceof String) {
+                    String att = (String) attachmentObject;
+                    String attStr = "close" + id;
+                    if (att.equals(attStr)) {
+                        return true;
+                    }
                 }
             }
+            if (WKIMApplication.getInstance().isCanConnect) {
+                WKConnection.getInstance().forcedReconnection();
+            } else {
+                WKLoggerUtils.getInstance().e("不能重连-->");
+            }
+            close(iNonBlockingConnection);
+        } catch (Exception ignored) {
+
         }
-        if (WKIMApplication.getInstance().isCanConnect) {
-            WKConnection.getInstance().forcedReconnection();
-        } else {
-            WKLoggerUtils.getInstance().e("不能重连-->");
-        }
-        close(iNonBlockingConnection);
+
         return true;
     }
 

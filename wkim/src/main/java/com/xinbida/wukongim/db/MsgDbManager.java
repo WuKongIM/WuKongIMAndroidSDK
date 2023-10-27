@@ -25,6 +25,7 @@ import com.xinbida.wukongim.interfaces.IGetOrSyncHistoryMsgBack;
 import com.xinbida.wukongim.manager.MsgManager;
 import com.xinbida.wukongim.message.type.WKSendMsgResult;
 import com.xinbida.wukongim.msgmodel.WKMessageContent;
+import com.xinbida.wukongim.utils.WKLoggerUtils;
 import com.xinbida.wukongim.utils.WKTypeUtils;
 
 import org.json.JSONException;
@@ -516,7 +517,9 @@ public class MsgDbManager {
             saveList.add(list.get(i));
         }
         List<String> clientMsgNos = new ArrayList<>();
+        List<String> msgIds = new ArrayList<>();
         List<WKMsg> existMsgList = new ArrayList<>();
+        List<WKMsg> msgIdExistMsgList = new ArrayList<>();
         for (int i = 0, size = saveList.size(); i < size; i++) {
             boolean isSave = WKIM.getInstance().getMsgManager().setMessageStoreBeforeIntercept(saveList.get(i));
             if (!isSave) {
@@ -525,36 +528,78 @@ public class MsgDbManager {
             if (saveList.get(i).setting == null) {
                 saveList.get(i).setting = new WKMsgSetting();
             }
+            if (msgIds.size() == 200) {
+                List<WKMsg> tempList = queryWithMsgIds(msgIds);
+                if (tempList != null && tempList.size() > 0) {
+                    msgIdExistMsgList.addAll(tempList);
+                }
+                msgIds.clear();
+            }
             if (clientMsgNos.size() == 200) {
                 List<WKMsg> tempList = queryWithClientMsgNos(clientMsgNos);
                 if (tempList != null && tempList.size() > 0)
                     existMsgList.addAll(tempList);
                 clientMsgNos.clear();
             }
+            if (!TextUtils.isEmpty(saveList.get(i).messageID)) {
+                msgIds.add(saveList.get(i).messageID);
+            }
             if (!TextUtils.isEmpty(saveList.get(i).clientMsgNO))
                 clientMsgNos.add(saveList.get(i).clientMsgNO);
         }
+        if (msgIds.size() > 0) {
+            List<WKMsg> tempList = queryWithMsgIds(msgIds);
+            if (tempList != null && tempList.size() > 0) {
+                msgIdExistMsgList.addAll(tempList);
+            }
+            msgIds.clear();
+        }
         if (clientMsgNos.size() > 0) {
             List<WKMsg> tempList = queryWithClientMsgNos(clientMsgNos);
-            if (tempList != null && tempList.size() > 0)
+            if (tempList != null && tempList.size() > 0) {
                 existMsgList.addAll(tempList);
+            }
             clientMsgNos.clear();
         }
-
+        List<WKMsg> insertMsgList = new ArrayList<>();
         for (WKMsg msg : saveList) {
+            if (TextUtils.isEmpty(msg.clientMsgNO) || TextUtils.isEmpty(msg.messageID)) {
+                continue;
+            }
+            boolean isAdd = true;
             for (WKMsg tempMsg : existMsgList) {
-                if (tempMsg != null && !TextUtils.isEmpty(tempMsg.clientMsgNO)
-                        && !TextUtils.isEmpty(msg.clientMsgNO) && tempMsg.clientMsgNO.equals(msg.clientMsgNO)) {
+                if (tempMsg == null || TextUtils.isEmpty(tempMsg.clientMsgNO)) {
+                    continue;
+                }
+                if (tempMsg.clientMsgNO.equals(msg.clientMsgNO)) {
+                    if (msg.isDeleted == tempMsg.isDeleted && tempMsg.isDeleted == 1) {
+                        isAdd = false;
+                    }
                     msg.isDeleted = 1;
                     msg.clientMsgNO = WKIM.getInstance().getMsgManager().createClientMsgNO();
                     break;
                 }
             }
+            if (isAdd) {
+                for (WKMsg tempMsg : msgIdExistMsgList) {
+                    if (tempMsg == null || TextUtils.isEmpty(tempMsg.messageID)) {
+                        continue;
+                    }
+                    if (msg.messageID.equals(tempMsg.messageID)) {
+                        isAdd = false;
+                        break;
+                    }
+                }
+            }
+            if (isAdd) {
+                insertMsgList.add(msg);
+            }
 
         }
-        //  insertMsgList(saveList);
+        //  insertMsgList(insertMsgList);
         List<ContentValues> cvList = new ArrayList<>();
-        for (WKMsg wkMsg : saveList) {
+        for (WKMsg wkMsg : insertMsgList) {
+            WKLoggerUtils.getInstance().e("插入数据" + wkMsg.messageID);
             ContentValues cv = WKSqlContentValues.getContentValuesWithMsg(wkMsg);
             cvList.add(cv);
         }
@@ -1183,8 +1228,8 @@ public class MsgDbManager {
         return orderSeq;
     }
 
-    public int queryMaxMessageSeqNotDeletedWithChannel(String channelID,byte channelType){
-        String sql = "SELECT max(message_seq) message_seq FROM " + message + " WHERE channel_id='" + channelID + "' AND channel_type=" + channelType +" AND is_deleted=0";
+    public int queryMaxMessageSeqNotDeletedWithChannel(String channelID, byte channelType) {
+        String sql = "SELECT max(message_seq) message_seq FROM " + message + " WHERE channel_id='" + channelID + "' AND channel_type=" + channelType + " AND is_deleted=0";
         int messageSeq = 0;
         try (Cursor cursor = WKIMApplication
                 .getInstance()
@@ -1253,14 +1298,15 @@ public class MsgDbManager {
     }
 
     public List<WKMsg> queryWithMsgIds(List<String> messageIds) {
-        StringBuffer stringBuffer = new StringBuffer();
+        StringBuffer sb = new StringBuffer();
         for (int i = 0, size = messageIds.size(); i < size; i++) {
-            if (!TextUtils.isEmpty(stringBuffer)) {
-                stringBuffer.append(",");
+            if (!TextUtils.isEmpty(sb)) {
+                sb.append(",");
             }
-            stringBuffer.append(messageIds.get(i));
+            sb.append("'").append(messageIds.get(i)).append("'");
         }
-        String sql = "select " + messageCols + "," + extraCols + " from " + message + " left join " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id where " + message + ".message_id in (" + stringBuffer + ")";
+        String sql = "select " + messageCols + "," + extraCols + " from " + message + " left join " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id where " + message + ".message_id in (" + sb + ")";
+        WKLoggerUtils.getInstance().e("查询sql：" + sql);
         List<WKMsg> list = new ArrayList<>();
         List<String> gChannelIds = new ArrayList<>();
         List<String> pChannelIds = new ArrayList<>();
