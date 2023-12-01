@@ -96,18 +96,16 @@ public class ConversationDbManager {
 
     public List<WKUIConversationMsg> queryWithChannelIds(List<String> channelIds) {
         StringBuilder sb = new StringBuilder();
-        sb.append("(");
         for (int i = 0, size = channelIds.size(); i < size; i++) {
             if (i != 0) sb.append(",");
             sb.append("'").append(channelIds.get(i)).append("'");
         }
-        sb.append(")");
-        String sql = "select " + conversation + ".*," + channelCols + "," + extraCols + " from " + conversation + " left join " + channel + " on " + conversation + ".channel_id=" + channel + ".channel_id and " + conversation + ".channel_type=" + channel + ".channel_type left join " + conversationExtra + " on " + conversation + ".channel_id=" + conversationExtra + ".channel_id and " + conversation + ".channel_type=" + conversationExtra + ".channel_type where " + conversation + ".is_deleted=0 and " + conversation + ".channel_id in " + sb;
+        String sql = "select " + conversation + ".*," + channelCols + "," + extraCols + " from " + conversation + " left join " + channel + " on " + conversation + ".channel_id=" + channel + ".channel_id and " + conversation + ".channel_type=" + channel + ".channel_type left join " + conversationExtra + " on " + conversation + ".channel_id=" + conversationExtra + ".channel_id and " + conversation + ".channel_type=" + conversationExtra + ".channel_type where " + conversation + ".is_deleted=0 and " + conversation + ".channel_id in (?)";
         List<WKUIConversationMsg> list = new ArrayList<>();
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper()
-                .rawQuery(sql)) {
+                .rawQuery(sql, new Object[]{sb.toString()})) {
             if (cursor == null) {
                 return list;
             }
@@ -123,12 +121,12 @@ public class ConversationDbManager {
     }
 
     public List<WKConversationMsg> queryWithChannelType(byte channelType) {
-        String sql = "select * from " + conversation + " where channel_type=" + channelType;
+        String sql = "select * from " + conversation + " where channel_type=?";
         List<WKConversationMsg> list = new ArrayList<>();
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper()
-                .rawQuery(sql)) {
+                .rawQuery(sql, new Object[]{channelType})) {
             if (cursor == null) {
                 return list;
             }
@@ -223,11 +221,11 @@ public class ConversationDbManager {
     }
 
     public WKConversationMsg queryWithChannel(String channelID, byte channelType) {
-        String sql = "select " + conversation + ".*," + channelCols + "," + extraCols + " from " + conversation + " left join " + channel + " on " + conversation + ".channel_id=" + channel + ".channel_id and " + conversation + ".channel_type=" + channel + ".channel_type left join " + conversationExtra + " on " + conversation + ".channel_id=" + conversationExtra + ".channel_id and " + conversation + ".channel_type=" + conversationExtra + ".channel_type where " + conversation + ".channel_id='" + channelID + "' and " + conversation + ".channel_type=" + channelType + " and " + conversation + ".is_deleted=0";
+        String sql = "select " + conversation + ".*," + channelCols + "," + extraCols + " from " + conversation + " left join " + channel + " on " + conversation + ".channel_id=" + channel + ".channel_id and " + conversation + ".channel_type=" + channel + ".channel_type left join " + conversationExtra + " on " + conversation + ".channel_id=" + conversationExtra + ".channel_id and " + conversation + ".channel_type=" + conversationExtra + ".channel_type where " + conversation + ".channel_id=? and " + conversation + ".channel_type=? and " + conversation + ".is_deleted=0";
         Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper()
-                .rawQuery(sql);
+                .rawQuery(sql, new Object[]{channelID, channelType});
         WKConversationMsg conversationMsg = null;
         if (cursor != null) {
             if (cursor.moveToFirst()) {
@@ -356,10 +354,10 @@ public class ConversationDbManager {
 
     public WKConversationMsgExtra queryMsgExtraWithChannel(String channelID, byte channelType) {
         WKConversationMsgExtra msgExtra = null;
-        String sql = "select * from " + conversationExtra + " where channel_id='" + channelID + "' and channel_type=" + channelType;
+        String sql = "select * from " + conversationExtra + " where channel_id=? and channel_type=?";
         Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql);
+                .getDbHelper().rawQuery(sql, new Object[]{channelID, channelType});
         if (cursor != null) {
             if (cursor.moveToFirst()) {
                 msgExtra = serializeMsgExtra(cursor);
@@ -371,17 +369,15 @@ public class ConversationDbManager {
 
     private List<WKConversationMsgExtra> queryWithExtraChannelIds(List<String> channelIds) {
         StringBuilder sb = new StringBuilder();
-        sb.append("select * from " + conversationExtra + " where channel_id in (");
-
+        String sql = "select * from " + conversationExtra + " where channel_id in (?)";
         for (int i = 0, size = channelIds.size(); i < size; i++) {
             if (i != 0) {
                 sb.append(",");
             }
             sb.append("'").append(channelIds.get(i)).append("'");
         }
-        sb.append(")");
         List<WKConversationMsgExtra> list = new ArrayList<>();
-        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sb.toString())) {
+        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql, new Object[]{sb.toString()})) {
             if (cursor == null) {
                 return list;
             }

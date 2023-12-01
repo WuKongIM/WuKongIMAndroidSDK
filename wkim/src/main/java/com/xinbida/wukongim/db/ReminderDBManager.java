@@ -48,9 +48,9 @@ public class ReminderDBManager {
     }
 
     public List<WKReminder> queryWithChannelAndDone(String channelID, byte channelType, int done) {
-        String sql = "select * from " + reminders + " where channel_id='" + channelID + "' and channel_type=" + channelType + " and done=" + done + " order by message_seq desc";
+        String sql = "select * from " + reminders + " where channel_id=? and channel_type=? and done=? order by message_seq desc";
         List<WKReminder> list = new ArrayList<>();
-        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql)) {
+        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql, new Object[]{channelID, channelType, done})) {
             if (cursor == null) {
                 return list;
             }
@@ -62,10 +62,10 @@ public class ReminderDBManager {
         return list;
     }
 
-    public List<WKReminder> queryWithChannelAndTypeAndDone(String channelID, byte channelType,  int type,int done) {
-        String sql = "select * from " + reminders + " where channel_id='" + channelID + "' and channel_type=" + channelType + " and done=" + done + " and type =" + type + " order by message_seq desc";
+    public List<WKReminder> queryWithChannelAndTypeAndDone(String channelID, byte channelType, int type, int done) {
+        String sql = "select * from " + reminders + " where channel_id=? and channel_type=? and done=? and type =? order by message_seq desc";
         List<WKReminder> list = new ArrayList<>();
-        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql)) {
+        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql, new Object[]{channelID, channelType, done, type})) {
             if (cursor == null) {
                 return list;
             }
@@ -85,12 +85,12 @@ public class ReminderDBManager {
             }
             stringBuffer.append(ids.get(i));
         }
-        String sql = "select * from " + reminders + " where reminder_id in (" + stringBuffer + ")";
+        String sql = "select * from " + reminders + " where reminder_id in (?)";
         List<WKReminder> list = new ArrayList<>();
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper()
-                .rawQuery(sql)) {
+                .rawQuery(sql, new Object[]{stringBuffer.toString()})) {
             if (cursor == null) {
                 return list;
             }
@@ -107,16 +107,16 @@ public class ReminderDBManager {
         StringBuilder stringBuffer = new StringBuilder();
         for (int i = 0, size = channelIds.size(); i < size; i++) {
             if (i != 0) {
-                stringBuffer.append("'");
+                stringBuffer.append(",");
             }
-            stringBuffer.append(channelIds.get(i)).append("'");
+            stringBuffer.append("'").append(channelIds.get(i)).append("'");
         }
-        String sql = "select * from " + reminders + " where channel_id in ('" + stringBuffer + ")";
+        String sql = "select * from " + reminders + " where channel_id in (?)";
         List<WKReminder> list = new ArrayList<>();
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper()
-                .rawQuery(sql)) {
+                .rawQuery(sql, new Object[]{stringBuffer.toString()})) {
             if (cursor == null) {
                 return list;
             }

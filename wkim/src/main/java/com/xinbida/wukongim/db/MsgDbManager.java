@@ -25,7 +25,6 @@ import com.xinbida.wukongim.interfaces.IGetOrSyncHistoryMsgBack;
 import com.xinbida.wukongim.manager.MsgManager;
 import com.xinbida.wukongim.message.type.WKSendMsgResult;
 import com.xinbida.wukongim.msgmodel.WKMessageContent;
-import com.xinbida.wukongim.utils.WKLoggerUtils;
 import com.xinbida.wukongim.utils.WKTypeUtils;
 
 import org.json.JSONException;
@@ -229,13 +228,13 @@ public class MsgDbManager {
      * @return 删除条数
      */
     private int getDeletedCount(long minMessageSeq, long maxMessageSeq, String channelID, byte channelType) {
-        String sql = "select count(*) num from " + message + " where " + WKDBColumns.WKMessageColumns.channel_id + "='" + channelID + "' and " + WKDBColumns.WKMessageColumns.channel_type + "=" + channelType + " and " + WKDBColumns.WKMessageColumns.message_seq + ">" + minMessageSeq + " and " + WKDBColumns.WKMessageColumns.message_seq + "<" + maxMessageSeq + " and " + WKDBColumns.WKMessageColumns.is_deleted + "=1";
+        String sql = "select count(*) num from " + message + " where " + WKDBColumns.WKMessageColumns.channel_id + "=? and " + WKDBColumns.WKMessageColumns.channel_type + "=? and " + WKDBColumns.WKMessageColumns.message_seq + ">? and " + WKDBColumns.WKMessageColumns.message_seq + "<? and " + WKDBColumns.WKMessageColumns.is_deleted + "=1";
         Cursor cursor = null;
         int num = 0;
         try {
             cursor = WKIMApplication
                     .getInstance()
-                    .getDbHelper().rawQuery(sql);
+                    .getDbHelper().rawQuery(sql, new Object[]{channelID, channelType, minMessageSeq, maxMessageSeq});
             if (cursor == null) {
                 return 0;
             }
@@ -252,30 +251,37 @@ public class MsgDbManager {
     private List<WKMsg> queryMessages(String channelId, byte channelType, long oldestOrderSeq, boolean contain, int pullMode, int limit) {
         List<WKMsg> msgList = new ArrayList<>();
         String sql;
-
+        Object[] args;
         if (oldestOrderSeq <= 0) {
-            sql = "SELECT * FROM (SELECT " + messageCols + "," + extraCols + " FROM " + message + " LEFT JOIN " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".channel_id='" + channelId + "' and " + message + ".channel_type=" + channelType + " and " + message + ".type<>0 and " + message + ".type<>99) where is_deleted=0 and is_mutual_deleted=0 order by order_seq desc limit 0," + limit;
+            sql = "SELECT * FROM (SELECT " + messageCols + "," + extraCols + " FROM " + message + " LEFT JOIN " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".channel_id=? and " + message + ".channel_type=? and " + message + ".type<>0 and " + message + ".type<>99) where is_deleted=0 and is_mutual_deleted=0 order by order_seq desc limit 0," + limit;
+            args = new Object[2];
+            args[0] = channelId;
+            args[1] = channelType;
         } else {
             if (pullMode == 0) {
                 if (contain) {
-                    sql = "SELECT * FROM (SELECT " + messageCols + "," + extraCols + " FROM " + message + " LEFT JOIN " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".channel_id='" + channelId + "' and " + message + ".channel_type=" + channelType + " and " + message + ".type<>0 and " + message + ".type<>99 AND " + message + ".order_seq<=" + oldestOrderSeq + ") where is_deleted=0 and is_mutual_deleted=0 order by order_seq desc limit 0," + limit;
+                    sql = "SELECT * FROM (SELECT " + messageCols + "," + extraCols + " FROM " + message + " LEFT JOIN " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".channel_id=? and " + message + ".channel_type=? and " + message + ".type<>0 and " + message + ".type<>99 AND " + message + ".order_seq<=?) where is_deleted=0 and is_mutual_deleted=0 order by order_seq desc limit 0," + limit;
                 } else {
-                    sql = "SELECT * FROM (SELECT " + messageCols + "," + extraCols + " FROM " + message + " LEFT JOIN " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".channel_id='" + channelId + "' and " + message + ".channel_type=" + channelType + " and " + message + ".type<>0 and " + message + ".type<>99 AND " + message + ".order_seq<" + oldestOrderSeq + ") where is_deleted=0 and is_mutual_deleted=0 order by order_seq desc limit 0," + limit;
+                    sql = "SELECT * FROM (SELECT " + messageCols + "," + extraCols + " FROM " + message + " LEFT JOIN " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".channel_id=? and " + message + ".channel_type=? and " + message + ".type<>0 and " + message + ".type<>99 AND " + message + ".order_seq<?) where is_deleted=0 and is_mutual_deleted=0 order by order_seq desc limit 0," + limit;
                 }
             } else {
                 if (contain) {
-                    sql = "SELECT * FROM (SELECT " + messageCols + "," + extraCols + " FROM " + message + " LEFT JOIN " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".channel_id='" + channelId + "' and " + message + ".channel_type=" + channelType + " and " + message + ".type<>0 and " + message + ".type<>99 AND " + message + ".order_seq>=" + oldestOrderSeq + ") where is_deleted=0 and is_mutual_deleted=0 order by order_seq asc limit 0," + limit;
+                    sql = "SELECT * FROM (SELECT " + messageCols + "," + extraCols + " FROM " + message + " LEFT JOIN " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".channel_id=? and " + message + ".channel_type=? and " + message + ".type<>0 and " + message + ".type<>99 AND " + message + ".order_seq>=?) where is_deleted=0 and is_mutual_deleted=0 order by order_seq asc limit 0," + limit;
                 } else {
-                    sql = "SELECT * FROM (SELECT " + messageCols + "," + extraCols + " FROM " + message + " LEFT JOIN " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".channel_id='" + channelId + "' and " + message + ".channel_type=" + channelType + " and " + message + ".type<>0 and " + message + ".type<>99 AND " + message + ".order_seq>" + oldestOrderSeq + ") where is_deleted=0 and is_mutual_deleted=0 order by order_seq asc limit 0," + limit;
+                    sql = "SELECT * FROM (SELECT " + messageCols + "," + extraCols + " FROM " + message + " LEFT JOIN " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".channel_id=? and " + message + ".channel_type=? and " + message + ".type<>0 and " + message + ".type<>99 AND " + message + ".order_seq>?) where is_deleted=0 and is_mutual_deleted=0 order by order_seq asc limit 0," + limit;
                 }
             }
+            args = new Object[3];
+            args[0] = channelId;
+            args[1] = channelType;
+            args[2] = oldestOrderSeq;
         }
         Cursor cursor = null;
         List<String> messageIds = new ArrayList<>();
         List<String> replyMsgIds = new ArrayList<>();
         List<String> fromUIDs = new ArrayList<>();
         try {
-            cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql);
+            cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql, args);
             if (cursor == null) {
                 return msgList;
             }
@@ -379,9 +385,9 @@ public class MsgDbManager {
     }
 
     public List<WKMsg> queryExpireMessages(long timestamp, int limit) {
-        String sql = "SELECT * from " + message + " where is_deleted=0 and " + WKDBColumns.WKMessageColumns.expire_time + ">0 and " + WKDBColumns.WKMessageColumns.expire_timestamp + "<=" + timestamp + " order by order_seq desc limit 0," + limit;
+        String sql = "SELECT * from " + message + " where is_deleted=0 and " + WKDBColumns.WKMessageColumns.expire_time + ">0 and " + WKDBColumns.WKMessageColumns.expire_timestamp + "<=? order by order_seq desc limit 0," + limit;
         List<WKMsg> list = new ArrayList<>();
-        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql)) {
+        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql, new Object[]{timestamp})) {
             if (cursor == null) {
                 return list;
             }
@@ -395,14 +401,25 @@ public class MsgDbManager {
 
     public List<WKMsg> queryWithFromUID(String channelID, byte channelType, String fromUID, long oldestOrderSeq, int limit) {
         String sql;
+        Object[] args;
         if (oldestOrderSeq == 0) {
-            sql = "SELECT * FROM (SELECT " + messageCols + "," + extraCols + " FROM " + message + " LEFT JOIN " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".channel_id='" + channelID + "' and " + message + ".channel_type=" + channelType + " and from_uid='" + fromUID + "' and " + message + ".type<>0 and " + message + ".type<>99) where is_deleted=0 and revoke=0 order by order_seq desc limit 0," + limit;
-        } else
-            sql = "SELECT * FROM (SELECT " + messageCols + "," + extraCols + " FROM " + message + " LEFT JOIN " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".channel_id='" + channelID + "' and " + message + ".channel_type=" + channelType + " and from_uid='" + fromUID + "' and " + message + ".type<>0 and " + message + ".type<>99 AND " + message + ".order_seq<" + oldestOrderSeq + ") where is_deleted=0 and revoke=0 order by order_seq desc limit 0," + limit;
+            args = new Object[3];
+            args[0] = channelID;
+            args[1] = channelType;
+            args[2] = fromUID;
+            sql = "SELECT * FROM (SELECT " + messageCols + "," + extraCols + " FROM " + message + " LEFT JOIN " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".channel_id=? and " + message + ".channel_type=? and from_uid=? and " + message + ".type<>0 and " + message + ".type<>99) where is_deleted=0 and revoke=0 order by order_seq desc limit 0," + limit;
+        } else {
+            args = new Object[4];
+            args[0] = channelID;
+            args[1] = channelType;
+            args[2] = fromUID;
+            args[3] = oldestOrderSeq;
+            sql = "SELECT * FROM (SELECT " + messageCols + "," + extraCols + " FROM " + message + " LEFT JOIN " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".channel_id=? and " + message + ".channel_type=? and from_uid=? and " + message + ".type<>0 and " + message + ".type<>99 AND " + message + ".order_seq<?) where is_deleted=0 and revoke=0 order by order_seq desc limit 0," + limit;
+        }
         List<WKMsg> wkMsgs = new ArrayList<>();
         Cursor cursor = null;
         try {
-            cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql);
+            cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql, args);
             if (cursor == null) {
                 return wkMsgs;
             }
@@ -425,8 +442,8 @@ public class MsgDbManager {
 
     public long queryOrderSeq(String channelID, byte channelType, long maxOrderSeq, int limit) {
         long minOrderSeq = 0;
-        String sql = "select order_seq from " + message + " where " + WKDBColumns.WKMessageColumns.channel_id + "='" + channelID + "' and " + WKDBColumns.WKMessageColumns.channel_type + "=" + channelType + " and type<>99 and order_seq <= " + maxOrderSeq + " order by " + WKDBColumns.WKMessageColumns.order_seq + " desc limit " + limit;
-        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql)) {
+        String sql = "select order_seq from " + message + " where " + WKDBColumns.WKMessageColumns.channel_id + "=? and " + WKDBColumns.WKMessageColumns.channel_type + "=? and type<>99 and order_seq <=? order by " + WKDBColumns.WKMessageColumns.order_seq + " desc limit " + limit;
+        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql, new Object[]{channelID, channelType, maxOrderSeq})) {
             if (cursor == null) {
                 return minOrderSeq;
             }
@@ -439,13 +456,13 @@ public class MsgDbManager {
 
     public long queryMaxOrderSeqWithChannel(String channelID, byte channelType) {
         long maxOrderSeq = 0;
-        String sql = "select max(order_seq) order_seq from " + message + " where " + WKDBColumns.WKMessageColumns.channel_id + "='" + channelID + "' and " + WKDBColumns.WKMessageColumns.channel_type + "=" + channelType + " and type<>99 and type<>0 and is_deleted=0";
+        String sql = "select max(order_seq) order_seq from " + message + " where " + WKDBColumns.WKMessageColumns.channel_id + "=? and " + WKDBColumns.WKMessageColumns.channel_type + "=? and type<>99 and type<>0 and is_deleted=0";
         try {
             if (WKIMApplication.getInstance().getDbHelper() != null) {
                 Cursor cursor = WKIMApplication
                         .getInstance()
                         .getDbHelper()
-                        .rawQuery(sql);
+                        .rawQuery(sql, new Object[]{channelID, channelType});
                 if (cursor != null) {
                     if (cursor.moveToFirst()) {
                         maxOrderSeq = WKCursor.readLong(cursor, "order_seq");
@@ -599,7 +616,6 @@ public class MsgDbManager {
         //  insertMsgList(insertMsgList);
         List<ContentValues> cvList = new ArrayList<>();
         for (WKMsg wkMsg : insertMsgList) {
-            WKLoggerUtils.getInstance().e("插入数据" + wkMsg.messageID);
             ContentValues cv = WKSqlContentValues.getContentValuesWithMsg(wkMsg);
             cvList.add(cv);
         }
@@ -618,13 +634,12 @@ public class MsgDbManager {
     public List<WKMsg> queryWithClientMsgNos(List<String> clientMsgNos) {
         List<WKMsg> msgs = new ArrayList<>();
         StringBuilder sb = new StringBuilder();
-        sb.append("select * from " + message + " where " + WKDBColumns.WKMessageColumns.client_msg_no + " in (");
+        String sql = "select * from " + message + " where " + WKDBColumns.WKMessageColumns.client_msg_no + " in (?)";
         for (int i = 0, size = clientMsgNos.size(); i < size; i++) {
             if (i != 0) sb.append(",");
             sb.append("'").append(clientMsgNos.get(i)).append("'");
         }
-        sb.append(")");
-        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sb.toString())) {
+        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql, new Object[]{sb.toString()})) {
             if (cursor == null) {
                 return msgs;
             }
@@ -707,10 +722,10 @@ public class MsgDbManager {
 
     public boolean isExist(String clientMsgNo) {
         boolean isExist = false;
-        String sql = "select * from " + message + " where " + WKDBColumns.WKMessageColumns.client_msg_no + "='" + clientMsgNo + "'";
+        String sql = "select * from " + message + " where " + WKDBColumns.WKMessageColumns.client_msg_no + "=?";
         try (Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql)) {
+                .getDbHelper().rawQuery(sql, new Object[]{clientMsgNo})) {
             if (cursor != null && cursor.moveToLast()) {
                 isExist = true;
             }
@@ -720,10 +735,10 @@ public class MsgDbManager {
 
     public WKMsg queryWithClientMsgNo(String clientMsgNo) {
         WKMsg wkMsg = null;
-        String sql = "select " + messageCols + "," + extraCols + " from " + message + " LEFT JOIN " + messageExtra + " ON " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".client_msg_no=" + "'" + clientMsgNo + "'";
+        String sql = "select " + messageCols + "," + extraCols + " from " + message + " LEFT JOIN " + messageExtra + " ON " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".client_msg_no=?";
         try (Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql)) {
+                .getDbHelper().rawQuery(sql, new Object[]{clientMsgNo})) {
             if (cursor == null) {
                 return null;
             }
@@ -739,10 +754,10 @@ public class MsgDbManager {
 
     public WKMsg queryWithClientSeq(long clientSeq) {
         WKMsg msg = null;
-        String sql = "select * from " + message + " where " + WKDBColumns.WKMessageColumns.client_seq + "=" + clientSeq;
+        String sql = "select * from " + message + " where " + WKDBColumns.WKMessageColumns.client_seq + "=?";
         try (Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql)) {
+                .getDbHelper().rawQuery(sql, new Object[]{clientSeq})) {
             if (cursor == null) {
                 return null;
             }
@@ -756,13 +771,13 @@ public class MsgDbManager {
     }
 
     public WKMsg queryMaxOrderSeqMsgWithChannel(String channelID, byte channelType) {
-        String sql = "select * from " + message + " where " + WKDBColumns.WKMessageColumns.channel_id + "='" + channelID + "' and " + WKDBColumns.WKMessageColumns.channel_type + "=" + channelType + " and " + WKDBColumns.WKMessageColumns.is_deleted + "=0 and type<>0 and type<>99 order by " + WKDBColumns.WKMessageColumns.order_seq + " desc limit 1";
+        String sql = "select * from " + message + " where " + WKDBColumns.WKMessageColumns.channel_id + "=? and " + WKDBColumns.WKMessageColumns.channel_type + "=? and " + WKDBColumns.WKMessageColumns.is_deleted + "=0 and type<>0 and type<>99 order by " + WKDBColumns.WKMessageColumns.order_seq + " desc limit 1";
         Cursor cursor = null;
         WKMsg msg = null;
         try {
             cursor = WKIMApplication
                     .getInstance()
-                    .getDbHelper().rawQuery(sql);
+                    .getDbHelper().rawQuery(sql, new Object[]{channelID, channelType});
             if (cursor == null) {
                 return null;
             }
@@ -800,14 +815,14 @@ public class MsgDbManager {
         return row > 0;
     }
 
-    public int queryRowNoWithOrderSeq(String channelID, byte channelType, long order_seq) {
-        String sql = "select count(*) cn from " + message + " where channel_id='" + channelID + "' and channel_type=" + channelType + " and " + WKDBColumns.WKMessageColumns.type + "<>0 and " + WKDBColumns.WKMessageColumns.type + "<>99 and " + WKDBColumns.WKMessageColumns.order_seq + ">" + order_seq + " and " + WKDBColumns.WKMessageColumns.is_deleted + "=0 order by " + WKDBColumns.WKMessageColumns.order_seq + " desc";
+    public int queryRowNoWithOrderSeq(String channelID, byte channelType, long orderSeq) {
+        String sql = "select count(*) cn from " + message + " where channel_id=? and channel_type=? and " + WKDBColumns.WKMessageColumns.type + "<>0 and " + WKDBColumns.WKMessageColumns.type + "<>99 and " + WKDBColumns.WKMessageColumns.order_seq + ">? and " + WKDBColumns.WKMessageColumns.is_deleted + "=0 order by " + WKDBColumns.WKMessageColumns.order_seq + " desc";
         Cursor cursor = null;
         int rowNo = 0;
         try {
             cursor = WKIMApplication
                     .getInstance()
-                    .getDbHelper().rawQuery(sql);
+                    .getDbHelper().rawQuery(sql, new Object[]{channelID, channelType, orderSeq});
             if (cursor == null) {
                 return 0;
             }
@@ -842,14 +857,13 @@ public class MsgDbManager {
 
     private List<WKMsgExtra> queryMsgExtrasWithMsgIds(List<String> msgIds) {
         StringBuilder sb = new StringBuilder();
-        sb.append("select * from " + messageExtra + " where message_id in (");
+        String sql = "select * from " + messageExtra + " where message_id in (?)";
         for (int i = 0, size = msgIds.size(); i < size; i++) {
             if (i != 0) sb.append(",");
             sb.append("'").append(msgIds.get(i)).append("'");
         }
-        sb.append(")");
         List<WKMsgExtra> list = new ArrayList<>();
-        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sb.toString())) {
+        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql, new Object[]{sb.toString()})) {
             if (cursor == null) {
                 return list;
             }
@@ -921,12 +935,12 @@ public class MsgDbManager {
      * @return List<WKMessageGroupByDate>
      */
     public List<WKMessageGroupByDate> queryMessageGroupByDateWithChannel(String channelID, byte channelType) {
-        String sql = "SELECT DATE(" + WKDBColumns.WKMessageColumns.timestamp + ", 'unixepoch','localtime') AS days,COUNT(" + WKDBColumns.WKMessageColumns.client_msg_no + ") count,min(" + WKDBColumns.WKMessageColumns.order_seq + ") AS order_seq FROM " + message + "  WHERE " + WKDBColumns.WKMessageColumns.channel_type + " = " + channelType + " and " + WKDBColumns.WKMessageColumns.channel_id + "='" + channelID + "' and is_deleted=0" + " GROUP BY " + WKDBColumns.WKMessageColumns.timestamp + "," + WKDBColumns.WKMessageColumns.order_seq + "";
+        String sql = "SELECT DATE(" + WKDBColumns.WKMessageColumns.timestamp + ", 'unixepoch','localtime') AS days,COUNT(" + WKDBColumns.WKMessageColumns.client_msg_no + ") count,min(" + WKDBColumns.WKMessageColumns.order_seq + ") AS order_seq FROM " + message + "  WHERE " + WKDBColumns.WKMessageColumns.channel_type + " =? and " + WKDBColumns.WKMessageColumns.channel_id + "=? and is_deleted=0" + " GROUP BY " + WKDBColumns.WKMessageColumns.timestamp + "," + WKDBColumns.WKMessageColumns.order_seq + "";
         List<WKMessageGroupByDate> list = new ArrayList<>();
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper()
-                .rawQuery(sql)) {
+                .rawQuery(sql, new Object[]{channelType, channelID})) {
             if (cursor == null) {
                 return list;
             }
@@ -959,12 +973,19 @@ public class MsgDbManager {
      */
     public List<WKMsg> queryWithContentType(int type, long oldestClientSeq, int limit) {
         String sql;
+        Object[] args;
         if (oldestClientSeq <= 0) {
-            sql = "select * from (select " + messageCols + "," + extraCols + " from " + message + " left join " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id where " + message + ".type=" + type + ") where is_deleted=0 and revoke=0 order by " + WKDBColumns.WKMessageColumns.timestamp + " desc limit 0," + limit;
-        } else
-            sql = "select * from (select " + messageCols + "," + extraCols + " from " + message + " left join " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id where " + message + ".type=" + type + " and " + WKDBColumns.WKMessageColumns.client_seq + "<" + oldestClientSeq + ") where is_deleted=0 and revoke=0 order by " + WKDBColumns.WKMessageColumns.timestamp + " desc limit 0," + limit;
+            args = new Object[1];
+            args[0] = type;
+            sql = "select * from (select " + messageCols + "," + extraCols + " from " + message + " left join " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id where " + message + ".type=?) where is_deleted=0 and revoke=0 order by " + WKDBColumns.WKMessageColumns.timestamp + " desc limit 0," + limit;
+        } else {
+            args = new Object[2];
+            args[0] = type;
+            args[1] = oldestClientSeq;
+            sql = "select * from (select " + messageCols + "," + extraCols + " from " + message + " left join " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id where " + message + ".type=? and " + WKDBColumns.WKMessageColumns.client_seq + "<?) where is_deleted=0 and revoke=0 order by " + WKDBColumns.WKMessageColumns.timestamp + " desc limit 0," + limit;
+        }
         List<WKMsg> msgs = new ArrayList<>();
-        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql)) {
+        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql, args)) {
             if (cursor == null) {
                 return msgs;
             }
@@ -988,11 +1009,11 @@ public class MsgDbManager {
 
     public List<WKMsg> searchWithChannel(String searchKey, String channelID, byte channelType) {
         List<WKMsg> msgs = new ArrayList<>();
-        String sql = "select * from (select " + messageCols + "," + extraCols + " from " + message + " left join " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id where " + message + ".searchable_word like '%" + searchKey + "%' and " + message + ".channel_id='" + channelID + "' and " + message + ".channel_type=" + channelType + ") where is_deleted=0 and revoke=0";
+        String sql = "select * from (select " + messageCols + "," + extraCols + " from " + message + " left join " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id where " + message + ".searchable_word like ? and " + message + ".channel_id=? and " + message + ".channel_type=?) where is_deleted=0 and revoke=0";
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper()
-                .rawQuery(sql)) {
+                .rawQuery(sql, new Object[]{"%" + searchKey + "%", channelID, channelType})) {
             if (cursor == null) {
                 return msgs;
             }
@@ -1021,9 +1042,9 @@ public class MsgDbManager {
         String sql = "select distinct c.*, count(*) message_count, case count(*) WHEN 1 then" +
                 " m.client_seq else ''END client_seq, CASE count(*) WHEN 1 THEN m.searchable_word else '' end searchable_word " +
                 "from " + channel + " c LEFT JOIN " + message + " m ON m.channel_id = c.channel_id and " +
-                "m.channel_type = c.channel_type WHERE m.is_deleted=0 and searchable_word LIKE  '%" + searchKey + "%' GROUP BY " +
+                "m.channel_type = c.channel_type WHERE m.is_deleted=0 and searchable_word LIKE ? GROUP BY " +
                 "c.channel_id, c.channel_type ORDER BY m.created_at DESC limit 100";
-        Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql);
+        Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql, new Object[]{"%" + searchKey + "%"});
         if (cursor == null) {
             return list;
         }
@@ -1092,24 +1113,25 @@ public class MsgDbManager {
         String whereStr = "";
         for (int contentType : contentTypes) {
             if (TextUtils.isEmpty(whereStr)) {
-                whereStr = "(" + contentType;
+                whereStr = contentType + "";
             } else {
                 whereStr = "," + contentType;
             }
         }
-        whereStr = whereStr + ")";
-
+        Object[] args;
         String sql;
         if (oldestOrderSeq <= 0) {
-            sql = "select * from (select " + messageCols + "," + extraCols + " from " + message + " left join " + messageExtra + " on " + message + ".message_id= " + messageExtra + ".message_id where " + message + ".channel_id='" + channelID + "' and " + message + ".channel_type=" + channelType + " and " + message + ".type<>0 and " + message + ".type<>99 and " + message + ".type in " + whereStr + ") where is_deleted=0 and revoke=0 order by order_seq desc limit 0," + limit;
+            args = new Object[]{channelID, channelType, whereStr};
+            sql = "select * from (select " + messageCols + "," + extraCols + " from " + message + " left join " + messageExtra + " on " + message + ".message_id= " + messageExtra + ".message_id where " + message + ".channel_id=? and " + message + ".channel_type=? and " + message + ".type<>0 and " + message + ".type<>99 and " + message + ".type in (?)) where is_deleted=0 and revoke=0 order by order_seq desc limit 0," + limit;
         } else {
-            sql = "select * from (select " + messageCols + "," + extraCols + " from " + message + " left join " + messageExtra + " on " + message + ".message_id= " + messageExtra + ".message_id where " + message + ".channel_id='" + channelID + "' and " + message + ".channel_type=" + channelType + " and " + message + ".order_seq<" + oldestOrderSeq + " and " + message + ".type<>0 and " + message + ".type<>99 and " + message + ".type in " + whereStr + ") where is_deleted=0 and revoke=0 order by order_seq desc limit 0," + limit;
+            args = new Object[]{channelID, channelType, oldestOrderSeq, whereStr};
+            sql = "select * from (select " + messageCols + "," + extraCols + " from " + message + " left join " + messageExtra + " on " + message + ".message_id= " + messageExtra + ".message_id where " + message + ".channel_id=? and " + message + ".channel_type=? and " + message + ".order_seq<? and " + message + ".type<>0 and " + message + ".type<>99 and " + message + ".type in (?)) where is_deleted=0 and revoke=0 order by order_seq desc limit 0," + limit;
         }
         List<WKMsg> wkMsgs = new ArrayList<>();
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper()
-                .rawQuery(sql)) {
+                .rawQuery(sql, args)) {
             if (cursor == null) {
                 return wkMsgs;
             }
@@ -1139,13 +1161,13 @@ public class MsgDbManager {
      * @param channelType 频道类型
      */
     public long queryMsgExtraMaxVersionWithChannel(String channelID, byte channelType) {
-        String sql = "select * from " + messageExtra + " where channel_id ='" + channelID + "' and channel_type=" + channelType + " order by extra_version desc limit 1";
+        String sql = "select * from " + messageExtra + " where channel_id =? and channel_type=? order by extra_version desc limit 1";
         Cursor cursor = null;
         long version = 0;
         try {
             cursor = WKIMApplication
                     .getInstance()
-                    .getDbHelper().rawQuery(sql);
+                    .getDbHelper().rawQuery(sql, new Object[]{channelID, channelType});
             if (cursor == null) {
                 return 0;
             }
@@ -1195,11 +1217,11 @@ public class MsgDbManager {
 
     public WKMsg queryWithMessageID(String messageID, boolean isGetMsgReaction) {
         WKMsg msg = null;
-        String sql = "select " + messageCols + "," + extraCols + " from " + message + " LEFT JOIN " + messageExtra + " ON " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".message_id=" + "'" + messageID + "' and " + message + ".is_deleted=0";
+        String sql = "select " + messageCols + "," + extraCols + " from " + message + " LEFT JOIN " + messageExtra + " ON " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".message_id=? and " + message + ".is_deleted=0";
 
         try (Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql)) {
+                .getDbHelper().rawQuery(sql, new Object[]{messageID})) {
             if (cursor == null) {
                 return null;
             }
@@ -1213,11 +1235,11 @@ public class MsgDbManager {
     }
 
     public int queryMaxMessageOrderSeqWithChannel(String channelID, byte channelType) {
-        String sql = "SELECT max(order_seq) order_seq FROM " + message + " WHERE channel_id='" + channelID + "' AND channel_type=" + channelType;
+        String sql = "SELECT max(order_seq) order_seq FROM " + message + " WHERE channel_id=? AND channel_type=?";
         int orderSeq = 0;
         try (Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql)) {
+                .getDbHelper().rawQuery(sql, new Object[]{channelID, channelType})) {
             if (cursor == null) {
                 return 0;
             }
@@ -1229,11 +1251,11 @@ public class MsgDbManager {
     }
 
     public int queryMaxMessageSeqNotDeletedWithChannel(String channelID, byte channelType) {
-        String sql = "SELECT max(message_seq) message_seq FROM " + message + " WHERE channel_id='" + channelID + "' AND channel_type=" + channelType + " AND is_deleted=0";
+        String sql = "SELECT max(message_seq) message_seq FROM " + message + " WHERE channel_id=? AND channel_type=? AND is_deleted=0";
         int messageSeq = 0;
         try (Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql)) {
+                .getDbHelper().rawQuery(sql, new Object[]{channelID, channelType})) {
             if (cursor == null) {
                 return 0;
             }
@@ -1245,11 +1267,11 @@ public class MsgDbManager {
     }
 
     public int queryMaxMessageSeqWithChannel(String channelID, byte channelType) {
-        String sql = "SELECT max(message_seq) message_seq FROM " + message + " WHERE channel_id='" + channelID + "' AND channel_type=" + channelType;
+        String sql = "SELECT max(message_seq) message_seq FROM " + message + " WHERE channel_id=? AND channel_type=?";
         int messageSeq = 0;
         try (Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql)) {
+                .getDbHelper().rawQuery(sql, new Object[]{channelID, channelType})) {
             if (cursor == null) {
                 return 0;
             }
@@ -1261,11 +1283,11 @@ public class MsgDbManager {
     }
 
     public int queryMinMessageSeqWithChannel(String channelID, byte channelType) {
-        String sql = "SELECT min(message_seq) message_seq FROM " + message + " WHERE channel_id='" + channelID + "' AND channel_type=" + channelType;
+        String sql = "SELECT min(message_seq) message_seq FROM " + message + " WHERE channel_id=? AND channel_type=?";
         int messageSeq = 0;
         try (Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql)) {
+                .getDbHelper().rawQuery(sql, new Object[]{channelID, channelType})) {
             if (cursor == null) {
                 return 0;
             }
@@ -1280,12 +1302,12 @@ public class MsgDbManager {
         String sql;
         int messageSeq = 0;
         if (pullMode == 1) {
-            sql = "select * from " + message + " where channel_id='" + channelID + "' and channel_type=" + channelType + " and  order_seq>" + oldestOrderSeq + " and message_seq<>0 order by message_seq desc limit 1";
+            sql = "select * from " + message + " where channel_id=? and channel_type=? and  order_seq>? and message_seq<>0 order by message_seq desc limit 1";
         } else
-            sql = "select * from " + message + " where channel_id='" + channelID + "' and channel_type=" + channelType + " and  order_seq<" + oldestOrderSeq + " and message_seq<>0 order by message_seq asc limit 1";
+            sql = "select * from " + message + " where channel_id=? and channel_type=? and  order_seq<? and message_seq<>0 order by message_seq asc limit 1";
         try (Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql)) {
+                .getDbHelper().rawQuery(sql, new Object[]{channelID, channelType, oldestOrderSeq})) {
             if (cursor == null) {
                 return 0;
             }
@@ -1305,8 +1327,7 @@ public class MsgDbManager {
             }
             sb.append("'").append(messageIds.get(i)).append("'");
         }
-        String sql = "select " + messageCols + "," + extraCols + " from " + message + " left join " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id where " + message + ".message_id in (" + sb + ")";
-        WKLoggerUtils.getInstance().e("查询sql：" + sql);
+        String sql = "select " + messageCols + "," + extraCols + " from " + message + " left join " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id where " + message + ".message_id in (?)";
         List<WKMsg> list = new ArrayList<>();
         List<String> gChannelIds = new ArrayList<>();
         List<String> pChannelIds = new ArrayList<>();
@@ -1314,7 +1335,7 @@ public class MsgDbManager {
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper()
-                .rawQuery(sql)) {
+                .rawQuery(sql, new Object[]{sb.toString()})) {
             if (cursor == null) {
                 return list;
             }
@@ -1503,8 +1524,8 @@ public class MsgDbManager {
 
     public List<WKMsgExtra> queryMsgExtraWithNeedUpload(int needUpload) {
         List<WKMsgExtra> list = new ArrayList<>();
-        String sql = "select * from " + messageExtra + " where needUpload=" + needUpload;
-        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql)) {
+        String sql = "select * from " + messageExtra + " where needUpload=?";
+        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql, new Object[]{needUpload})) {
             if (cursor == null) {
                 return list;
             }
@@ -1517,14 +1538,14 @@ public class MsgDbManager {
     }
 
     public WKMsgExtra queryMsgExtraWithMsgID(String msgID) {
-        String sql = "select * from " + messageExtra + " where message_id='" + msgID + "'";
+        String sql = "select * from " + messageExtra + " where message_id=?";
         WKMsgExtra extra = null;
         try {
             if (WKIMApplication.getInstance().getDbHelper() != null) {
                 Cursor cursor = WKIMApplication
                         .getInstance()
                         .getDbHelper()
-                        .rawQuery(sql);
+                        .rawQuery(sql,new Object[]{msgID});
                 if (cursor != null) {
                     if (cursor.moveToFirst()) {
                         extra = serializeMsgExtra(cursor);

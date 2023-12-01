@@ -173,6 +173,7 @@ class WKProto {
             sendAckMsg.clientSeq = wkRead.readInt();
             sendAckMsg.messageSeq = wkRead.readInt();
             sendAckMsg.reasonCode = wkRead.readByte();
+            WKLoggerUtils.getInstance().e("发送ack" + sendAckMsg.messageID);
             WKLoggerUtils.getInstance().e("发送返回状态：" + sendAckMsg.reasonCode);
         } catch (IOException e) {
             WKLoggerUtils.getInstance().e("解码发送消息ack错误");
@@ -245,6 +246,7 @@ class WKProto {
         try {
             WKRead wkRead = new WKRead(bytes);
             int packetType = wkRead.readPacketType();
+            WKLoggerUtils.getInstance().e("解码出包类型" + packetType);
             wkRead.readRemainingLength();
             if (packetType == WKMsgType.CONNACK) {
                 int hasServerVersion = WKTypeUtils.getInstance().getBit(bytes[0], 0);

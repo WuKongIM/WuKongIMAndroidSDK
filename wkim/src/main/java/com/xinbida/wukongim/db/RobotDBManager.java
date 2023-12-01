@@ -38,10 +38,10 @@ public class RobotDBManager {
 
     public boolean isExitMenu(String robotID, String cmd) {
         boolean isExist = false;
-        String sql = "select * from " + robotMenu + " where robot_id ='" + robotID + "' and cmd='" + cmd + "'";
+        String sql = "select * from " + robotMenu + " where robot_id =? and cmd=?";
         try (Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql)) {
+                .getDbHelper().rawQuery(sql, new Object[]{robotID, cmd})) {
             if (cursor != null && cursor.moveToLast()) {
                 isExist = true;
             }
@@ -78,10 +78,10 @@ public class RobotDBManager {
 
     public boolean isExist(String robotID) {
         boolean isExist = false;
-        String sql = "select * from " + robot + " where robot_id ='" + robotID + "'";
+        String sql = "select * from " + robot + " where robot_id =?";
         try (Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql)) {
+                .getDbHelper().rawQuery(sql, new Object[]{robotID})) {
             if (cursor != null && cursor.moveToLast()) {
                 isExist = true;
             }
@@ -138,10 +138,10 @@ public class RobotDBManager {
 
     public WKRobot query(String robotID) {
         WKRobot wkRobot = null;
-        String sql = "select * from " + robot + " where robot_id ='" + robotID + "'";
+        String sql = "select * from " + robot + " where robot_id =?";
         try (Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql)) {
+                .getDbHelper().rawQuery(sql, new Object[]{robotID})) {
             if (cursor == null) {
                 return null;
             }
@@ -154,10 +154,10 @@ public class RobotDBManager {
 
     public WKRobot queryWithUsername(String username) {
         WKRobot wkRobot = null;
-        String sql = "select * from " + robot + " where username ='" + username + "'";
+        String sql = "select * from " + robot + " where username =?";
         try (Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql)) {
+                .getDbHelper().rawQuery(sql, new Object[]{username})) {
             if (cursor == null) {
                 return null;
             }
@@ -169,17 +169,17 @@ public class RobotDBManager {
     }
 
     public List<WKRobot> queryRobots(List<String> robotIds) {
-        StringBuilder sb = new StringBuilder("select * from " + robot + " where robot_id in (");
+        String sql = "select * from " + robot + " where robot_id in (?)";
+        StringBuilder sb = new StringBuilder();
         for (int i = 0; i < robotIds.size(); i++) {
             if (i != 0) {
                 sb.append(",");
             }
             sb.append("'").append(robotIds.get(i)).append("'");
         }
-        sb.append(")");
         List<WKRobot> list = new ArrayList<>();
 
-        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sb.toString())) {
+        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql, new Object[]{sb.toString()})) {
             if (cursor == null) {
                 return list;
             }
@@ -192,17 +192,17 @@ public class RobotDBManager {
     }
 
     public List<WKRobotMenu> queryRobotMenus(List<String> robotIds) {
-        StringBuilder sb = new StringBuilder("select * from " + robotMenu + " where robot_id in (");
+        String sql = "select * from " + robotMenu + " where robot_id in (?)";
+        StringBuilder sb = new StringBuilder();
         for (int i = 0; i < robotIds.size(); i++) {
             if (i != 0) {
                 sb.append(",");
             }
             sb.append("'").append(robotIds.get(i)).append("'");
         }
-        sb.append(")");
         List<WKRobotMenu> list = new ArrayList<>();
 
-        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sb.toString())) {
+        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql, new Object[]{sb.toString()})) {
             if (cursor == null) {
                 return list;
             }
@@ -216,9 +216,9 @@ public class RobotDBManager {
 
     public List<WKRobotMenu> queryRobotMenus(String robotID) {
         List<WKRobotMenu> list = new ArrayList<>();
-        String sql = "select * from " + robotMenu + " where robot_id ='" + robotID + "'";
+        String sql = "select * from " + robotMenu + " where robot_id =?";
 
-        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql)) {
+        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql,new Object[]{robotID})) {
             if (cursor == null) {
                 return list;
             }

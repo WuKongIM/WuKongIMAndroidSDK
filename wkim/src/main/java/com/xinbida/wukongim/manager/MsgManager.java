@@ -1173,7 +1173,9 @@ public class MsgManager extends BaseManager {
                 List<WKMsgExtra> list = MsgDbManager.getInstance().queryMsgExtraWithNeedUpload(1);
                 if (list != null && list.size() > 0) {
                     for (WKMsgExtra extra : list) {
-                        setUploadMsgExtra(extra);
+                        if (iUploadMsgExtraListener != null) {
+                            iUploadMsgExtraListener.onUpload(extra);
+                        }
                     }
                 } else {
                     checkMsgNeedUploadTimer.cancel();

@@ -68,10 +68,10 @@ class MsgReactionDBManager {
     private boolean isExist(String uid, String messageID) {
         boolean isExist = false;
         String sql = "select * from " + messageReaction
-                + " where message_id='" + messageID + "' and uid='" + uid + "'";
+                + " where message_id=? and uid=?";
         try (Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql)) {
+                .getDbHelper().rawQuery(sql, new Object[]{messageID, uid})) {
             if (cursor != null && cursor.moveToLast()) {
                 isExist = true;
             }
@@ -81,8 +81,8 @@ class MsgReactionDBManager {
 
     public List<WKMsgReaction> queryWithMessageId(String messageID) {
         List<WKMsgReaction> list = new ArrayList<>();
-        String sql = "select * from " + messageReaction + " where message_id='" + messageID + "' and is_deleted=0 ORDER BY created_at desc";
-        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql)) {
+        String sql = "select * from " + messageReaction + " where message_id=? and is_deleted=0 ORDER BY created_at desc";
+        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql, new Object[]{messageID})) {
             if (cursor == null) {
                 return list;
             }
@@ -108,13 +108,13 @@ class MsgReactionDBManager {
             }
             stringBuffer.append(messageIds.get(i));
         }
-        String sql = "select * from " + messageReaction + " where message_id in (" + stringBuffer + ") and is_deleted=0 ORDER BY created_at desc";
+        String sql = "select * from " + messageReaction + " where message_id in (?) and is_deleted=0 ORDER BY created_at desc";
         List<WKMsgReaction> list = new ArrayList<>();
         List<String> channelIds = new ArrayList<>();
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper()
-                .rawQuery(sql)) {
+                .rawQuery(sql, new Object[]{stringBuffer.toString()})) {
             if (cursor == null) {
                 return list;
             }
@@ -140,10 +140,10 @@ class MsgReactionDBManager {
     public WKMsgReaction queryWithMsgIdAndUIDAndText(String messageID, String uid, String emoji) {
         WKMsgReaction reaction = null;
         String sql = "select * from " + messageReaction
-                + " where message_id='" + messageID + "' and uid='" + uid + "' and emoji='" + emoji + "'";
+                + " where message_id=? and uid=? and emoji=?";
         try (Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql)) {
+                .getDbHelper().rawQuery(sql, new Object[]{messageID, uid, emoji})) {
             if (cursor == null) {
                 return null;
             }
@@ -158,10 +158,10 @@ class MsgReactionDBManager {
     public WKMsgReaction queryWithMsgIdAndUID(String messageID, String uid) {
         WKMsgReaction reaction = null;
         String sql = "select * from " + messageReaction
-                + " where message_id='" + messageID + "' and uid='" + uid + "'";
+                + " where message_id=? and uid=?";
         try (Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql)) {
+                .getDbHelper().rawQuery(sql, new Object[]{messageID, uid})) {
             if (cursor == null) {
                 return null;
             }
@@ -176,13 +176,13 @@ class MsgReactionDBManager {
     public long queryMaxSeqWithChannel(String channelID, byte channelType) {
         int maxSeq = 0;
         String sql = "select max(seq) seq from " + messageReaction
-                + " where channel_id='" + channelID + "' and channel_type=" + channelType + " limit 0, 1";
+                + " where channel_id=? and channel_type=? limit 0, 1";
         try {
             if (WKIMApplication.getInstance().getDbHelper() != null) {
                 Cursor cursor = WKIMApplication
                         .getInstance()
                         .getDbHelper()
-                        .rawQuery(sql);
+                        .rawQuery(sql, new Object[]{channelID, channelType});
                 if (cursor != null) {
                     if (cursor.moveToFirst()) {
                         maxSeq = WKCursor.readInt(cursor, "seq");

@@ -116,6 +116,13 @@ public class WKDBHelper {
         return mDb.rawQuery(sql, null);
     }
 
+    public Cursor rawQuery(String sql, Object[] selectionArgs) {
+        if (mDb == null) {
+            return null;
+        }
+        return mDb.rawQuery(sql, selectionArgs);
+    }
+
     public Cursor select(String table, String selection,
                          String[] selectionArgs,
                          String orderBy) {
@@ -135,7 +142,8 @@ public class WKDBHelper {
         if (mDb == null) return 0;
         long count = 0;
         try {
-            count = mDb.insert(table, null, cv);
+            count = mDb.insert(table, SQLiteDatabase.CONFLICT_REPLACE, cv);
+//            count = mDb.insert(table, null, cv);
         } catch (Exception e) {
             StringBuilder fields = new StringBuilder();
             for (Map.Entry<String, Object> item : cv.valueSet()) {
