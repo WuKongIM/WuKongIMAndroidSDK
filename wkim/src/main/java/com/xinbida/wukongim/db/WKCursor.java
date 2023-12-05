@@ -45,4 +45,19 @@ public class WKCursor {
             return null;
         }
     }
+
+    public static String getPlaceholders(int count) {
+        StringBuilder placeholders = new StringBuilder();
+        for (int i = 0; i < count; i++) {
+            if (i != 0) {
+                placeholders.append(", ");
+            }
+            placeholders.append("?");
+        }
+        return placeholders.toString();
+    }
+
+    public static void copyArray(String[] src, String[] dest) {
+        System.arraycopy(src, 0, dest, 0, src.length);
+    }
 }

@@ -85,12 +85,12 @@ public class ReminderDBManager {
             }
             stringBuffer.append(ids.get(i));
         }
-        String sql = "select * from " + reminders + " where reminder_id in (?)";
+        String sql = "select * from " + reminders + " where reminder_id in (" + stringBuffer + ")";
         List<WKReminder> list = new ArrayList<>();
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper()
-                .rawQuery(sql, new Object[]{stringBuffer.toString()})) {
+                .rawQuery(sql)) {
             if (cursor == null) {
                 return list;
             }
@@ -104,19 +104,11 @@ public class ReminderDBManager {
     }
 
     private List<WKReminder> queryWithChannelIds(List<String> channelIds) {
-        StringBuilder stringBuffer = new StringBuilder();
-        for (int i = 0, size = channelIds.size(); i < size; i++) {
-            if (i != 0) {
-                stringBuffer.append(",");
-            }
-            stringBuffer.append("'").append(channelIds.get(i)).append("'");
-        }
-        String sql = "select * from " + reminders + " where channel_id in (?)";
         List<WKReminder> list = new ArrayList<>();
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper()
-                .rawQuery(sql, new Object[]{stringBuffer.toString()})) {
+                .select(reminders, "channel_id in (" + WKCursor.getPlaceholders(channelIds.size()) + ")", channelIds.toArray(new String[0]), null)) {
             if (cursor == null) {
                 return list;
             }

@@ -144,21 +144,14 @@ public class ChannelMembersDbManager {
     }
 
     public List<WKChannelMember> queryWithUIDs(String channelID, byte channelType, List<String> uidList) {
-        StringBuilder sb = new StringBuilder();
-        Object[] args = new Object[3];
-        args[0] = channelID;
-        args[1] = channelType;
-        String sql = "select * from " + channelMembers + " where channel_id =? and channel_type=? and member_uid in (?)";
-        for (int i = 0, size = uidList.size(); i < size; i++) {
-            if (i != 0) {
-                sb.append(",");
-            }
-            sb.append("'").append(uidList.get(i)).append("'");
-        }
-        args[2] = sb.toString();
+        List<String> args = new ArrayList<>();
+        args.add(channelID);
+        args.add(String.valueOf(channelType));
+        args.addAll(uidList);
+        uidList.add(String.valueOf(channelType));
         Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql, args);
+                .getDbHelper().select(channelMembers, "channel_id =? and channel_type=? and member_uid in (" + WKCursor.getPlaceholders(uidList.size()) + ")", args.toArray(new String[0]), null);
         List<WKChannelMember> list = new ArrayList<>();
         if (cursor == null) {
             return list;

@@ -101,20 +101,11 @@ class MsgReactionDBManager {
     }
 
     public List<WKMsgReaction> queryWithMessageIds(List<String> messageIds) {
-        StringBuffer stringBuffer = new StringBuffer();
-        for (int i = 0, size = messageIds.size(); i < size; i++) {
-            if (!TextUtils.isEmpty(stringBuffer)) {
-                stringBuffer.append(",");
-            }
-            stringBuffer.append(messageIds.get(i));
-        }
-        String sql = "select * from " + messageReaction + " where message_id in (?) and is_deleted=0 ORDER BY created_at desc";
         List<WKMsgReaction> list = new ArrayList<>();
         List<String> channelIds = new ArrayList<>();
         try (Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper()
-                .rawQuery(sql, new Object[]{stringBuffer.toString()})) {
+                .getDbHelper().select(messageReaction, "message_id in (" + WKCursor.getPlaceholders(messageIds.size()) + ")", messageIds.toArray(new String[0]), "created_at desc")) {
             if (cursor == null) {
                 return list;
             }

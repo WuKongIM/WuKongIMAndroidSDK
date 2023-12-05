@@ -633,13 +633,7 @@ public class MsgDbManager {
 
     public List<WKMsg> queryWithClientMsgNos(List<String> clientMsgNos) {
         List<WKMsg> msgs = new ArrayList<>();
-        StringBuilder sb = new StringBuilder();
-        String sql = "select * from " + message + " where " + WKDBColumns.WKMessageColumns.client_msg_no + " in (?)";
-        for (int i = 0, size = clientMsgNos.size(); i < size; i++) {
-            if (i != 0) sb.append(",");
-            sb.append("'").append(clientMsgNos.get(i)).append("'");
-        }
-        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql, new Object[]{sb.toString()})) {
+        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().select(message, "client_msg_no in (" + WKCursor.getPlaceholders(clientMsgNos.size()) + ")", clientMsgNos.toArray(new String[0]), null)) {
             if (cursor == null) {
                 return msgs;
             }
@@ -856,14 +850,8 @@ public class MsgDbManager {
     }
 
     private List<WKMsgExtra> queryMsgExtrasWithMsgIds(List<String> msgIds) {
-        StringBuilder sb = new StringBuilder();
-        String sql = "select * from " + messageExtra + " where message_id in (?)";
-        for (int i = 0, size = msgIds.size(); i < size; i++) {
-            if (i != 0) sb.append(",");
-            sb.append("'").append(msgIds.get(i)).append("'");
-        }
         List<WKMsgExtra> list = new ArrayList<>();
-        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql, new Object[]{sb.toString()})) {
+        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().select(messageExtra, "message_id in (" + WKCursor.getPlaceholders(msgIds.size()) + ")", msgIds.toArray(new String[0]), null)) {
             if (cursor == null) {
                 return list;
             }
@@ -1320,14 +1308,8 @@ public class MsgDbManager {
     }
 
     public List<WKMsg> queryWithMsgIds(List<String> messageIds) {
-        StringBuffer sb = new StringBuffer();
-        for (int i = 0, size = messageIds.size(); i < size; i++) {
-            if (!TextUtils.isEmpty(sb)) {
-                sb.append(",");
-            }
-            sb.append("'").append(messageIds.get(i)).append("'");
-        }
-        String sql = "select " + messageCols + "," + extraCols + " from " + message + " left join " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id where " + message + ".message_id in (?)";
+
+        String sql = "select " + messageCols + "," + extraCols + " from " + message + " left join " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id where " + message + ".message_id in (" + WKCursor.getPlaceholders(messageIds.size()) + ")";
         List<WKMsg> list = new ArrayList<>();
         List<String> gChannelIds = new ArrayList<>();
         List<String> pChannelIds = new ArrayList<>();
@@ -1335,7 +1317,7 @@ public class MsgDbManager {
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper()
-                .rawQuery(sql, new Object[]{sb.toString()})) {
+                .rawQuery(sql, messageIds.toArray())) {
             if (cursor == null) {
                 return list;
             }
@@ -1545,7 +1527,7 @@ public class MsgDbManager {
                 Cursor cursor = WKIMApplication
                         .getInstance()
                         .getDbHelper()
-                        .rawQuery(sql,new Object[]{msgID});
+                        .rawQuery(sql, new Object[]{msgID});
                 if (cursor != null) {
                     if (cursor.moveToFirst()) {
                         extra = serializeMsgExtra(cursor);

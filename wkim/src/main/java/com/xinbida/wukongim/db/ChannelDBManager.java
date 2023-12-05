@@ -37,29 +37,18 @@ public class ChannelDBManager {
     }
 
     public List<WKChannel> queryWithChannelIdsAndChannelType(List<String> channelIDs, byte channelType) {
-        StringBuffer stringBuffer = new StringBuffer();
-        for (int i = 0, size = channelIDs.size(); i < size; i++) {
-            if (stringBuffer.toString().contains(channelIDs.get(i)))
-                continue;
-            if (!TextUtils.isEmpty(stringBuffer)) {
-                stringBuffer.append(",");
-            }
-            stringBuffer.append("'").append(channelIDs.get(i)).append("'");
-        }
-        Object[] args = new Object[2];
-        args[0] = stringBuffer.toString();
-        args[1] = channelType;
-        String sql = "select * from " + channel + " where " + WKDBColumns.WKChannelColumns.channel_id + " in (?) and " + WKDBColumns.WKChannelColumns.channel_type + "=?";
         List<WKChannel> list = new ArrayList<>();
         if (WKIMApplication
                 .getInstance()
                 .getDbHelper() == null) {
             return list;
         }
+        List<String> args = new ArrayList<>(channelIDs);
+        args.add(String.valueOf(channelType));
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper()
-                .rawQuery(sql, args)) {
+                .select(channel, "channel_id in (" + WKCursor.getPlaceholders(channelIDs.size()) + ") and channel_type=?", args.toArray(new String[0]), null)) {
             if (cursor == null) {
                 return list;
             }
