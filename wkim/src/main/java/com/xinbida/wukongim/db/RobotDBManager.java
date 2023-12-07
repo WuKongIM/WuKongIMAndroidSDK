@@ -194,9 +194,7 @@ public class RobotDBManager {
 
     public List<WKRobotMenu> queryRobotMenus(String robotID) {
         List<WKRobotMenu> list = new ArrayList<>();
-        String sql = "select * from " + robotMenu + " where robot_id =?";
-
-        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql, new Object[]{robotID})) {
+        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().select(robotMenu, "robot_id=?", new String[]{robotID}, null)) {
             if (cursor == null) {
                 return list;
             }

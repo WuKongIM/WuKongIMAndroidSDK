@@ -9,8 +9,8 @@ import android.text.TextUtils;
 import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.WKIMApplication;
 import com.xinbida.wukongim.entity.WKChannel;
-import com.xinbida.wukongim.entity.WKMsgReaction;
 import com.xinbida.wukongim.entity.WKChannelType;
+import com.xinbida.wukongim.entity.WKMsgReaction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,11 +67,9 @@ class MsgReactionDBManager {
 
     private boolean isExist(String uid, String messageID) {
         boolean isExist = false;
-        String sql = "select * from " + messageReaction
-                + " where message_id=? and uid=?";
         try (Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql, new Object[]{messageID, uid})) {
+                .getDbHelper().select(messageReaction, "message_id=? and uid=?", new String[]{messageID, uid}, null)) {
             if (cursor != null && cursor.moveToLast()) {
                 isExist = true;
             }

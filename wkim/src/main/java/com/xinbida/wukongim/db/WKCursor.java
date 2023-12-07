@@ -56,8 +56,4 @@ public class WKCursor {
         }
         return placeholders.toString();
     }
-
-    public static void copyArray(String[] src, String[] dest) {
-        System.arraycopy(src, 0, dest, 0, src.length);
-    }
 }

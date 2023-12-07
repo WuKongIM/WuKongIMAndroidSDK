@@ -116,12 +116,11 @@ public class ConversationDbManager {
     }
 
     public List<WKConversationMsg> queryWithChannelType(byte channelType) {
-        String sql = "select * from " + conversation + " where channel_type=?";
         List<WKConversationMsg> list = new ArrayList<>();
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper()
-                .rawQuery(sql, new Object[]{channelType})) {
+                .select(conversation, "channel_type=?", new String[]{String.valueOf(channelType)}, null)) {
             if (cursor == null) {
                 return list;
             }
@@ -326,7 +325,7 @@ public class ConversationDbManager {
     private synchronized WKConversationMsg queryWithChannelId(String channelId, byte channelType) {
         WKConversationMsg msg = null;
         String selection = WKDBColumns.WKCoverMessageColumns.channel_id + " = ? and " + WKDBColumns.WKCoverMessageColumns.channel_type + "=?";
-        String[] selectionArgs = new String[]{channelId, channelType + ""};
+        String[] selectionArgs = new String[]{channelId, String.valueOf(channelType)};
         Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper()
@@ -349,10 +348,10 @@ public class ConversationDbManager {
 
     public WKConversationMsgExtra queryMsgExtraWithChannel(String channelID, byte channelType) {
         WKConversationMsgExtra msgExtra = null;
-        String sql = "select * from " + conversationExtra + " where channel_id=? and channel_type=?";
+        String selection = "channel_id=? and channel_type=?";
         Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql, new Object[]{channelID, channelType});
+                .getDbHelper().select(conversationExtra, selection, new String[]{channelID, String.valueOf(channelType)}, null);
         if (cursor != null) {
             if (cursor.moveToFirst()) {
                 msgExtra = serializeMsgExtra(cursor);

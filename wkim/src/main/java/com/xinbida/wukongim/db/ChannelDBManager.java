@@ -209,18 +209,18 @@ public class ChannelDBManager {
      * @return List<WKChannel>
      */
     public synchronized List<WKChannel> queryWithFollowAndStatus(byte channelType, int follow, int status) {
-        Object[] args = new Object[3];
-        args[0] = channelType;
-        args[1] = follow;
-        args[2] = status;
-        String sql = "select * from " + channel + " where " + WKDBColumns.WKChannelColumns.channel_type + "=? and " + WKDBColumns.WKChannelColumns.follow + "=? and " + WKDBColumns.WKChannelColumns.status + "=? and is_deleted=0";
+        String[] args = new String[3];
+        args[0] = String.valueOf(channelType);
+        args[1] = String.valueOf(follow);
+        args[2] = String.valueOf(status);
+        String selection = WKDBColumns.WKChannelColumns.channel_type + "=? and " + WKDBColumns.WKChannelColumns.follow + "=? and " + WKDBColumns.WKChannelColumns.status + "=? and is_deleted=0";
         List<WKChannel> channels = new ArrayList<>();
         if (WKIMApplication
                 .getInstance()
                 .getDbHelper() != null) {
             try (Cursor cursor = WKIMApplication
                     .getInstance()
-                    .getDbHelper().rawQuery(sql, args)) {
+                    .getDbHelper().select(channel, selection, args, null)) {
                 if (cursor == null) {
                     return channels;
                 }
@@ -241,17 +241,17 @@ public class ChannelDBManager {
      * @return List<WKChannel>
      */
     public synchronized List<WKChannel> queryWithStatus(byte channelType, int status) {
-        Object[] args = new Object[2];
-        args[0] = channelType;
-        args[1] = status;
-        String sql = "select * from " + channel + " where " + WKDBColumns.WKChannelColumns.channel_type + "=? and " + WKDBColumns.WKChannelColumns.status + "=?";
+        String[] args = new String[2];
+        args[0] = String.valueOf(channelType);
+        args[1] = String.valueOf(status);
+        String selection = WKDBColumns.WKChannelColumns.channel_type + "=? and " + WKDBColumns.WKChannelColumns.status + "=?";
         List<WKChannel> channels = new ArrayList<>();
         if (WKIMApplication.getInstance().getDbHelper() == null) {
             return channels;
         }
         try (Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql, args)) {
+                .getDbHelper().select(channel, selection, args, null)) {
             if (cursor == null) {
                 return channels;
             }
@@ -343,14 +343,14 @@ public class ChannelDBManager {
     }
 
     public synchronized List<WKChannel> queryWithChannelTypeAndFollow(byte channelType, int follow) {
-        Object[] args = new Object[2];
-        args[0] = channelType;
-        args[1] = follow;
-        String sql = "select * from " + channel + " where " + WKDBColumns.WKChannelColumns.channel_type + "=? and " + WKDBColumns.WKChannelColumns.follow + "=?";
+        String[] args = new String[2];
+        args[0] = String.valueOf(channelType);
+        args[1] = String.valueOf(follow);
+        String selection = WKDBColumns.WKChannelColumns.channel_type + "=? and " + WKDBColumns.WKChannelColumns.follow + "=?";
         List<WKChannel> channels = new ArrayList<>();
         try (Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql, args)) {
+                .getDbHelper().select(channel, selection, args, null)) {
             if (cursor == null) {
                 return channels;
             }
@@ -367,7 +367,7 @@ public class ChannelDBManager {
         String where = WKDBColumns.WKChannelColumns.channel_id + "=? and " + WKDBColumns.WKChannelColumns.channel_type + "=?";
         String[] whereValue = new String[2];
         whereValue[0] = channelID;
-        whereValue[1] = channelType + "";
+        whereValue[1] = String.valueOf(channelType);
         WKIMApplication.getInstance().getDbHelper()
                 .update(channel, updateKey, updateValue, where, whereValue);
     }

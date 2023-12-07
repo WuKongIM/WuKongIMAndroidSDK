@@ -416,12 +416,10 @@ public class MsgDbManager {
             args[3] = oldestOrderSeq;
             sql = "SELECT * FROM (SELECT " + messageCols + "," + extraCols + " FROM " + message + " LEFT JOIN " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id WHERE " + message + ".channel_id=? and " + message + ".channel_type=? and from_uid=? and " + message + ".type<>0 and " + message + ".type<>99 AND " + message + ".order_seq<?) where is_deleted=0 and revoke=0 order by order_seq desc limit 0," + limit;
         }
-        List<WKMsg> wkMsgs = new ArrayList<>();
-        Cursor cursor = null;
-        try {
-            cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql, args);
+        List<WKMsg> wkMsgList = new ArrayList<>();
+        try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql, args)) {
             if (cursor == null) {
-                return wkMsgs;
+                return wkMsgList;
             }
             WKChannel wkChannel = ChannelDBManager.getInstance().query(channelID, channelType);
             for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
@@ -432,12 +430,10 @@ public class MsgDbManager {
                     WKChannelMember member = ChannelMembersDbManager.getInstance().query(channelID, WKChannelType.GROUP, wkMsg.fromUID);
                     wkMsg.setMemberOfFrom(member);
                 }
-                wkMsgs.add(wkMsg);
+                wkMsgList.add(wkMsg);
             }
-        } finally {
-            if (cursor != null) cursor.close();
         }
-        return wkMsgs;
+        return wkMsgList;
     }
 
     public long queryOrderSeq(String channelID, byte channelType, long maxOrderSeq, int limit) {
@@ -699,7 +695,7 @@ public class MsgDbManager {
         updateValue[0] = msg.content;
 
         updateKey[1] = WKDBColumns.WKMessageColumns.status;
-        updateValue[1] = msg.status + "";
+        updateValue[1] = String.valueOf(msg.status);
 
         updateKey[2] = WKDBColumns.WKMessageColumns.message_id;
         updateValue[2] = msg.messageID;
@@ -748,10 +744,9 @@ public class MsgDbManager {
 
     public WKMsg queryWithClientSeq(long clientSeq) {
         WKMsg msg = null;
-        String sql = "select * from " + message + " where " + WKDBColumns.WKMessageColumns.client_seq + "=?";
         try (Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql, new Object[]{clientSeq})) {
+                .getDbHelper().select(message, "client_seq=?", new String[]{String.valueOf(clientSeq)}, null)) {
             if (cursor == null) {
                 return null;
             }
@@ -1101,7 +1096,7 @@ public class MsgDbManager {
         String whereStr = "";
         for (int contentType : contentTypes) {
             if (TextUtils.isEmpty(whereStr)) {
-                whereStr = contentType + "";
+                whereStr = String.valueOf(contentType);
             } else {
                 whereStr = "," + contentType;
             }
@@ -1466,11 +1461,11 @@ public class MsgDbManager {
         String[] updateKey = new String[1];
         String[] updateValue = new String[1];
         updateKey[0] = WKDBColumns.WKMessageColumns.status;
-        updateValue[0] = status + "";
+        updateValue[0] = String.valueOf(status);
 
         String where = WKDBColumns.WKMessageColumns.client_seq + "=?";
         String[] whereValue = new String[1];
-        whereValue[0] = client_seq + "";
+        whereValue[0] = String.valueOf(client_seq);
 
         int row = WKIMApplication.getInstance().getDbHelper()
                 .update(message, updateKey, updateValue, where, whereValue);
@@ -1520,14 +1515,13 @@ public class MsgDbManager {
     }
 
     public WKMsgExtra queryMsgExtraWithMsgID(String msgID) {
-        String sql = "select * from " + messageExtra + " where message_id=?";
         WKMsgExtra extra = null;
         try {
             if (WKIMApplication.getInstance().getDbHelper() != null) {
                 Cursor cursor = WKIMApplication
                         .getInstance()
                         .getDbHelper()
-                        .rawQuery(sql, new Object[]{msgID});
+                        .select(messageExtra, "message_id=?", new String[]{msgID}, null);
                 if (cursor != null) {
                     if (cursor.moveToFirst()) {
                         extra = serializeMsgExtra(cursor);

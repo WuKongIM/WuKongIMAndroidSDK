@@ -24,7 +24,7 @@ import java.util.List;
  * 频道成员数据管理
  */
 public class ChannelMembersDbManager {
-    final String channelCols = "" + channel + ".channel_remark," + channel + ".channel_name," + channel + ".avatar," + channel + ".avatar_cache_key";
+    final String channelCols = channel + ".channel_remark," + channel + ".channel_name," + channel + ".avatar," + channel + ".avatar_cache_key";
 
     private ChannelMembersDbManager() {
     }
@@ -46,7 +46,7 @@ public class ChannelMembersDbManager {
         args[3] = "%" + keyword + "%";
         args[4] = "%" + keyword + "%";
         args[5] = "%" + keyword + "%";
-        String sql = "select " + channelMembers + ".*," + channelCols + " from " + channelMembers + " LEFT JOIN " + channel + " on " + channelMembers + ".member_uid=" + channel + ".channel_id and " + channel + ".channel_type=1 where " + channelMembers + ".channel_id=? and " + channelMembers + ".channel_type=? and " + channelMembers + ".is_deleted=0 and " + channelMembers + ".status=1 and (member_name like ? or member_remark like ? or channel_name like ? or channel_remark like ?) order by " + channelMembers + ".role=1 desc," + channelMembers + ".role=2 desc," + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.created_at + " asc limit " + queryPage + "," + size + "";
+        String sql = "select " + channelMembers + ".*," + channelCols + " from " + channelMembers + " LEFT JOIN " + channel + " on " + channelMembers + ".member_uid=" + channel + ".channel_id and " + channel + ".channel_type=1 where " + channelMembers + ".channel_id=? and " + channelMembers + ".channel_type=? and " + channelMembers + ".is_deleted=0 and " + channelMembers + ".status=1 and (member_name like ? or member_remark like ? or channel_name like ? or channel_remark like ?) order by " + channelMembers + ".role=1 desc," + channelMembers + ".role=2 desc," + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.created_at + " asc limit " + queryPage + "," + size;
         Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper().rawQuery(sql, args);
@@ -66,7 +66,7 @@ public class ChannelMembersDbManager {
         Object[] args = new Object[2];
         args[0] = channelId;
         args[1] = channelType;
-        String sql = "select " + channelMembers + ".*," + channelCols + " from " + channelMembers + " LEFT JOIN " + channel + " on " + channelMembers + ".member_uid=" + channel + ".channel_id and " + channel + ".channel_type=1 where " + channelMembers + ".channel_id=? and " + channelMembers + ".channel_type=? and " + channelMembers + ".is_deleted=0 and " + channelMembers + ".status=1 order by " + channelMembers + ".role=1 desc," + channelMembers + ".role=2 desc," + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.created_at + " asc limit " + queryPage + "," + size + "";
+        String sql = "select " + channelMembers + ".*," + channelCols + " from " + channelMembers + " LEFT JOIN " + channel + " on " + channelMembers + ".member_uid=" + channel + ".channel_id and " + channel + ".channel_type=1 where " + channelMembers + ".channel_id=? and " + channelMembers + ".channel_type=? and " + channelMembers + ".is_deleted=0 and " + channelMembers + ".status=1 order by " + channelMembers + ".role=1 desc," + channelMembers + ".role=2 desc," + channelMembers + "." + WKDBColumns.WKChannelMembersColumns.created_at + " asc limit " + queryPage + "," + size;
         Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper().rawQuery(sql, args);
@@ -336,7 +336,7 @@ public class ChannelMembersDbManager {
         String where = WKDBColumns.WKChannelMembersColumns.channel_id + "=? and " + WKDBColumns.WKChannelMembersColumns.channel_type + "=? and " + WKDBColumns.WKChannelMembersColumns.member_uid + "=?";
         String[] whereValue = new String[3];
         whereValue[0] = channelID;
-        whereValue[1] = channelType + "";
+        whereValue[1] = String.valueOf(channelType);
         whereValue[2] = uid;
         int row = WKIMApplication.getInstance().getDbHelper()
                 .update(channelMembers, updateKey, updateValue, where, whereValue);
@@ -428,13 +428,10 @@ public class ChannelMembersDbManager {
     }
 
     public synchronized List<WKChannelMember> queryRobotMembers(String channelId, byte channelType) {
-        Object[] args = new Object[2];
-        args[0] = channelId;
-        args[1] = channelType;
-        String sql = "select * from " + channelMembers + " where channel_id=? and channel_type=? and robot=1 and is_deleted=0";
+        String selection = "channel_id=? and channel_type=? and robot=1 and is_deleted=0";
         Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql, args);
+                .getDbHelper().select(channelMembers, selection, new String[]{channelId, String.valueOf(channelType)}, null);
         List<WKChannelMember> list = new ArrayList<>();
         if (cursor == null) {
             return list;
@@ -447,14 +444,10 @@ public class ChannelMembersDbManager {
     }
 
     public List<WKChannelMember> queryWithRole(String channelId, byte channelType, int role) {
-        Object[] args = new Object[3];
-        args[0] = channelId;
-        args[1] = channelType;
-        args[2] = role;
-        String sql = "SELECT * FROM " + channelMembers + " WHERE channel_id=? AND channel_type=? AND role=? AND is_deleted=0";
+        String selection = "channel_id=? AND channel_type=? AND role=? AND is_deleted=0";
         Cursor cursor = WKIMApplication
                 .getInstance()
-                .getDbHelper().rawQuery(sql, args);
+                .getDbHelper().select(channelMembers, selection, new String[]{channelId, String.valueOf(channelType), String.valueOf(role)}, null);
         List<WKChannelMember> list = new ArrayList<>();
         if (cursor == null) {
             return list;
