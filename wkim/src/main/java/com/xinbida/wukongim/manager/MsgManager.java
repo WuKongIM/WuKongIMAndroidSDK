@@ -308,7 +308,7 @@ public class MsgManager extends BaseManager {
                         // 显示最后一页数据
 //                oldestOrderSeq = 0;
                         tempOldestOrderSeq = getMessageOrderSeq(maxMsgSeq, channelId, channelType);
-                        if (tempOldestOrderSeq < aroundMsgOrderSeq){
+                        if (tempOldestOrderSeq < aroundMsgOrderSeq) {
                             tempOldestOrderSeq = aroundMsgOrderSeq;
                         }
                         tempContain = true;
@@ -789,6 +789,7 @@ public class MsgManager extends BaseManager {
         if (list == null || list.size() == 0) return;
         List<WKMsgExtra> extraList = new ArrayList<>();
         List<String> messageIds = new ArrayList<>();
+        List<String> deleteMsgIds = new ArrayList<>();
         for (int i = 0, size = list.size(); i < size; i++) {
             if (TextUtils.isEmpty(list.get(i).message_id)) {
                 continue;
@@ -796,8 +797,14 @@ public class MsgManager extends BaseManager {
             WKMsgExtra extra = WKSyncExtraMsg2WKMsgExtra(channel.channelID, channel.channelType, list.get(i));
             extraList.add(extra);
             messageIds.add(list.get(i).message_id);
+            if (extra.isMutualDeleted == 1) {
+                deleteMsgIds.add(list.get(i).message_id);
+            }
         }
         List<WKMsg> updatedMsgList = MsgDbManager.getInstance().insertOrUpdateMsgExtras(extraList);
+        if (deleteMsgIds.size() > 0) {
+            MsgDbManager.getInstance().deleteWithMessageIDs(deleteMsgIds);
+        }
         getMsgReactionsAndRefreshMsg(messageIds, updatedMsgList);
     }
 

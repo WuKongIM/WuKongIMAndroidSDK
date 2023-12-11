@@ -21,6 +21,7 @@ import com.xinbida.wukongim.interfaces.IDeleteConversationMsg;
 import com.xinbida.wukongim.interfaces.IRefreshConversationMsg;
 import com.xinbida.wukongim.interfaces.ISyncConversationChat;
 import com.xinbida.wukongim.interfaces.ISyncConversationChatBack;
+import com.xinbida.wukongim.message.type.WKConnectStatus;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
 
 import org.json.JSONException;
@@ -350,18 +351,18 @@ public class ConversationManager extends BaseManager {
                     allMsgMap.put(wkMsg.channelID, list);
                 }
 
-                for (Map.Entry<String, List<WKMsg>> entry : allMsgMap.entrySet()) {
-                    List<WKMsg> channelMsgList = entry.getValue();
-                    if (channelMsgList != null && channelMsgList.size() < 20) {
-                        Collections.sort(channelMsgList, new Comparator<WKMsg>() {
-                            @Override
-                            public int compare(WKMsg o1, WKMsg o2) {
-                                return Long.compare(o1.messageSeq, o2.messageSeq);
-                            }
-                        });
-                        MsgManager.getInstance().pushNewMsg(channelMsgList);
-                    }
-                }
+//                for (Map.Entry<String, List<WKMsg>> entry : allMsgMap.entrySet()) {
+//                    List<WKMsg> channelMsgList = entry.getValue();
+//                    if (channelMsgList != null && channelMsgList.size() < 20) {
+//                        Collections.sort(channelMsgList, new Comparator<WKMsg>() {
+//                            @Override
+//                            public int compare(WKMsg o1, WKMsg o2) {
+//                                return Long.compare(o1.messageSeq, o2.messageSeq);
+//                            }
+//                        });
+//                        MsgManager.getInstance().pushNewMsg(channelMsgList);
+//                    }
+//                }
 
 
             }
@@ -385,6 +386,7 @@ public class ConversationManager extends BaseManager {
                 e.printStackTrace();
             }
         }
+        WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.syncCompleted, "");
         iSaveSyncChatBack.onBack();
     }
 }

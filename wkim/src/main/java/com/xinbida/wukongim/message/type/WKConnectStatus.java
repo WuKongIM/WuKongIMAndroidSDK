@@ -17,4 +17,6 @@ public class WKConnectStatus {
     public static final int connecting = 4;
     //无网络
     public static final int noNetwork = 5;
+    // 同步完成
+    public static final int syncCompleted = 6;
 }

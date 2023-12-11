@@ -23,6 +23,7 @@ import com.xinbida.wukongim.entity.WKMsgReaction;
 import com.xinbida.wukongim.entity.WKMsgSetting;
 import com.xinbida.wukongim.interfaces.IGetOrSyncHistoryMsgBack;
 import com.xinbida.wukongim.manager.MsgManager;
+import com.xinbida.wukongim.message.WKRead;
 import com.xinbida.wukongim.message.type.WKSendMsgResult;
 import com.xinbida.wukongim.msgmodel.WKMessageContent;
 import com.xinbida.wukongim.utils.WKTypeUtils;
@@ -840,6 +841,27 @@ public class MsgDbManager {
             if (msg != null)
                 WKIM.getInstance().getMsgManager().setDeleteMsg(msg);
         }
+        return row > 0;
+
+    }
+
+    public synchronized boolean deleteWithMessageIDs(List<String> messageIDs) {
+        String[] updateKey = new String[1];
+        String[] updateValue = new String[1];
+        updateKey[0] = WKDBColumns.WKMessageColumns.is_deleted;
+        updateValue[0] = "1";
+        String where = WKDBColumns.WKMessageColumns.message_id + "in (" + WKCursor.getPlaceholders(messageIDs.size()) + ")";
+        String[] whereValue = messageIDs.toArray(new String[0]);
+        int row = WKIMApplication.getInstance().getDbHelper()
+                .update(message, updateKey, updateValue, where, whereValue);
+//        if (row > 0) {
+//            List<WKMsg> msgList = queryWithMsgIds(messageIDs);
+//            if (msgList.size() > 0) {
+//                for (WKMsg msg : msgList) {
+//                    WKIM.getInstance().getMsgManager().setDeleteMsg(msg);
+//                }
+//            }
+//        }
         return row > 0;
 
     }
