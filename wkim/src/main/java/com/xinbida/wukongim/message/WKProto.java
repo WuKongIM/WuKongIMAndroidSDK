@@ -173,8 +173,6 @@ class WKProto {
             sendAckMsg.clientSeq = wkRead.readInt();
             sendAckMsg.messageSeq = wkRead.readInt();
             sendAckMsg.reasonCode = wkRead.readByte();
-            WKLoggerUtils.getInstance().e("发送ack" + sendAckMsg.messageID);
-            WKLoggerUtils.getInstance().e("发送返回状态：" + sendAckMsg.reasonCode);
         } catch (IOException e) {
             WKLoggerUtils.getInstance().e("解码发送消息ack错误");
         }
@@ -188,7 +186,6 @@ class WKProto {
             disconnectMsg.reason = wkRead.readString();
             WKLoggerUtils.getInstance().e("sdk收到被踢的消息code:" + disconnectMsg.reasonCode + ",reason:" + disconnectMsg.reason);
             return disconnectMsg;
-
         } catch (IOException e) {
             WKLoggerUtils.getInstance().e("解码断开连接错误");
         }

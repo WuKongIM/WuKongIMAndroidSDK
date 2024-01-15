@@ -104,7 +104,6 @@ public class CryptoUtils {
                  InvalidAlgorithmParameterException | IllegalBlockSizeException |
                  BadPaddingException e) {
             e.printStackTrace();
-            Log.e("加密错误：", "-->");
         }
         if (encrypted == null) {
             Log.e("加密后的数据为空", "--->");
@@ -184,12 +183,10 @@ public class CryptoUtils {
             signature.initVerify(publicK);
             signature.update(content.getBytes());
             boolean result = signature.verify(base64Decode(sign));
-            Log.e("校验结果", result + "");
             return result;
         } catch (InvalidKeyException | NoSuchAlgorithmException | SignatureException |
                  InvalidKeySpecException e) {
             e.printStackTrace();
-            Log.e("校验异常", Objects.requireNonNull(e.getLocalizedMessage()));
             return false;
         }
     }

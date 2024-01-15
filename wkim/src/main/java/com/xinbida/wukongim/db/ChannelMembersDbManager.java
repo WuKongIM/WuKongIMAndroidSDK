@@ -298,7 +298,6 @@ public class ChannelMembersDbManager {
         } else {
             insert(channelMember);
         }
-
     }
 
     /**

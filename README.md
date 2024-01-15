@@ -3,7 +3,7 @@
 
 该项目是一个完全自定义协议的即时通讯sdk。
 
-## [详细文档](http://githubim.com "文档")
+## [详细文档](https://githubim.com/sdk/android.html "文档")
 
 ## 官方Demo
 悟空团队官方基于本sdk编写了一个Android项目，该项目覆盖了sdk所有方法的使用及演示流程。[跳转到Demo](https://github.com/TangSengDaoDao/TangSengDaoDaoAndroid)
