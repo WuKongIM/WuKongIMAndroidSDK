@@ -501,13 +501,25 @@ public class MsgManager extends BaseManager {
         return messageOrderSeq / wkOrderSeqFactor;
     }
 
+    /**
+     *  use getMaxReactionSeqWithChannel
+     * @param channelID channelId
+     * @param channelType channelType
+     * @return channel reaction max seq version
+     */
+    @Deprecated
     public long getMaxSeqWithChannel(String channelID, byte channelType) {
-        return MsgDbManager.getInstance().getMaxSeqWithChannel(channelID, channelType);
+        return MsgDbManager.getInstance().getMaxReactionSeqWithChannel(channelID, channelType);
     }
+
+    public long getMaxReactionSeqWithChannel(String channelID, byte channelType) {
+        return MsgDbManager.getInstance().getMaxReactionSeqWithChannel(channelID, channelType);
+    }
+
 
     // 设置消息回应
     public void setSyncMsgReaction(String channelID, byte channelType) {
-        long maxSeq = MsgDbManager.getInstance().getMaxSeqWithChannel(channelID, channelType);
+        long maxSeq = MsgDbManager.getInstance().getMaxReactionSeqWithChannel(channelID, channelType);
         if (iSyncMsgReaction != null) {
             runOnMainThread(() -> iSyncMsgReaction.onSyncMsgReaction(channelID, channelType, maxSeq));
         }

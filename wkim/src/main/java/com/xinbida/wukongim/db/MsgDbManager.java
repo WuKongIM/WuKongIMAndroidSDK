@@ -1447,7 +1447,7 @@ public class MsgDbManager {
         return msg;
     }
 
-    public long getMaxSeqWithChannel(String channelID, byte channelType) {
+    public long getMaxReactionSeqWithChannel(String channelID, byte channelType) {
         return MsgReactionDBManager.getInstance().queryMaxSeqWithChannel(channelID, channelType);
     }
 
