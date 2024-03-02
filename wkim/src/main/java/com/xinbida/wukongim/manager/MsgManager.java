@@ -292,53 +292,51 @@ public class MsgManager extends BaseManager {
      * @param iGetOrSyncHistoryMsgBack 请求返还
      */
     public void getOrSyncHistoryMessages(String channelId, byte channelType, long oldestOrderSeq, boolean contain, int pullMode, int limit, long aroundMsgOrderSeq, final IGetOrSyncHistoryMsgBack iGetOrSyncHistoryMsgBack) {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                int tempPullMode = pullMode;
-                long tempOldestOrderSeq = oldestOrderSeq;
-                boolean tempContain = contain;
-                if (aroundMsgOrderSeq != 0) {
+        new Thread(() -> {
+            int tempPullMode = pullMode;
+            long tempOldestOrderSeq = oldestOrderSeq;
+            boolean tempContain = contain;
+            if (aroundMsgOrderSeq != 0) {
 //                    long maxMsgSeq = getMaxMessageSeqWithChannel(channelId, channelType);
-                    long maxMsgSeq =
-                            MsgDbManager.getInstance().queryMaxMessageSeqNotDeletedWithChannel(channelId, channelType);
-                    long aroundMsgSeq = getOrNearbyMsgSeq(aroundMsgOrderSeq);
+                long maxMsgSeq =
+                        MsgDbManager.getInstance().queryMaxMessageSeqNotDeletedWithChannel(channelId, channelType);
+                long aroundMsgSeq = getOrNearbyMsgSeq(aroundMsgOrderSeq);
 
-                    if (maxMsgSeq >= aroundMsgSeq && maxMsgSeq - aroundMsgSeq <= limit) {
-                        // 显示最后一页数据
+                if (maxMsgSeq >= aroundMsgSeq && maxMsgSeq - aroundMsgSeq <= limit) {
+                    // 显示最后一页数据
 //                oldestOrderSeq = 0;
-                        tempOldestOrderSeq = getMessageOrderSeq(maxMsgSeq, channelId, channelType);
-                        if (tempOldestOrderSeq < aroundMsgOrderSeq) {
-                            tempOldestOrderSeq = aroundMsgOrderSeq;
-                        }
-                        tempContain = true;
-                        tempPullMode = 0;
-                    } else {
-                        long minOrderSeq = MsgDbManager.getInstance().queryOrderSeq(channelId, channelType, aroundMsgOrderSeq, 3);
-                        if (minOrderSeq == 0) {
-                            tempOldestOrderSeq = aroundMsgOrderSeq;
-                        } else {
-                            if (minOrderSeq + limit < aroundMsgOrderSeq) {
-                                if (aroundMsgOrderSeq % wkOrderSeqFactor == 0) {
-                                    tempOldestOrderSeq = (aroundMsgOrderSeq / wkOrderSeqFactor - 3) * wkOrderSeqFactor;
-                                } else
-                                    tempOldestOrderSeq = aroundMsgOrderSeq - 3;
-//                        oldestOrderSeq = aroundMsgOrderSeq;
-                            } else {
-                                // todo 这里只会查询3条数据  oldestOrderSeq = minOrderSeq
-                                long startOrderSeq = MsgDbManager.getInstance().queryOrderSeq(channelId, channelType, aroundMsgOrderSeq, limit);
-                                if (startOrderSeq == 0) {
-                                    tempOldestOrderSeq = aroundMsgOrderSeq;
-                                } else
-                                    tempOldestOrderSeq = startOrderSeq;
-                            }
-                        }
-                        tempPullMode = 1;
-                        tempContain = true;
+                    tempOldestOrderSeq = getMaxOrderSeqWithChannel(channelId, channelType);
+//                    tempOldestOrderSeq = getMessageOrderSeq(maxMsgSeq, channelId, channelType);
+                    if (tempOldestOrderSeq < aroundMsgOrderSeq) {
+                        tempOldestOrderSeq = aroundMsgOrderSeq;
                     }
+                    tempContain = true;
+                    tempPullMode = 0;
+                } else {
+                    long minOrderSeq = MsgDbManager.getInstance().queryOrderSeq(channelId, channelType, aroundMsgOrderSeq, 3);
+                    if (minOrderSeq == 0) {
+                        tempOldestOrderSeq = aroundMsgOrderSeq;
+                    } else {
+                        if (minOrderSeq + limit < aroundMsgOrderSeq) {
+                            if (aroundMsgOrderSeq % wkOrderSeqFactor == 0) {
+                                tempOldestOrderSeq = (aroundMsgOrderSeq / wkOrderSeqFactor - 3) * wkOrderSeqFactor;
+                            } else
+                                tempOldestOrderSeq = aroundMsgOrderSeq - 3;
+//                        oldestOrderSeq = aroundMsgOrderSeq;
+                        } else {
+                            // todo 这里只会查询3条数据  oldestOrderSeq = minOrderSeq
+                            long startOrderSeq = MsgDbManager.getInstance().queryOrderSeq(channelId, channelType, aroundMsgOrderSeq, limit);
+                            if (startOrderSeq == 0) {
+                                tempOldestOrderSeq = aroundMsgOrderSeq;
+                            } else
+                                tempOldestOrderSeq = startOrderSeq;
+                        }
+                    }
+                    tempPullMode = 1;
+                    tempContain = true;
                 }
-                MsgDbManager.getInstance().queryOrSyncHistoryMessages(channelId, channelType, tempOldestOrderSeq, tempContain, tempPullMode, limit, iGetOrSyncHistoryMsgBack);
             }
+            MsgDbManager.getInstance().queryOrSyncHistoryMessages(channelId, channelType, tempOldestOrderSeq, tempContain, tempPullMode, limit, iGetOrSyncHistoryMsgBack);
         }).start();
     }
 

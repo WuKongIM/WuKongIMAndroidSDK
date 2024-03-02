@@ -52,12 +52,13 @@ class MsgReactionDBManager {
     }
 
     public synchronized void insertOrUpdate(WKMsgReaction reaction) {
-        boolean isExist = isExist(reaction.uid, reaction.messageID);
-        if (isExist) {
-            update(reaction);
-        } else {
-            insert(reaction);
-        }
+//        boolean isExist = isExist(reaction.uid, reaction.messageID);
+//        if (isExist) {
+//            update(reaction);
+//        } else {
+//            insert(reaction);
+//        }
+        insert(reaction);
     }
 
     public void insert(WKMsgReaction reaction) {

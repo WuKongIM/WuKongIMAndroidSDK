@@ -9,6 +9,7 @@ import android.database.Cursor;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.WKIMApplication;
@@ -57,10 +58,16 @@ public class MsgDbManager {
     }
 
     private int requestCount;
+    private int more = 1;
 
     public void queryOrSyncHistoryMessages(String channelId, byte channelType, long oldestOrderSeq, boolean contain, int pullMode, int limit, final IGetOrSyncHistoryMsgBack iGetOrSyncHistoryMsgBack) {
         //获取原始数据
         List<WKMsg> list = queryMessages(channelId, channelType, oldestOrderSeq, contain, pullMode, limit);
+        if (more == 0) {
+            new Handler(Looper.getMainLooper()).post(() -> iGetOrSyncHistoryMsgBack.onResult(list));
+            more = 1;
+            return;
+        }
         //业务判断数据
         List<WKMsg> tempList = new ArrayList<>();
         for (int i = 0, size = list.size(); i < size; i++) {
@@ -164,6 +171,7 @@ public class MsgDbManager {
         if (!isSyncMsg) {
             if (minMessageSeq == 1) {
                 requestCount = 0;
+                more = 1;
                 new Handler(Looper.getMainLooper()).post(() -> iGetOrSyncHistoryMsgBack.onResult(list));
                 return;
             }
@@ -187,18 +195,21 @@ public class MsgDbManager {
             //同步消息
             requestCount++;
             MsgManager.getInstance().setSyncChannelMsgListener(channelId, channelType, startMsgSeq, endMsgSeq, limit, pullMode, syncChannelMsg -> {
-                if (syncChannelMsg != null && syncChannelMsg.messages != null && syncChannelMsg.messages.size() > 0) {
+                if (syncChannelMsg != null) {
                     if (oldestMsgSeq == 0) {
                         requestCount = 5;
                     }
+                    more = syncChannelMsg.more;
                     queryOrSyncHistoryMessages(channelId, channelType, oldestOrderSeq, contain, pullMode, limit, iGetOrSyncHistoryMsgBack);
                 } else {
                     requestCount = 0;
+                    more = 1;
                     new Handler(Looper.getMainLooper()).post(() -> iGetOrSyncHistoryMsgBack.onResult(list));
                 }
             });
         } else {
             requestCount = 0;
+            more = 1;
             new Handler(Looper.getMainLooper()).post(() -> iGetOrSyncHistoryMsgBack.onResult(list));
         }
 
