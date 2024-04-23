@@ -32,7 +32,7 @@ class MsgReactionDBManager {
     }
 
     public void insertReactions(List<WKMsgReaction> list) {
-        if (list == null || list.size() == 0) return;
+        if (list == null || list.isEmpty()) return;
         for (int i = 0, size = list.size(); i < size; i++) {
             insertOrUpdate(list.get(i));
         }
@@ -52,13 +52,13 @@ class MsgReactionDBManager {
     }
 
     public synchronized void insertOrUpdate(WKMsgReaction reaction) {
-//        boolean isExist = isExist(reaction.uid, reaction.messageID);
-//        if (isExist) {
-//            update(reaction);
-//        } else {
-//            insert(reaction);
-//        }
-        insert(reaction);
+        boolean isExist = isExist(reaction.uid, reaction.messageID);
+        if (isExist) {
+            update(reaction);
+        } else {
+            insert(reaction);
+        }
+       // insert(reaction);
     }
 
     public void insert(WKMsgReaction reaction) {

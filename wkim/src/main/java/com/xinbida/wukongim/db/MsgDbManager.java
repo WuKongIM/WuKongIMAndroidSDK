@@ -917,12 +917,12 @@ public class MsgDbManager {
         try {
             WKIMApplication.getInstance().getDbHelper().getDb()
                     .beginTransaction();
-            if (insertCVList.size() > 0) {
+            if (!insertCVList.isEmpty()) {
                 for (ContentValues cv : insertCVList) {
                     WKIMApplication.getInstance().getDbHelper().insert(messageExtra, cv);
                 }
             }
-            if (updateCVList.size() > 0) {
+            if (!updateCVList.isEmpty()) {
                 for (ContentValues cv : updateCVList) {
                     String[] update = new String[1];
                     update[0] = cv.getAsString("message_id");

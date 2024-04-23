@@ -796,7 +796,7 @@ public class MsgManager extends BaseManager {
 
 
     public void saveRemoteExtraMsg(WKChannel channel, List<WKSyncExtraMsg> list) {
-        if (list == null || list.size() == 0) return;
+        if (list == null || list.isEmpty()) return;
         List<WKMsgExtra> extraList = new ArrayList<>();
         List<String> messageIds = new ArrayList<>();
         List<String> deleteMsgIds = new ArrayList<>();
@@ -812,7 +812,7 @@ public class MsgManager extends BaseManager {
             }
         }
         List<WKMsg> updatedMsgList = MsgDbManager.getInstance().insertOrUpdateMsgExtras(extraList);
-        if (deleteMsgIds.size() > 0) {
+        if (!deleteMsgIds.isEmpty()) {
             MsgDbManager.getInstance().deleteWithMessageIDs(deleteMsgIds);
         }
         getMsgReactionsAndRefreshMsg(messageIds, updatedMsgList);

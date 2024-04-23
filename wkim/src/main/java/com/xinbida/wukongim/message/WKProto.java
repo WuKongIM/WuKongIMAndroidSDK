@@ -319,6 +319,10 @@ class WKProto {
                 }
                 jsonObject.put("entities", jsonArray);
             }
+            if (msg.flame != 0) {
+                jsonObject.put("flame_second", msg.flameSecond);
+                jsonObject.put("flame", msg.flame);
+            }
             if (msg.baseContentMsgModel.flame != 0) {
                 jsonObject.put("flame_second", msg.baseContentMsgModel.flameSecond);
                 jsonObject.put("flame", msg.baseContentMsgModel.flame);

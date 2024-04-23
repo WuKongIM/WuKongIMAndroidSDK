@@ -52,6 +52,10 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 5/21/21 10:51 AM
@@ -68,6 +72,10 @@ public class WKConnection {
     public static WKConnection getInstance() {
         return ConnectHandleBinder.CONNECT;
     }
+
+    final ExecutorService executors = new ThreadPoolExecutor(1, 4, 1, TimeUnit.SECONDS,
+            new LinkedBlockingQueue(100),
+            new ThreadPoolExecutor.DiscardOldestPolicy());
 
     // 正在发送的消息
     private final ConcurrentHashMap<Integer, WKSendingMsg> sendingMsgHashMap = new ConcurrentHashMap<>();
@@ -149,7 +157,8 @@ public class WKConnection {
                     WKConnection.this.port = port;
                     WKLoggerUtils.getInstance().e("连接地址" + ip + ":" + port);
                     if (connectionIsNull()) {
-                        new Thread(WKConnection.this::connSocket).start();
+                        executors.execute(WKConnection.this::connSocket);
+                      //  new Thread(WKConnection.this::connSocket).start();
                     }
                 } else {
                     if (connectionIsNull()) {

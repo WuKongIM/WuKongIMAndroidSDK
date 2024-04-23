@@ -14,23 +14,22 @@
 
 [![](https://jitpack.io/v/WuKongIM/WuKongIMAndroidSDK.svg)](https://jitpack.io/#WuKongIM/WuKongIMAndroidSDK)
 
-```
+```groovy
 implementation 'com.github.WuKongIM:WuKongIMAndroidSDK:version' // 版本号请看上面
 ```
 
 jitpack还需在主程序的`build.gradle`文件中添加：
 
-```
+```groovy
 allprojects {
     repositories {
-        ...
         maven { url 'https://jitpack.io' }
     }
 }
 ```
 
 由于sdk内使用了sqlcipher加密数据库和curve25519加密算法，需将库添加到项目中
-```
+```groovy
 implementation "net.zetetic:android-database-sqlcipher:4.5.3"
 implementation "androidx.sqlite:sqlite-ktx:2.3.1"
 implementation 'org.whispersystems:curve25519-android:0.5.0'
