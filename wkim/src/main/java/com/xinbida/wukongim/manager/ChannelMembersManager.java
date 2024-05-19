@@ -18,6 +18,7 @@ import com.xinbida.wukongim.interfaces.IGetChannelMemberListResult;
 import com.xinbida.wukongim.interfaces.IRefreshChannelMember;
 import com.xinbida.wukongim.interfaces.IRemoveChannelMember;
 import com.xinbida.wukongim.interfaces.ISyncChannelMembers;
+import com.xinbida.wukongim.utils.WKCommonUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,7 +74,7 @@ public class ChannelMembersManager extends BaseManager {
      * @param list 成员数据
      */
     public synchronized void save(List<WKChannelMember> list) {
-        if (list == null || list.size() == 0) return;
+        if (WKCommonUtils.isEmpty(list)) return;
         new Thread(() -> {
             String channelID = list.get(0).channelID;
             byte channelType = list.get(0).channelType;
@@ -87,16 +88,16 @@ public class ChannelMembersManager extends BaseManager {
             for (WKChannelMember channelMember : list) {
                 if (uidList.size() == 200) {
                     List<WKChannelMember> tempList = ChannelMembersDbManager.getInstance().queryWithUIDs(channelMember.channelID, channelMember.channelType, uidList);
-                    if (tempList != null && tempList.size() > 0)
+                    if (WKCommonUtils.isNotEmpty(tempList))
                         existList.addAll(tempList);
                     uidList.clear();
                 }
                 uidList.add(channelMember.memberUID);
             }
 
-            if (uidList.size() > 0) {
+            if (WKCommonUtils.isNotEmpty(uidList)) {
                 List<WKChannelMember> tempList = ChannelMembersDbManager.getInstance().queryWithUIDs(channelID, channelType, uidList);
-                if (tempList != null && tempList.size() > 0)
+                if (WKCommonUtils.isNotEmpty(tempList))
                     existList.addAll(tempList);
                 uidList.clear();
             }
@@ -125,13 +126,13 @@ public class ChannelMembersManager extends BaseManager {
             // 先保存或修改成员
             ChannelMembersDbManager.getInstance().insertMembers(list, existList);
 
-            if (addList.size() > 0) {
+            if (WKCommonUtils.isNotEmpty(addList)) {
                 setOnAddChannelMember(addList);
             }
-            if (deleteList.size() > 0)
+            if (WKCommonUtils.isNotEmpty(deleteList))
                 setOnRemoveChannelMember(deleteList);
 
-            if (updateList.size() > 0) {
+            if (WKCommonUtils.isNotEmpty(updateList)) {
                 for (int i = 0, size = updateList.size(); i < size; i++) {
                     setRefreshChannelMember(updateList.get(i), i == updateList.size() - 1);
                 }
@@ -221,7 +222,7 @@ public class ChannelMembersManager extends BaseManager {
         if (iGetChannelMemberList != null && groupType == 1) {
             iGetChannelMemberList.request(channelID, channelType, searchKey, page, limit, list1 -> {
                 iGetChannelMemberListResult.onResult(list1, true);
-                if (list1 != null && list1.size() > 0) {
+                if (WKCommonUtils.isNotEmpty(list1)) {
                     ChannelMembersDbManager.getInstance().deleteWithChannel(channelID, channelType);
                     save(list1);
                 }

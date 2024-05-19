@@ -19,7 +19,7 @@ import com.xinbida.wukongim.utils.WKLoggerUtils;
  * 5/20/21 5:25 PM
  */
 public class WKIM {
-    private final String Version = "V1.1.4";
+    private final String Version = "V1.1.6";
 
     private WKIM() {
 
@@ -86,8 +86,6 @@ public class WKIM {
         WKIMApplication.getInstance().getDbHelper();
         // 将上次发送消息中的队列标志为失败
         MessageHandler.getInstance().updateLastSendingMsgFail();
-        WKLoggerUtils.getInstance().e("init uid:" + uid);
-        WKLoggerUtils.getInstance().e("init token:" + token);
     }
 
     // 获取消息管理

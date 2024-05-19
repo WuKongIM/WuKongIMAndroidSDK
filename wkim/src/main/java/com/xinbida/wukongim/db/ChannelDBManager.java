@@ -10,6 +10,8 @@ import android.text.TextUtils;
 import com.xinbida.wukongim.WKIMApplication;
 import com.xinbida.wukongim.entity.WKChannel;
 import com.xinbida.wukongim.entity.WKChannelSearchResult;
+import com.xinbida.wukongim.utils.WKCommonUtils;
+import com.xinbida.wukongim.utils.WKLoggerUtils;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -24,6 +26,7 @@ import java.util.List;
  * channel DB manager
  */
 public class ChannelDBManager {
+    private static final String TAG = "ChannelDBManager";
 
     private ChannelDBManager() {
     }
@@ -135,7 +138,7 @@ public class ChannelDBManager {
             }
             WKIMApplication.getInstance().getDbHelper().getDb()
                     .beginTransaction();
-            if (updateCVList.size() > 0) {
+            if (WKCommonUtils.isNotEmpty(updateCVList)) {
                 for (ContentValues cv : updateCVList) {
                     String[] update = new String[2];
                     update[0] = cv.getAsString(WKDBColumns.WKChannelColumns.channel_id);
@@ -173,7 +176,7 @@ public class ChannelDBManager {
         try {
             cv = WKSqlContentValues.getContentValuesWithChannel(wkChannel);
         } catch (Exception e) {
-            e.printStackTrace();
+            WKLoggerUtils.getInstance().e(TAG , "insert channel error");
         }
         if (WKIMApplication.getInstance().getDbHelper() == null) {
             return;
@@ -190,7 +193,7 @@ public class ChannelDBManager {
         try {
             cv = WKSqlContentValues.getContentValuesWithChannel(wkChannel);
         } catch (Exception e) {
-            e.printStackTrace();
+            WKLoggerUtils.getInstance().e(TAG , "update channel error");
         }
         if (WKIMApplication.getInstance().getDbHelper() == null) {
             return;
@@ -421,7 +424,7 @@ public class ChannelDBManager {
                     hashMap.put(key, jsonObject.opt(key));
                 }
             } catch (JSONException e) {
-                e.printStackTrace();
+                WKLoggerUtils.getInstance().e(TAG , "get channel getChannelExtra error");
             }
         }
         return hashMap;

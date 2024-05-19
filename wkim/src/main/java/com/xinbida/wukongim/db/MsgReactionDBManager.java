@@ -11,6 +11,7 @@ import com.xinbida.wukongim.WKIMApplication;
 import com.xinbida.wukongim.entity.WKChannel;
 import com.xinbida.wukongim.entity.WKChannelType;
 import com.xinbida.wukongim.entity.WKMsgReaction;
+import com.xinbida.wukongim.utils.WKCommonUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,50 +33,28 @@ class MsgReactionDBManager {
     }
 
     public void insertReactions(List<WKMsgReaction> list) {
-        if (list == null || list.isEmpty()) return;
-        for (int i = 0, size = list.size(); i < size; i++) {
-            insertOrUpdate(list.get(i));
+        if (WKCommonUtils.isEmpty(list)) return;
+        List<ContentValues> insertCVs = new ArrayList<>();
+        for (WKMsgReaction reaction : list) {
+            insertCVs.add(WKSqlContentValues.getContentValuesWithMsgReaction(reaction));
         }
-    }
-
-    public void update(WKMsgReaction reaction) {
-        String[] update = new String[2];
-        update[0] = reaction.messageID;
-        update[1] = reaction.uid;
-        ContentValues cv = new ContentValues();
-        cv.put("is_deleted", reaction.isDeleted);
-        cv.put("seq", reaction.seq);
-        cv.put("emoji", reaction.emoji);
-        WKIMApplication.getInstance().getDbHelper()
-                .update(messageReaction, cv, "message_id=? and uid=?", update);
-
-    }
-
-    public synchronized void insertOrUpdate(WKMsgReaction reaction) {
-        boolean isExist = isExist(reaction.uid, reaction.messageID);
-        if (isExist) {
-            update(reaction);
-        } else {
-            insert(reaction);
-        }
-       // insert(reaction);
-    }
-
-    public void insert(WKMsgReaction reaction) {
-        WKIMApplication.getInstance().getDbHelper()
-                .insert(messageReaction, WKSqlContentValues.getContentValuesWithMsgReaction(reaction));
-    }
-
-    private boolean isExist(String uid, String messageID) {
-        boolean isExist = false;
-        try (Cursor cursor = WKIMApplication
-                .getInstance()
-                .getDbHelper().select(messageReaction, "message_id=? and uid=?", new String[]{messageID, uid}, null)) {
-            if (cursor != null && cursor.moveToLast()) {
-                isExist = true;
+        try {
+            WKIMApplication.getInstance().getDbHelper().getDb()
+                    .beginTransaction();
+            if (!insertCVs.isEmpty()) {
+                for (ContentValues cv : insertCVs) {
+                    WKIMApplication.getInstance().getDbHelper().insert(messageReaction, cv);
+                }
+            }
+            WKIMApplication.getInstance().getDbHelper().getDb()
+                    .setTransactionSuccessful();
+        } catch (Exception ignored) {
+        } finally {
+            if (WKIMApplication.getInstance().getDbHelper().getDb().inTransaction()) {
+                WKIMApplication.getInstance().getDbHelper().getDb()
+                        .endTransaction();
             }
         }
-        return isExist;
     }
 
     public List<WKMsgReaction> queryWithMessageId(String messageID) {
@@ -125,42 +104,6 @@ class MsgReactionDBManager {
             }
         }
         return list;
-    }
-
-    public WKMsgReaction queryWithMsgIdAndUIDAndText(String messageID, String uid, String emoji) {
-        WKMsgReaction reaction = null;
-        String sql = "select * from " + messageReaction
-                + " where message_id=? and uid=? and emoji=?";
-        try (Cursor cursor = WKIMApplication
-                .getInstance()
-                .getDbHelper().rawQuery(sql, new Object[]{messageID, uid, emoji})) {
-            if (cursor == null) {
-                return null;
-            }
-            if (cursor.moveToLast()) {
-                reaction = serializeReaction(cursor);
-            }
-        }
-
-        return reaction;
-    }
-
-    public WKMsgReaction queryWithMsgIdAndUID(String messageID, String uid) {
-        WKMsgReaction reaction = null;
-        String sql = "select * from " + messageReaction
-                + " where message_id=? and uid=?";
-        try (Cursor cursor = WKIMApplication
-                .getInstance()
-                .getDbHelper().rawQuery(sql, new Object[]{messageID, uid})) {
-            if (cursor == null) {
-                return null;
-            }
-            if (cursor.moveToLast()) {
-                reaction = serializeReaction(cursor);
-            }
-        }
-
-        return reaction;
     }
 
     public long queryMaxSeqWithChannel(String channelID, byte channelType) {

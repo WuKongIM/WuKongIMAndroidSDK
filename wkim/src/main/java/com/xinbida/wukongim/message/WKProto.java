@@ -22,6 +22,7 @@ import com.xinbida.wukongim.protocol.WKReceivedMsg;
 import com.xinbida.wukongim.protocol.WKSendAckMsg;
 import com.xinbida.wukongim.protocol.WKSendMsg;
 import com.xinbida.wukongim.utils.CryptoUtils;
+import com.xinbida.wukongim.utils.WKCommonUtils;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
 import com.xinbida.wukongim.utils.WKTypeUtils;
 
@@ -38,6 +39,7 @@ import java.math.BigInteger;
  * 收发消息转换
  */
 class WKProto {
+    private final String TAG = "WKProto";
 
     private WKProto() {
     }
@@ -86,7 +88,7 @@ class WKProto {
             wkWrite.writeString(CryptoUtils.getInstance().getPublicKey());
 
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            WKLoggerUtils.getInstance().e(TAG, "enConnectMsg error");
         }
         return wkWrite.getWriteBytes();
     }
@@ -135,7 +137,7 @@ class WKProto {
             wkWrite.writePayload(sendContent);
 
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            WKLoggerUtils.getInstance().e(TAG, "enSendMsg error");
         }
         return wkWrite.getWriteBytes();
     }
@@ -160,7 +162,7 @@ class WKProto {
             connectAckMsg.timeDiff = time;
             connectAckMsg.reasonCode = reasonCode;
         } catch (IOException e) {
-            WKLoggerUtils.getInstance().d("解码连接ack错误");
+            WKLoggerUtils.getInstance().e(TAG, "Decoding connection ack error");
         }
 
         return connectAckMsg;
@@ -174,7 +176,7 @@ class WKProto {
             sendAckMsg.messageSeq = wkRead.readInt();
             sendAckMsg.reasonCode = wkRead.readByte();
         } catch (IOException e) {
-            WKLoggerUtils.getInstance().e("解码发送消息ack错误");
+            WKLoggerUtils.getInstance().e(TAG, "deSendAckMsg Decoding and sending message ack error");
         }
         return sendAckMsg;
     }
@@ -184,10 +186,10 @@ class WKProto {
         try {
             disconnectMsg.reasonCode = wkRead.readByte();
             disconnectMsg.reason = wkRead.readString();
-            WKLoggerUtils.getInstance().e("sdk收到被踢的消息code:" + disconnectMsg.reasonCode + ",reason:" + disconnectMsg.reason);
+            WKLoggerUtils.getInstance().e(TAG, "received kicked reasonCode:" + disconnectMsg.reasonCode + ",reason:" + disconnectMsg.reason);
             return disconnectMsg;
         } catch (IOException e) {
-            WKLoggerUtils.getInstance().e("解码断开连接错误");
+            WKLoggerUtils.getInstance().e(TAG, "Decoding disconnection error");
         }
         return disconnectMsg;
     }
@@ -232,9 +234,8 @@ class WKProto {
             if (!localMsgKey.equals(receivedMsg.msgKey)) {
                 return null;
             }
-            WKLoggerUtils.getInstance().e("接受到消息:" + receivedMsg.payload);
         } catch (IOException e) {
-            WKLoggerUtils.getInstance().e("解码收到消息错误");
+            WKLoggerUtils.getInstance().e(TAG, "deReceivedMsg Decoding received message error");
         }
         return receivedMsg;
     }
@@ -243,7 +244,6 @@ class WKProto {
         try {
             WKRead wkRead = new WKRead(bytes);
             int packetType = wkRead.readPacketType();
-            WKLoggerUtils.getInstance().e("解码出包类型" + packetType);
             wkRead.readRemainingLength();
             if (packetType == WKMsgType.CONNACK) {
                 int hasServerVersion = WKTypeUtils.getInstance().getBit(bytes[0], 0);
@@ -257,12 +257,11 @@ class WKProto {
             } else if (packetType == WKMsgType.PONG) {
                 return new WKPongMsg();
             } else {
-                WKLoggerUtils.getInstance().e("解析协议类型失败--->：" + packetType);
+                WKLoggerUtils.getInstance().e("Failed to parse protocol type：" + packetType);
                 return null;
             }
         } catch (IOException e) {
-            e.printStackTrace();
-            WKLoggerUtils.getInstance().e("解析数据异常------>：" + e.getMessage());
+            WKLoggerUtils.getInstance().e("Parsing data exception：" + e.getMessage());
             return null;
         }
     }
@@ -280,7 +279,7 @@ class WKProto {
             //判断@情况
             if (msg.baseContentMsgModel.mentionInfo != null
                     && msg.baseContentMsgModel.mentionInfo.uids != null
-                    && msg.baseContentMsgModel.mentionInfo.uids.size() > 0) {
+                    && !msg.baseContentMsgModel.mentionInfo.uids.isEmpty()) {
                 JSONArray jsonArray = new JSONArray();
                 for (int i = 0, size = msg.baseContentMsgModel.mentionInfo.uids.size(); i < size; i++) {
                     jsonArray.put(msg.baseContentMsgModel.mentionInfo.uids.get(i));
@@ -307,7 +306,7 @@ class WKProto {
             if (!TextUtils.isEmpty(msg.baseContentMsgModel.robotID)) {
                 jsonObject.put("robot_id", msg.baseContentMsgModel.robotID);
             }
-            if (msg.baseContentMsgModel.entities != null && msg.baseContentMsgModel.entities.size() > 0) {
+            if (WKCommonUtils.isNotEmpty(msg.baseContentMsgModel.entities)) {
                 JSONArray jsonArray = new JSONArray();
                 for (WKMsgEntity entity : msg.baseContentMsgModel.entities) {
                     JSONObject jo = new JSONObject();
@@ -328,7 +327,7 @@ class WKProto {
                 jsonObject.put("flame", msg.baseContentMsgModel.flame);
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            WKLoggerUtils.getInstance().e(TAG, "getSendPayload error");
         }
         return jsonObject;
     }
@@ -365,7 +364,6 @@ class WKProto {
             }
         }
         sendMsg.payload = jsonObject.toString();
-        WKLoggerUtils.getInstance().e(jsonObject.toString());
         return sendMsg;
     }
 
@@ -399,7 +397,7 @@ class WKProto {
                 JSONObject jsonObject = new JSONObject(contentJson);
                 isDelete = WKIM.getInstance().getMsgManager().isDeletedMsg(jsonObject);
             } catch (JSONException e) {
-                e.printStackTrace();
+                WKLoggerUtils.getInstance().e(TAG, "isDelete error");
             }
         }
         return isDelete;

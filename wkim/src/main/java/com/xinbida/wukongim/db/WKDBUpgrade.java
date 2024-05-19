@@ -2,6 +2,7 @@ package com.xinbida.wukongim.db;
 
 import android.content.res.AssetManager;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.xinbida.wukongim.WKIMApplication;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
@@ -20,6 +21,8 @@ import java.util.List;
  * 数据库升级管理
  */
 public class WKDBUpgrade {
+    private static final String TAG = "WKDBUpgrade";
+
     private WKDBUpgrade() {
     }
 
@@ -36,14 +39,15 @@ public class WKDBUpgrade {
         long tempIndex = maxIndex;
         List<WKDBSql> list = getExecSQL();
         for (int i = 0; i < list.size(); i++) {
-            if (list.get(i).index > maxIndex && list.get(i).sqlList != null && list.get(i).sqlList.size() > 0) {
+            if (list.get(i).index > maxIndex && list.get(i).sqlList != null && !list.get(i).sqlList.isEmpty()) {
                 for (String sql : list.get(i).sqlList) {
                     if (!TextUtils.isEmpty(sql)) {
                         db.execSQL(sql);
                     }
                 }
-                if (list.get(i).index > tempIndex)
+                if (list.get(i).index > tempIndex) {
                     tempIndex = list.get(i).index;
+                }
             }
         }
         WKIMApplication.getInstance().setDBUpgradeIndex(tempIndex);
@@ -57,7 +61,7 @@ public class WKDBUpgrade {
             try {
                 String[] strings = assetManager.list("wk_sql");
                 if (strings == null || strings.length == 0) {
-                    WKLoggerUtils.getInstance().e("读取sql失败--->");
+                    WKLoggerUtils.getInstance().e(TAG,"Failed to read SQL");
                 }
                 assert strings != null;
                 for (String str : strings) {
@@ -77,7 +81,7 @@ public class WKDBUpgrade {
                     sqlList.add(new WKDBSql(Long.parseLong(temp), list));
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                WKLoggerUtils.getInstance().e(TAG , "getExecSQL error");
             }
         }
         return sqlList;

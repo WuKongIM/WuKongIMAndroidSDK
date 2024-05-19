@@ -4,6 +4,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import com.xinbida.wukongim.message.type.WKMsgContentType;
+import com.xinbida.wukongim.utils.WKLoggerUtils;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -13,6 +14,7 @@ import org.json.JSONObject;
  * 图片消息
  */
 public class WKImageContent extends WKMediaMessageContent {
+    private final String TAG = "WKImageContent";
     public int width;
     public int height;
 
@@ -35,7 +37,7 @@ public class WKImageContent extends WKMediaMessageContent {
             jsonObject.put("height", height);
             jsonObject.put("localPath", localPath);
         } catch (JSONException e) {
-            e.printStackTrace();
+            WKLoggerUtils.getInstance().e(TAG, "encodeMsg error");
         }
         return jsonObject;
     }

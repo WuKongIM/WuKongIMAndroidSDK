@@ -68,7 +68,7 @@ public class WKIMApplication {
 
     public String getRSAPublicKey() {
         if (mContext == null) {
-            WKLoggerUtils.getInstance().e("传入的context为空");
+            WKLoggerUtils.getInstance().e("The passed in context is null");
             return "";
         }
         if (TextUtils.isEmpty(tempRSAPublicKey)) {
@@ -91,7 +91,7 @@ public class WKIMApplication {
 
     public String getUid() {
         if (mContext == null) {
-            WKLoggerUtils.getInstance().e("传入的context为空");
+            WKLoggerUtils.getInstance().e("The passed in context is null");
             return "";
         }
         String tempUid = "";
@@ -136,7 +136,7 @@ public class WKIMApplication {
             if (!TextUtils.isEmpty(uid)) {
                 mDbHelper = WKDBHelper.getInstance(mContext.get(), uid);
             } else {
-                WKLoggerUtils.getInstance().e("获取DbHelper时用户ID为null");
+                WKLoggerUtils.getInstance().e("get DbHelper uid is null");
             }
         }
         return mDbHelper;
@@ -190,7 +190,7 @@ public class WKIMApplication {
 
     public boolean isNetworkConnected() {
         if (mContext == null) {
-            WKLoggerUtils.getInstance().e("检测网络的context为空--->");
+            WKLoggerUtils.getInstance().e("check network status The passed in context is null");
             return false;
         }
         ConnectivityManager manager = (ConnectivityManager) mContext.get().getSystemService(Context.CONNECTIVITY_SERVICE);

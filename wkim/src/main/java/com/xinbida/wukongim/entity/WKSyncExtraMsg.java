@@ -13,6 +13,7 @@ public class WKSyncExtraMsg {
     public String revoker;
     public int voice_status;
     public int is_mutual_deleted;
+    public int is_pinned;
     public long extra_version;
     public int unread_count;
     public int readed_count;

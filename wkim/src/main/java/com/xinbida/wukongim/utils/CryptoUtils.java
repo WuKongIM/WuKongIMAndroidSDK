@@ -2,7 +2,6 @@ package com.xinbida.wukongim.utils;
 
 import android.text.TextUtils;
 import android.util.Base64;
-import android.util.Log;
 
 import com.xinbida.wukongim.WKIMApplication;
 
@@ -21,7 +20,6 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.Objects;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -36,6 +34,7 @@ import javax.crypto.spec.SecretKeySpec;
  * 消息加密处理
  */
 public class CryptoUtils {
+    private final String TAG = "CryptoUtils";
     private byte[] privateKey, publicKey;
     private byte[] serverKey;
     private String aesKey;
@@ -103,10 +102,10 @@ public class CryptoUtils {
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
                  InvalidAlgorithmParameterException | IllegalBlockSizeException |
                  BadPaddingException e) {
-            e.printStackTrace();
+           WKLoggerUtils.getInstance().e(TAG,"aesEncrypt encrypt error");
         }
         if (encrypted == null) {
-            Log.e("加密后的数据为空", "--->");
+            WKLoggerUtils.getInstance().e(TAG,"aesEncrypt The encrypted data is empty");
             encrypted = sSrc.getBytes();
         }
         return encrypted;
@@ -131,8 +130,7 @@ public class CryptoUtils {
             byte[] original = cipher.doFinal(sSrc);
             content = new String(original, CHARSET_UTF8);
         } catch (Exception e) {
-            e.printStackTrace();
-            Log.e("解密错误：", "--->");
+            WKLoggerUtils.getInstance().e(TAG, "aesDecrypt Decryption error");
         }
 
         return content;

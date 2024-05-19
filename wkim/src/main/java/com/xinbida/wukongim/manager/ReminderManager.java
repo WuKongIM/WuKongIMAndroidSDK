@@ -40,7 +40,7 @@ public class ReminderManager extends BaseManager {
     }
 
     private void setNewReminders(List<WKReminder> list) {
-        if (newReminderMaps != null && newReminderMaps.size() > 0) {
+        if (newReminderMaps != null && !newReminderMaps.isEmpty()) {
             runOnMainThread(() -> {
                 for (Map.Entry<String, INewReminderListener> entry : newReminderMaps.entrySet()) {
                     entry.getValue().newReminder(list);
@@ -86,7 +86,7 @@ public class ReminderManager extends BaseManager {
 
     public void saveOrUpdateReminders(List<WKReminder> reminderList) {
         List<WKReminder> wkReminders = ReminderDBManager.getInstance().insertOrUpdateReminders(reminderList);
-        if (wkReminders != null && wkReminders.size() > 0) {
+        if (wkReminders != null && !wkReminders.isEmpty()) {
             setNewReminders(reminderList);
         }
     }

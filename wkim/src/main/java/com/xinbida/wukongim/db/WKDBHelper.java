@@ -17,6 +17,7 @@ import java.util.Map;
  * 数据库辅助类
  */
 public class WKDBHelper {
+    private static final String TAG = "WKDBHelper";
     private DatabaseHelper mDbHelper;
     private SQLiteDatabase mDb;
 
@@ -39,7 +40,7 @@ public class WKDBHelper {
             mDb = mDbHelper.getWritableDatabase(uid);
             WKDBUpgrade.getInstance().onUpgrade(mDb);
         } catch (Exception e) {
-            e.printStackTrace();
+            WKLoggerUtils.getInstance().e(TAG + " init WKDBHelper error");
         }
     }
 
@@ -97,7 +98,7 @@ public class WKDBHelper {
                 mDbHelper = null;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            WKLoggerUtils.getInstance().e(TAG + " close WKDBHelper error");
         }
     }
 
@@ -132,7 +133,7 @@ public class WKDBHelper {
             cursor = mDb.query(table, null, selection, selectionArgs,
                     null, null, orderBy);
         } catch (Exception e) {
-            e.printStackTrace();
+            WKLoggerUtils.getInstance().e(TAG + " select WKDBHelper error");
             return null;
         }
         return cursor;
@@ -152,8 +153,7 @@ public class WKDBHelper {
                 }
                 fields.append(item.getKey()).append(":").append(item.getValue());
             }
-            WKLoggerUtils.getInstance().e("数据库插入异常，插入表：" + table + "，字段信息：" + fields);
-            e.printStackTrace();
+            WKLoggerUtils.getInstance().e(TAG, "Database insertion exception，Table：" + table + "，Fields：" + fields);
         }
         return count;
     }
@@ -175,7 +175,7 @@ public class WKDBHelper {
         try {
             count = mDb.update(table, cv, where, whereValue);
         } catch (Exception e) {
-            e.printStackTrace();
+            WKLoggerUtils.getInstance().e(TAG, "update WKDBHelper error");
         }
         return count;
     }
@@ -187,7 +187,7 @@ public class WKDBHelper {
         try {
             flag = mDb.update(tableName, cv, where, whereValue) > 0;
         } catch (Exception e) {
-            e.printStackTrace();
+            WKLoggerUtils.getInstance().e(TAG, "update WKDBHelper error");
         }
         return flag;
     }
@@ -199,7 +199,7 @@ public class WKDBHelper {
         try {
             flag = mDb.update(tableName, args, whereClause, null) > 0;
         } catch (Exception e) {
-            e.printStackTrace();
+            WKLoggerUtils.getInstance().e(TAG + " update WKDBHelper error");
         }
         return flag;
     }

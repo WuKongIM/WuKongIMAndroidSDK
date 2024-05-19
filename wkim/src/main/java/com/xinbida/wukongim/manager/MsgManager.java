@@ -1,6 +1,7 @@
 package com.xinbida.wukongim.manager;
 
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.WKIMApplication;
@@ -32,25 +33,25 @@ import com.xinbida.wukongim.interfaces.ISendACK;
 import com.xinbida.wukongim.interfaces.ISendMsgCallBackListener;
 import com.xinbida.wukongim.interfaces.ISyncChannelMsgBack;
 import com.xinbida.wukongim.interfaces.ISyncChannelMsgListener;
-import com.xinbida.wukongim.interfaces.ISyncMsgReaction;
 import com.xinbida.wukongim.interfaces.ISyncOfflineMsgBack;
 import com.xinbida.wukongim.interfaces.ISyncOfflineMsgListener;
 import com.xinbida.wukongim.interfaces.IUploadAttacResultListener;
 import com.xinbida.wukongim.interfaces.IUploadAttachmentListener;
 import com.xinbida.wukongim.interfaces.IUploadMsgExtraListener;
-import com.xinbida.wukongim.message.WKConnection;
 import com.xinbida.wukongim.message.MessageHandler;
-import com.xinbida.wukongim.message.WKRead;
+import com.xinbida.wukongim.message.WKConnection;
 import com.xinbida.wukongim.message.type.WKMsgContentType;
 import com.xinbida.wukongim.message.type.WKSendMsgResult;
 import com.xinbida.wukongim.msgmodel.WKImageContent;
+import com.xinbida.wukongim.msgmodel.WKMessageContent;
+import com.xinbida.wukongim.msgmodel.WKMsgEntity;
 import com.xinbida.wukongim.msgmodel.WKReply;
 import com.xinbida.wukongim.msgmodel.WKTextContent;
 import com.xinbida.wukongim.msgmodel.WKVideoContent;
 import com.xinbida.wukongim.msgmodel.WKVoiceContent;
-import com.xinbida.wukongim.msgmodel.WKMessageContent;
-import com.xinbida.wukongim.msgmodel.WKMsgEntity;
 import com.xinbida.wukongim.utils.DateUtils;
+import com.xinbida.wukongim.utils.WKCommonUtils;
+import com.xinbida.wukongim.utils.WKLoggerUtils;
 import com.xinbida.wukongim.utils.WKTypeUtils;
 
 import org.json.JSONArray;
@@ -72,6 +73,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * 消息管理
  */
 public class MsgManager extends BaseManager {
+    private final String TAG = "MsgManager";
+
     private MsgManager() {
     }
 
@@ -96,8 +99,6 @@ public class MsgManager extends BaseManager {
     private ConcurrentHashMap<String, INewMsgListener> newMsgListenerMap;
     // 清空消息
     private ConcurrentHashMap<String, IClearMsgListener> clearMsgMap;
-    // 同步消息回应
-    private ISyncMsgReaction iSyncMsgReaction;
     // 上传文件附件
     private IUploadAttachmentListener iUploadAttachmentListener;
     // 同步离线消息
@@ -130,7 +131,7 @@ public class MsgManager extends BaseManager {
      * @param contentMsg 消息
      */
     public void registerContentMsg(java.lang.Class<? extends WKMessageContent> contentMsg) {
-        if (customContentMsgList == null || customContentMsgList.size() == 0)
+        if (WKCommonUtils.isEmpty(customContentMsgList))
             initNormalMsg();
         try {
             boolean isAdd = true;
@@ -144,7 +145,7 @@ public class MsgManager extends BaseManager {
                 customContentMsgList.add(contentMsg);
         } catch (IllegalAccessException | InstantiationException | NoSuchMethodException |
                  InvocationTargetException e) {
-            e.printStackTrace();
+            WKLoggerUtils.getInstance().e(TAG, "registerContentMsg error " + e.getLocalizedMessage());
         }
 
     }
@@ -161,7 +162,7 @@ public class MsgManager extends BaseManager {
         try {
             jsonObject = new JSONObject(jsonStr);
         } catch (JSONException e) {
-            e.printStackTrace();
+            WKLoggerUtils.getInstance().e(TAG, "getMsgContentModel The parameter is not a JSON");
         }
         if (jsonObject == null) {
             return new WKMessageContent();
@@ -248,7 +249,7 @@ public class MsgManager extends BaseManager {
      */
     private WKMessageContent getContentMsgModel(int type, JSONObject jsonObject) {
         java.lang.Class<? extends WKMessageContent> baseMsg = null;
-        if (customContentMsgList != null && customContentMsgList.size() > 0) {
+        if (customContentMsgList != null && !customContentMsgList.isEmpty()) {
             try {
                 for (int i = 0, size = customContentMsgList.size(); i < size; i++) {
                     if (customContentMsgList.get(i).getDeclaredConstructor().newInstance().type == type) {
@@ -258,7 +259,7 @@ public class MsgManager extends BaseManager {
                 }
             } catch (IllegalAccessException | InstantiationException | NoSuchMethodException |
                      InvocationTargetException e) {
-                e.printStackTrace();
+                WKLoggerUtils.getInstance().e(TAG, "getContentMsgModel error" + e.getLocalizedMessage());
             }
         }
         try {
@@ -267,7 +268,7 @@ public class MsgManager extends BaseManager {
                 return baseMsg.newInstance().decodeMsg(jsonObject);
             }
         } catch (IllegalAccessException | InstantiationException e) {
-            e.printStackTrace();
+            WKLoggerUtils.getInstance().e(TAG, "getContentMsgModel decodeMsg error");
         }
         return null;
     }
@@ -354,21 +355,19 @@ public class MsgManager extends BaseManager {
      * @param clientMsgNos 消息编号集合
      */
     public void deleteWithClientMsgNos(List<String> clientMsgNos) {
-        if (clientMsgNos == null || clientMsgNos.size() == 0) return;
+        if (WKCommonUtils.isEmpty(clientMsgNos)) return;
         List<WKMsg> list = new ArrayList<>();
         try {
             WKIMApplication.getInstance().getDbHelper().getDb()
                     .beginTransaction();
-            if (clientMsgNos.size() > 0) {
-                for (int i = 0, size = clientMsgNos.size(); i < size; i++) {
-                    WKMsg msg = MsgDbManager.getInstance().deleteWithClientMsgNo(clientMsgNos.get(i));
-                    if (msg != null) {
-                        list.add(msg);
-                    }
+            for (int i = 0, size = clientMsgNos.size(); i < size; i++) {
+                WKMsg msg = MsgDbManager.getInstance().deleteWithClientMsgNo(clientMsgNos.get(i));
+                if (msg != null) {
+                    list.add(msg);
                 }
-                WKIMApplication.getInstance().getDbHelper().getDb()
-                        .setTransactionSuccessful();
             }
+            WKIMApplication.getInstance().getDbHelper().getDb()
+                    .setTransactionSuccessful();
         } catch (Exception ignored) {
         } finally {
             if (WKIMApplication.getInstance().getDbHelper().getDb().inTransaction()) {
@@ -457,6 +456,10 @@ public class MsgManager extends BaseManager {
         return MsgDbManager.getInstance().queryWithMessageID(messageID, true);
     }
 
+    public List<WKMsg> getWithMessageIDs(List<String> msgIds) {
+        return MsgDbManager.getInstance().queryWithMsgIds(msgIds);
+    }
+
     public int isDeletedMsg(JSONObject jsonObject) {
         int isDelete = 0;
         //消息可见数组
@@ -500,8 +503,9 @@ public class MsgManager extends BaseManager {
     }
 
     /**
-     *  use getMaxReactionSeqWithChannel
-     * @param channelID channelId
+     * use getMaxReactionSeqWithChannel
+     *
+     * @param channelID   channelId
      * @param channelType channelType
      * @return channel reaction max seq version
      */
@@ -515,16 +519,8 @@ public class MsgManager extends BaseManager {
     }
 
 
-    // 设置消息回应
-    public void setSyncMsgReaction(String channelID, byte channelType) {
-        long maxSeq = MsgDbManager.getInstance().getMaxReactionSeqWithChannel(channelID, channelType);
-        if (iSyncMsgReaction != null) {
-            runOnMainThread(() -> iSyncMsgReaction.onSyncMsgReaction(channelID, channelType, maxSeq));
-        }
-    }
-
     public void saveMessageReactions(List<WKSyncMsgReaction> list) {
-        if (list == null || list.size() == 0) return;
+        if (WKCommonUtils.isEmpty(list)) return;
         List<WKMsgReaction> reactionList = new ArrayList<>();
         List<String> msgIds = new ArrayList<>();
         for (int i = 0, size = list.size(); i < size; i++) {
@@ -601,7 +597,7 @@ public class MsgManager extends BaseManager {
                 try {
                     jsonObject.put(key, hashExtra.get(key));
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    WKLoggerUtils.getInstance().e(TAG, "updateLocalExtraWithClientMsgNO local_extra is not a JSON");
                 }
             }
             return MsgDbManager.getInstance().updateFieldWithClientMsgNo(clientMsgNo, WKDBColumns.WKMessageColumns.extra, jsonObject.toString(), true);
@@ -718,7 +714,7 @@ public class MsgManager extends BaseManager {
     public boolean clearWithChannel(String channelId, byte channelType) {
         boolean result = MsgDbManager.getInstance().deleteWithChannel(channelId, channelType);
         if (result) {
-            if (clearMsgMap != null && clearMsgMap.size() > 0) {
+            if (clearMsgMap != null && !clearMsgMap.isEmpty()) {
                 runOnMainThread(() -> {
                     for (Map.Entry<String, IClearMsgListener> entry : clearMsgMap.entrySet()) {
                         entry.getValue().clear(channelId, channelType, "");
@@ -733,7 +729,7 @@ public class MsgManager extends BaseManager {
     public boolean clearWithChannelAndFromUID(String channelId, byte channelType, String fromUID) {
         boolean result = MsgDbManager.getInstance().deleteWithChannelAndFromUID(channelId, channelType, fromUID);
         if (result) {
-            if (clearMsgMap != null && clearMsgMap.size() > 0) {
+            if (clearMsgMap != null && !clearMsgMap.isEmpty()) {
                 runOnMainThread(() -> {
                     for (Map.Entry<String, IClearMsgListener> entry : clearMsgMap.entrySet()) {
                         entry.getValue().clear(channelId, channelType, fromUID);
@@ -796,7 +792,7 @@ public class MsgManager extends BaseManager {
 
 
     public void saveRemoteExtraMsg(WKChannel channel, List<WKSyncExtraMsg> list) {
-        if (list == null || list.isEmpty()) return;
+        if (WKCommonUtils.isEmpty(list)) return;
         List<WKMsgExtra> extraList = new ArrayList<>();
         List<String> messageIds = new ArrayList<>();
         List<String> deleteMsgIds = new ArrayList<>();
@@ -811,21 +807,18 @@ public class MsgManager extends BaseManager {
                 deleteMsgIds.add(list.get(i).message_id);
             }
         }
-        List<WKMsg> updatedMsgList = MsgDbManager.getInstance().insertOrUpdateMsgExtras(extraList);
+        List<WKMsg> updatedMsgList = MsgDbManager.getInstance().insertOrReplace(extraList);
         if (!deleteMsgIds.isEmpty()) {
-            MsgDbManager.getInstance().deleteWithMessageIDs(deleteMsgIds);
+            boolean isSuccess = MsgDbManager.getInstance().deleteWithMessageIDs(deleteMsgIds);
+            if (!isSuccess) {
+                WKLoggerUtils.getInstance().e(TAG, "saveRemoteExtraMsg delete message error");
+            }
         }
         getMsgReactionsAndRefreshMsg(messageIds, updatedMsgList);
     }
 
     public void addOnSyncOfflineMsgListener(ISyncOfflineMsgListener iOfflineMsgListener) {
         this.iOfflineMsgListener = iOfflineMsgListener;
-    }
-
-    public void addOnSyncMsgReactionListener(ISyncMsgReaction iSyncMsgReactionListener) {
-        if (iSyncMsgReactionListener != null) {
-            this.iSyncMsgReaction = iSyncMsgReactionListener;
-        }
     }
 
     //添加删除消息监听
@@ -842,7 +835,7 @@ public class MsgManager extends BaseManager {
 
     //设置删除消息
     public void setDeleteMsg(WKMsg msg) {
-        if (deleteMsgListenerMap != null && deleteMsgListenerMap.size() > 0) {
+        if (deleteMsgListenerMap != null && !deleteMsgListenerMap.isEmpty()) {
             runOnMainThread(() -> {
                 for (Map.Entry<String, IDeleteMsgListener> entry : deleteMsgListenerMap.entrySet()) {
                     entry.getValue().onDeleteMsg(msg);
@@ -880,7 +873,7 @@ public class MsgManager extends BaseManager {
 
 
     public void setSendMsgCallback(WKMsg msg) {
-        if (sendMsgCallBackListenerHashMap != null && sendMsgCallBackListenerHashMap.size() > 0) {
+        if (sendMsgCallBackListenerHashMap != null && !sendMsgCallBackListenerHashMap.isEmpty()) {
             runOnMainThread(() -> {
                 for (Map.Entry<String, ISendMsgCallBackListener> entry : sendMsgCallBackListenerHashMap.entrySet()) {
                     entry.getValue().onInsertMsg(msg);
@@ -912,7 +905,7 @@ public class MsgManager extends BaseManager {
     public void setSyncChannelMsgListener(String channelID, byte channelType, long startMessageSeq, long endMessageSeq, int limit, int pullMode, ISyncChannelMsgBack iSyncChannelMsgBack) {
         if (this.iSyncChannelMsgListener != null) {
             runOnMainThread(() -> iSyncChannelMsgListener.syncChannelMsgs(channelID, channelType, startMessageSeq, endMessageSeq, limit, pullMode, syncChannelMsg -> {
-                if (syncChannelMsg != null && syncChannelMsg.messages != null && syncChannelMsg.messages.size() > 0) {
+                if (syncChannelMsg != null && WKCommonUtils.isNotEmpty(syncChannelMsg.messages)) {
                     saveSyncChannelMSGs(syncChannelMsg.messages);
                 }
                 iSyncChannelMsgBack.onBack(syncChannelMsg);
@@ -921,31 +914,37 @@ public class MsgManager extends BaseManager {
     }
 
 
-    private void saveSyncChannelMSGs(List<WKSyncRecent> list) {
-        if (list == null || list.size() == 0) return;
+    public void saveSyncChannelMSGs(List<WKSyncRecent> list) {
+        if (WKCommonUtils.isEmpty(list)) return;
         List<WKMsg> msgList = new ArrayList<>();
         List<WKMsgExtra> msgExtraList = new ArrayList<>();
         List<WKMsgReaction> reactionList = new ArrayList<>();
+        List<String> msgIds = new ArrayList<>();
         for (int j = 0, len = list.size(); j < len; j++) {
             WKMsg wkMsg = WKSyncRecent2WKMsg(list.get(j));
             msgList.add(wkMsg);
+            if (!TextUtils.isEmpty(wkMsg.messageID)) {
+                msgIds.add(wkMsg.messageID);
+            }
             if (list.get(j).message_extra != null) {
                 WKMsgExtra extra = WKSyncExtraMsg2WKMsgExtra(wkMsg.channelID, wkMsg.channelType, list.get(j).message_extra);
                 msgExtraList.add(extra);
             }
-            if (wkMsg.reactionList != null && wkMsg.reactionList.size() > 0) {
+            if (WKCommonUtils.isNotEmpty(wkMsg.reactionList)) {
                 reactionList.addAll(wkMsg.reactionList);
             }
         }
-        if (msgExtraList.size() > 0) {
-            MsgDbManager.getInstance().insertOrUpdateMsgExtras(msgExtraList);
+        if (WKCommonUtils.isNotEmpty(msgExtraList)) {
+            MsgDbManager.getInstance().insertOrReplace(msgExtraList);
         }
-        if (msgList.size() > 0) {
+        if (WKCommonUtils.isNotEmpty(msgList)) {
             MsgDbManager.getInstance().insertMsgs(msgList);
         }
-        if (reactionList.size() > 0) {
+        if (WKCommonUtils.isNotEmpty(reactionList)) {
             MsgDbManager.getInstance().insertMsgReactions(reactionList);
         }
+        List<WKMsg> saveList = MsgDbManager.getInstance().queryWithMsgIds(msgIds);
+        getMsgReactionsAndRefreshMsg(msgIds, saveList);
     }
 
     public void addOnSendMsgAckListener(String key, ISendACK iSendACKListener) {
@@ -955,7 +954,7 @@ public class MsgManager extends BaseManager {
     }
 
     public void setSendMsgAck(WKMsg msg) {
-        if (sendAckListenerMap != null && sendAckListenerMap.size() > 0) {
+        if (sendAckListenerMap != null && !sendAckListenerMap.isEmpty()) {
             runOnMainThread(() -> {
                 for (Map.Entry<String, ISendACK> entry : sendAckListenerMap.entrySet()) {
                     entry.getValue().msgACK(msg);
@@ -1006,7 +1005,7 @@ public class MsgManager extends BaseManager {
     }
 
     public void setRefreshMsg(WKMsg msg, boolean left) {
-        if (refreshMsgListenerMap != null && refreshMsgListenerMap.size() > 0) {
+        if (refreshMsgListenerMap != null && !refreshMsgListenerMap.isEmpty()) {
             runOnMainThread(() -> {
                 for (Map.Entry<String, IRefreshMsg> entry : refreshMsgListenerMap.entrySet()) {
                     entry.getValue().onRefresh(msg, left);
@@ -1049,6 +1048,7 @@ public class MsgManager extends BaseManager {
         extra.readed = extraMsg.readed;
         extra.messageID = extraMsg.message_id;
         extra.isMutualDeleted = extraMsg.is_mutual_deleted;
+        extra.isPinned = extraMsg.is_pinned;
         extra.extraVersion = extraMsg.extra_version;
         extra.revoke = extraMsg.revoke;
         extra.revoker = extraMsg.revoker;
@@ -1114,11 +1114,11 @@ public class MsgManager extends BaseManager {
                     msg.flameSecond = jsonObject.optInt("flame_second");
                 msg.content = jsonObject.toString();
             } catch (JSONException e) {
-                e.printStackTrace();
+                WKLoggerUtils.getInstance().e(TAG, "WKSyncRecent2WKMsg message content not a JSON");
             }
         }
         // 处理消息回应
-        if (wkSyncRecent.reactions != null && wkSyncRecent.reactions.size() > 0) {
+        if (WKCommonUtils.isNotEmpty(wkSyncRecent.reactions)) {
             msg.reactionList = getMsgReaction(wkSyncRecent);
         }
         if (msg.type != WKMsgContentType.WK_SIGNAL_DECRYPT_ERROR && msg.type != WKMsgContentType.WK_CONTENT_FORMAT_ERROR)
@@ -1146,7 +1146,7 @@ public class MsgManager extends BaseManager {
     }
 
     public void saveSyncMsg(List<WKSyncMsg> wkSyncMsgs) {
-        if (wkSyncMsgs == null || wkSyncMsgs.size() == 0) return;
+        if (WKCommonUtils.isEmpty(wkSyncMsgs)) return;
         for (int i = 0, size = wkSyncMsgs.size(); i < size; i++) {
             wkSyncMsgs.get(i).wkMsg = MessageHandler.getInstance().parsingMsg(wkSyncMsgs.get(i).wkMsg);
             if (wkSyncMsgs.get(i).wkMsg.timestamp != 0)
@@ -1171,11 +1171,11 @@ public class MsgManager extends BaseManager {
         wkMsgExtra.needUpload = 1;
         List<WKMsgExtra> list = new ArrayList<>();
         list.add(wkMsgExtra);
-        List<WKMsg> wkMsgs = MsgDbManager.getInstance().insertOrUpdateMsgExtras(list);
+        List<WKMsg> wkMsgList = MsgDbManager.getInstance().insertOrReplace(list);
         List<String> messageIds = new ArrayList<>();
         messageIds.add(msgID);
-        if (wkMsgs != null && wkMsgs.size() > 0) {
-            getMsgReactionsAndRefreshMsg(messageIds, wkMsgs);
+        if (WKCommonUtils.isNotEmpty(wkMsgList)) {
+            getMsgReactionsAndRefreshMsg(messageIds, wkMsgList);
             setUploadMsgExtra(wkMsgExtra);
         }
     }

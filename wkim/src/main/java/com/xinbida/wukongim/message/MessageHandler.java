@@ -22,6 +22,7 @@ import com.xinbida.wukongim.protocol.WKDisconnectMsg;
 import com.xinbida.wukongim.protocol.WKPongMsg;
 import com.xinbida.wukongim.protocol.WKReceivedAckMsg;
 import com.xinbida.wukongim.protocol.WKSendAckMsg;
+import com.xinbida.wukongim.utils.WKCommonUtils;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
 import com.xinbida.wukongim.utils.WKTypeUtils;
 
@@ -46,6 +47,8 @@ import java.util.TimerTask;
  * msg handler
  */
 public class MessageHandler {
+    private final String TAG = "MessageHandler";
+
     private MessageHandler() {
     }
 
@@ -63,7 +66,7 @@ public class MessageHandler {
         }
         byte[] bytes = WKProto.getInstance().encodeMsg(msg);
         if (bytes == null || bytes.length == 0) {
-            WKLoggerUtils.getInstance().e("发送未知消息包:" + msg.packetType);
+            WKLoggerUtils.getInstance().e(TAG, "Send unknown message packet:" + msg.packetType);
             return 1;
         }
 
@@ -73,23 +76,19 @@ public class MessageHandler {
                 connection.flush();
                 return 1;
             } catch (BufferOverflowException e) {
-                e.printStackTrace();
-                WKLoggerUtils.getInstance().e("sendMessages Exception BufferOverflowException"
+                WKLoggerUtils.getInstance().e(TAG, "sendMessages Exception BufferOverflowException"
                         + e.getMessage());
                 return 0;
             } catch (ClosedChannelException e) {
-                e.printStackTrace();
-                WKLoggerUtils.getInstance().e("sendMessages Exception ClosedChannelException"
+                WKLoggerUtils.getInstance().e(TAG, "sendMessages Exception ClosedChannelException"
                         + e.getMessage());
                 return 0;
             } catch (SocketTimeoutException e) {
-                e.printStackTrace();
-                WKLoggerUtils.getInstance().e("sendMessages Exception SocketTimeoutException"
+                WKLoggerUtils.getInstance().e(TAG, "sendMessages Exception SocketTimeoutException"
                         + e.getMessage());
                 return 0;
             } catch (IOException e) {
-                e.printStackTrace();
-                WKLoggerUtils.getInstance().e("sendMessages Exception IOException" + e.getMessage());
+                WKLoggerUtils.getInstance().e(TAG, "sendMessages Exception IOException" + e.getMessage());
                 return 0;
             }
         } else {
@@ -115,7 +114,7 @@ public class MessageHandler {
                 System.arraycopy(available_bytes, 0, temp, cacheData.length, available_bytes.length);
                 cacheData = temp;
             } catch (Exception e) {
-                WKLoggerUtils.getInstance().e("多条消息合并错误" + e.getMessage());
+                WKLoggerUtils.getInstance().e(TAG,"cutBytes Merge message error" + e.getMessage());
             }
 
         }
@@ -133,12 +132,12 @@ public class MessageHandler {
             int red_dot = WKTypeUtils.getInstance().getBit(lastMsgBytes[0], 1);
             //是否只同步一次
             int sync_once = WKTypeUtils.getInstance().getBit(lastMsgBytes[0], 2);
-            WKLoggerUtils.getInstance().e("是否不存储：" + no_persist + "是否显示红点：" + red_dot + "是否只同步一次：" + sync_once);
-            WKLoggerUtils.getInstance().e("消息包类型" + packetType);
+            WKLoggerUtils.getInstance().e(TAG, "no_persist：" + no_persist + "red_dot：" + red_dot + "sync_once：" + sync_once);
+            WKLoggerUtils.getInstance().e(TAG, "packet type" + packetType);
             if (packetType == WKMsgType.PONG) {
                 //心跳ack
                 mIReceivedMsgListener.pongMsg(new WKPongMsg());
-                WKLoggerUtils.getInstance().e("pong...");
+                WKLoggerUtils.getInstance().e(TAG, "pong...");
                 byte[] bytes = Arrays.copyOfRange(lastMsgBytes, 1, lastMsgBytes.length);
                 cacheData = lastMsgBytes = bytes;
             } else {
@@ -191,7 +190,6 @@ public class MessageHandler {
                 if (g_msg.packetType == WKMsgType.CONNACK) {
                     WKConnectAckMsg loginStatusMsg = (WKConnectAckMsg) g_msg;
                     mIReceivedMsgListener.loginStatusMsg(loginStatusMsg.reasonCode);
-                    WKLoggerUtils.getInstance().e("头信息-->" + no_persist);
                 } else if (g_msg.packetType == WKMsgType.SENDACK) {
                     //发送ack
                     WKSendAckMsg sendAckMsg = (WKSendAckMsg) g_msg;
@@ -247,7 +245,7 @@ public class MessageHandler {
 
     public synchronized void saveReceiveMsg() {
 
-        if (receivedMsgList != null && receivedMsgList.size() > 0) {
+        if (WKCommonUtils.isNotEmpty(receivedMsgList)) {
             saveSyncMsg(receivedMsgList);
 
             List<WKReceivedAckMsg> list = new ArrayList<>();
@@ -275,7 +273,7 @@ public class MessageHandler {
         sendAckTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                if (list.size() > 0) {
+                if (WKCommonUtils.isNotEmpty(list)) {
                     WKConnection.getInstance().sendMessage(list.get(0));
                     list.remove(0);
                 } else {
@@ -328,7 +326,6 @@ public class MessageHandler {
             }
             count = list.get(i).red_dot;
             if (lastMsg == null) {
-//                Log.e("消息不存在", "---->");
                 continue;
             }
             JSONObject jsonObject = null;
@@ -336,7 +333,7 @@ public class MessageHandler {
                 try {
                     jsonObject = new JSONObject(list.get(i).wkMsg.content);
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    WKLoggerUtils.getInstance().e(TAG, "groupMsg content is not a JSON struct");
                     jsonObject = new JSONObject();
                 }
             }
@@ -351,7 +348,7 @@ public class MessageHandler {
             if (lastMsg.baseContentMsgModel != null && lastMsg.baseContentMsgModel.mentionAll == 1 && list.get(i).red_dot == 1) {
                 isSave = true;
             } else {
-                if (lastMsg.baseContentMsgModel != null && lastMsg.baseContentMsgModel.mentionInfo != null && lastMsg.baseContentMsgModel.mentionInfo.uids.size() > 0 && count == 1) {
+                if (lastMsg.baseContentMsgModel != null && lastMsg.baseContentMsgModel.mentionInfo != null && WKCommonUtils.isNotEmpty(lastMsg.baseContentMsgModel.mentionInfo.uids) && count == 1) {
                     for (int j = 0, len = lastMsg.baseContentMsgModel.mentionInfo.uids.size(); j < len; j++) {
                         if (!TextUtils.isEmpty(lastMsg.baseContentMsgModel.mentionInfo.uids.get(j)) && !TextUtils.isEmpty(WKIMApplication.getInstance().getUid()) && lastMsg.baseContentMsgModel.mentionInfo.uids.get(j).equalsIgnoreCase(WKIMApplication.getInstance().getUid())) {
                             isSave = true;
@@ -411,9 +408,8 @@ public class MessageHandler {
                 }
 
             } catch (JSONException e) {
-                e.printStackTrace();
                 message.type = WKMsgContentType.WK_CONTENT_FORMAT_ERROR;
-                WKLoggerUtils.getInstance().e("解析消息错误，消息非json结构");
+                WKLoggerUtils.getInstance().e(TAG, "Parsing message error, message is not a JSON structure");
             }
         }
 

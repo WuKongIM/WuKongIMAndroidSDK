@@ -9,6 +9,7 @@ import android.database.Cursor;
 import com.xinbida.wukongim.WKIMApplication;
 import com.xinbida.wukongim.entity.WKRobot;
 import com.xinbida.wukongim.entity.WKRobotMenu;
+import com.xinbida.wukongim.utils.WKCommonUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -117,7 +118,7 @@ public class RobotDBManager {
     }
 
     public void insertRobots(List<WKRobot> list) {
-        if (list == null || list.size() == 0) return;
+        if (WKCommonUtils.isEmpty(list)) return;
         List<ContentValues> cvList = new ArrayList<>();
         for (WKRobot robot : list) {
             cvList.add(getCV(robot));
@@ -207,7 +208,7 @@ public class RobotDBManager {
     }
 
     public void insertMenus(List<WKRobotMenu> list) {
-        if (list == null || list.size() == 0) return;
+        if (WKCommonUtils.isEmpty(list)) return;
         List<ContentValues> cvList = new ArrayList<>();
         for (WKRobotMenu robot : list) {
             cvList.add(getCV(robot));

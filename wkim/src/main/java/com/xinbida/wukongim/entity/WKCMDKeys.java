@@ -33,14 +33,8 @@ public class WKCMDKeys {
     public final static String wk_friendDeleted = "friendDeleted";
     //动态消息
     public final static String wk_momentMsg = "momentMsg";
-    //收款成功
-    public final static String wk_receiveMoneySuccess = "receiveMoneySuccess";
-    //付款成功
-    public final static String wk_payMoneySuccess = "payMoneySuccess";
     //同步扩展消息cmd
     public final static String wk_sync_message_extra = "syncMessageExtra";
-    //同步消息回应
-    public final static String wk_syncMessageReaction = "syncMessageReaction";
     //邀请视频通话
     public final static String wk_room_invoke = "room.invoke";
     // 删除某个channel或channel成员聊天数据

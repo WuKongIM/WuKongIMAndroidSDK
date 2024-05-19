@@ -12,6 +12,7 @@ import com.xinbida.wukongim.entity.WKMsgExtra;
 import com.xinbida.wukongim.entity.WKMsgReaction;
 import com.xinbida.wukongim.entity.WKMsgSetting;
 import com.xinbida.wukongim.entity.WKReminder;
+import com.xinbida.wukongim.utils.WKLoggerUtils;
 import com.xinbida.wukongim.utils.WKTypeUtils;
 
 import org.json.JSONException;
@@ -19,6 +20,7 @@ import org.json.JSONObject;
 
 
 class WKSqlContentValues {
+    private final static String TAG = "WKSqlContentValues";
 
     static ContentValues getContentValuesWithMsg(WKMsg msg) {
         ContentValues contentValues = new ContentValues();
@@ -188,7 +190,8 @@ class WKSqlContentValues {
         cv.put("is_mutual_deleted", extra.isMutualDeleted);
         cv.put("content_edit", extra.contentEdit);
         cv.put("edited_at", extra.editedAt);
-        cv.put("needUpload", extra.needUpload);
+        cv.put("need_upload", extra.needUpload);
+        cv.put("is_pinned", extra.isPinned);
         return cv;
     }
 
@@ -205,7 +208,7 @@ class WKSqlContentValues {
         cv.put("text", reminder.text);
         cv.put("version", reminder.version);
         cv.put("done", reminder.done);
-        cv.put("needUpload", reminder.needUpload);
+        cv.put("need_upload", reminder.needUpload);
         cv.put("publisher", reminder.publisher);
 
         if (reminder.data != null) {
@@ -214,7 +217,7 @@ class WKSqlContentValues {
                 try {
                     jsonObject.put(String.valueOf(key), reminder.data.get(key));
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    WKLoggerUtils.getInstance().e(TAG, "getCVWithReminder error");
                 }
             }
             cv.put("data", jsonObject.toString());

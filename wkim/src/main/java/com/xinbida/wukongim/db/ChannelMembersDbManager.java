@@ -10,6 +10,8 @@ import android.text.TextUtils;
 import com.xinbida.wukongim.WKIMApplication;
 import com.xinbida.wukongim.entity.WKChannelMember;
 import com.xinbida.wukongim.manager.ChannelMembersManager;
+import com.xinbida.wukongim.utils.WKCommonUtils;
+import com.xinbida.wukongim.utils.WKLoggerUtils;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -24,6 +26,7 @@ import java.util.List;
  * 频道成员数据管理
  */
 public class ChannelMembersDbManager {
+    private static final String TAG = "ChannelMembersDbManager";
     final String channelCols = channel + ".channel_remark," + channel + ".channel_name," + channel + ".avatar," + channel + ".avatar_cache_key";
 
     private ChannelMembersDbManager() {
@@ -196,7 +199,7 @@ public class ChannelMembersDbManager {
         try {
             cv = WKSqlContentValues.getContentValuesWithChannelMember(channelMember);
         } catch (Exception e) {
-            e.printStackTrace();
+            WKLoggerUtils.getInstance().e(TAG , "insert error");
         }
         WKIMApplication.getInstance().getDbHelper()
                 .insert(channelMembers, cv);
@@ -222,7 +225,7 @@ public class ChannelMembersDbManager {
         try {
             WKIMApplication.getInstance().getDbHelper().getDb()
                     .beginTransaction();
-            if (updateCVList.size() > 0) {
+            if (WKCommonUtils.isNotEmpty(updateCVList)) {
                 for (ContentValues cv : updateCVList) {
                     String[] update = new String[3];
                     update[0] = cv.getAsString(WKDBColumns.WKChannelMembersColumns.channel_id);
@@ -232,7 +235,7 @@ public class ChannelMembersDbManager {
                             .update(channelMembers, cv, WKDBColumns.WKChannelMembersColumns.channel_id + "=? and " + WKDBColumns.WKChannelMembersColumns.channel_type + "=? and " + WKDBColumns.WKChannelMembersColumns.member_uid + "=?", update);
                 }
             }
-            if (newCVList.size() > 0) {
+            if (WKCommonUtils.isNotEmpty(newCVList)) {
                 for (ContentValues cv : newCVList) {
                     WKIMApplication.getInstance().getDbHelper().insert(channelMembers, cv);
                 }
@@ -267,12 +270,12 @@ public class ChannelMembersDbManager {
         WKIMApplication.getInstance().getDbHelper().getDb()
                 .beginTransaction();
         try {
-            if (insertCVList.size() > 0) {
+            if (WKCommonUtils.isNotEmpty(insertCVList)) {
                 for (ContentValues cv : insertCVList) {
                     WKIMApplication.getInstance().getDbHelper().insert(channelMembers, cv);
                 }
             }
-            if (updateCVList.size() > 0) {
+            if (WKCommonUtils.isNotEmpty(updateCVList)) {
                 for (ContentValues cv : updateCVList) {
                     String[] update = new String[3];
                     update[0] = cv.getAsString(WKDBColumns.WKChannelMembersColumns.channel_id);
@@ -314,7 +317,7 @@ public class ChannelMembersDbManager {
         try {
             cv = WKSqlContentValues.getContentValuesWithChannelMember(channelMember);
         } catch (Exception e) {
-            e.printStackTrace();
+            WKLoggerUtils.getInstance().e(TAG , "update error");
         }
         WKIMApplication.getInstance().getDbHelper()
                 .update(channelMembers, cv, WKDBColumns.WKChannelMembersColumns.channel_id + "=? and " + WKDBColumns.WKChannelMembersColumns.channel_type + "=? and " + WKDBColumns.WKChannelMembersColumns.member_uid + "=?", update);
@@ -365,7 +368,7 @@ public class ChannelMembersDbManager {
         try {
             WKIMApplication.getInstance().getDbHelper().getDb()
                     .beginTransaction();
-            if (list != null && list.size() > 0) {
+            if (WKCommonUtils.isNotEmpty(list)) {
                 for (int i = 0, size = list.size(); i < size; i++) {
                     insertOrUpdate(list.get(i));
                 }
@@ -537,7 +540,7 @@ public class ChannelMembersDbManager {
                     hashMap.put(key, jsonObject.opt(key));
                 }
             } catch (JSONException e) {
-                e.printStackTrace();
+                WKLoggerUtils.getInstance().e(TAG , "serializableChannelMember extra error");
             }
             channelMember.extraMap = hashMap;
         }

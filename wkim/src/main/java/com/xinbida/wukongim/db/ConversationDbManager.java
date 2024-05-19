@@ -18,6 +18,8 @@ import com.xinbida.wukongim.entity.WKConversationMsgExtra;
 import com.xinbida.wukongim.entity.WKMsg;
 import com.xinbida.wukongim.entity.WKUIConversationMsg;
 import com.xinbida.wukongim.manager.ConversationManager;
+import com.xinbida.wukongim.utils.WKCommonUtils;
+import com.xinbida.wukongim.utils.WKLoggerUtils;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -32,6 +34,7 @@ import java.util.List;
  * 最近会话
  */
 public class ConversationDbManager {
+    private final String TAG = "ConversationDbManager";
     private final String extraCols = "IFNULL(" + conversationExtra + ".browse_to,0) AS browse_to,IFNULL(" + conversationExtra + ".keep_message_seq,0) AS keep_message_seq,IFNULL(" + conversationExtra + ".keep_offset_y,0) AS keep_offset_y,IFNULL(" + conversationExtra + ".draft,'') AS draft,IFNULL(" + conversationExtra + ".version,0) AS extra_version";
     private final String channelCols = channel + ".channel_remark," +
             channel + ".channel_name," +
@@ -208,7 +211,7 @@ public class ConversationDbManager {
             cv.put(WKDBColumns.WKCoverMessageColumns.last_msg_seq, lastMsgSeq);
             cv.put(WKDBColumns.WKCoverMessageColumns.unread_count, count);
         } catch (Exception e) {
-            e.printStackTrace();
+            WKLoggerUtils.getInstance().e(TAG , "updateMsg error");
         }
         WKIMApplication.getInstance().getDbHelper()
                 .update(conversation, cv, WKDBColumns.WKCoverMessageColumns.channel_id + "=? and " + WKDBColumns.WKCoverMessageColumns.channel_type + "=?", update);
@@ -238,7 +241,7 @@ public class ConversationDbManager {
         try {
             cv.put(WKDBColumns.WKCoverMessageColumns.is_deleted, isDeleted);
         } catch (Exception e) {
-            e.printStackTrace();
+            WKLoggerUtils.getInstance().e(TAG , "deleteWithChannel error");
         }
 
         boolean result = WKIMApplication.getInstance().getDbHelper()
@@ -291,7 +294,7 @@ public class ConversationDbManager {
         try {
             cv = WKSqlContentValues.getContentValuesWithCoverMsg(msg, false);
         } catch (Exception e) {
-            e.printStackTrace();
+            WKLoggerUtils.getInstance().e(TAG,"insert error");
         }
         long result = -1;
         try {
@@ -316,7 +319,7 @@ public class ConversationDbManager {
         try {
             cv = WKSqlContentValues.getContentValuesWithCoverMsg(msg, false);
         } catch (Exception e) {
-            e.printStackTrace();
+            WKLoggerUtils.getInstance().e(TAG,"update error");
         }
         return WKIMApplication.getInstance().getDbHelper()
                 .update(conversation, cv, WKDBColumns.WKCoverMessageColumns.channel_id + "=? and " + WKDBColumns.WKCoverMessageColumns.channel_type + "=?", update);
@@ -421,13 +424,13 @@ public class ConversationDbManager {
 
         try {
             WKIMApplication.getInstance().getDbHelper().getDb().beginTransaction();
-            if (insertCVList.size() > 0) {
+            if (WKCommonUtils.isNotEmpty(insertCVList)) {
                 for (ContentValues cv : insertCVList) {
                     WKIMApplication.getInstance().getDbHelper()
                             .insert(conversationExtra, cv);
                 }
             }
-            if (updateCVList.size() > 0) {
+            if (WKCommonUtils.isNotEmpty(updateCVList)) {
                 for (ContentValues cv : updateCVList) {
                     String[] sv = new String[2];
                     sv[0] = cv.getAsString("channel_id");
@@ -501,7 +504,7 @@ public class ConversationDbManager {
                     hashMap.put(key, jsonObject.opt(key));
                 }
             } catch (JSONException e) {
-                e.printStackTrace();
+                WKLoggerUtils.getInstance().e(TAG , "serializeMsg error");
             }
             msg.localExtraMap = hashMap;
         }

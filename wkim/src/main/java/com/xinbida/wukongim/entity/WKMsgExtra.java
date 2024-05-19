@@ -19,6 +19,7 @@ public class WKMsgExtra implements Parcelable {
     public long editedAt;
     public String contentEdit;
     public int needUpload;
+    public int isPinned;
     public WKMessageContent contentEditMsgModel;
 
     public WKMsgExtra() {
@@ -38,6 +39,7 @@ public class WKMsgExtra implements Parcelable {
         editedAt = in.readLong();
         contentEdit = in.readString();
         needUpload = in.readInt();
+        isPinned = in.readInt();
         contentEditMsgModel = in.readParcelable(WKMessageContent.class.getClassLoader());
     }
 
@@ -73,6 +75,7 @@ public class WKMsgExtra implements Parcelable {
         parcel.writeLong(editedAt);
         parcel.writeString(contentEdit);
         parcel.writeInt(needUpload);
+        parcel.writeInt(isPinned);
         parcel.writeParcelable(contentEditMsgModel, i);
     }
 }

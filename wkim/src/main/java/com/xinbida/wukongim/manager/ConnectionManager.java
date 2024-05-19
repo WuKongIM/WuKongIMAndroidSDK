@@ -18,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * connect manager
  */
 public class ConnectionManager extends BaseManager {
+    private final String TAG = "ConnectionManager";
     private ConnectionManager() {
 
     }
@@ -37,7 +38,7 @@ public class ConnectionManager extends BaseManager {
     // 连接
     public void connection() {
         if (TextUtils.isEmpty(WKIMApplication.getInstance().getToken()) || TextUtils.isEmpty(WKIMApplication.getInstance().getUid())) {
-            WKLoggerUtils.getInstance().d("未初始化uid和token");
+            WKLoggerUtils.getInstance().e(TAG,"connection Uninitialized UID and token");
             return;
         }
         WKIMApplication.getInstance().isCanConnect = true;
@@ -49,7 +50,7 @@ public class ConnectionManager extends BaseManager {
 
     public void disconnect(boolean isLogout) {
         if (TextUtils.isEmpty(WKIMApplication.getInstance().getToken())) return;
-        WKLoggerUtils.getInstance().e("断开连接，是否退出IM:" + isLogout);
+        WKLoggerUtils.getInstance().e(TAG,"disconnect Disconnect is exit :" + isLogout);
         if (isLogout) {
             logoutChat();
         } else {
@@ -69,7 +70,7 @@ public class ConnectionManager extends BaseManager {
      * 退出登录
      */
     private void logoutChat() {
-        WKLoggerUtils.getInstance().e("退出登录设置不能连接");
+        WKLoggerUtils.getInstance().e(TAG,"exit");
         WKIMApplication.getInstance().isCanConnect = false;
         MessageHandler.getInstance().saveReceiveMsg();
 
@@ -86,10 +87,10 @@ public class ConnectionManager extends BaseManager {
 
     public void getIpAndPort(String requestId, IRequestIP iRequestIP) {
         if (iGetIpAndPort != null) {
-            WKLoggerUtils.getInstance().e("获取IP中...");
+            WKLoggerUtils.getInstance().e(TAG,"getIpAndPort get ip...");
             runOnMainThread(() -> iGetIpAndPort.getIP((ip, port) -> iRequestIP.onResult(requestId, ip, port)));
         } else {
-            WKLoggerUtils.getInstance().e("未注册获取IP事件");
+            WKLoggerUtils.getInstance().e(TAG,"Unregistered IP acquisition event");
         }
     }
 
@@ -99,7 +100,7 @@ public class ConnectionManager extends BaseManager {
     }
 
     public void setConnectionStatus(int status, String reason) {
-        if (connectionListenerMap != null && connectionListenerMap.size() > 0) {
+        if (connectionListenerMap != null && !connectionListenerMap.isEmpty()) {
             runOnMainThread(() -> {
                 for (Map.Entry<String, IConnectionStatus> entry : connectionListenerMap.entrySet()) {
                     entry.getValue().onStatus(status, reason);

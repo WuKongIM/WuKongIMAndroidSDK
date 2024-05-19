@@ -13,6 +13,7 @@ import com.xinbida.wukongim.entity.WKChannel;
 import com.xinbida.wukongim.interfaces.ICMDListener;
 import com.xinbida.wukongim.entity.WKChannelType;
 import com.xinbida.wukongim.utils.DateUtils;
+import com.xinbida.wukongim.utils.WKLoggerUtils;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -25,6 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * cmd manager
  */
 public class CMDManager extends BaseManager {
+    private final String TAG = "CMDManager";
+
     private CMDManager() {
     }
 
@@ -48,7 +51,7 @@ public class CMDManager extends BaseManager {
             if (!jsonObject.has("channel_type"))
                 jsonObject.put("channel_type", channelType);
         } catch (JSONException e) {
-            e.printStackTrace();
+            WKLoggerUtils.getInstance().e(TAG, "handleCMD put json error");
         }
         handleCMD(jsonObject);
     }
@@ -92,7 +95,7 @@ public class CMDManager extends BaseManager {
 //            String content = WKAESEncryptUtils.digest(cmd + sb);
 //            boolean verifyResult = WKAESEncryptUtils.checkRSASign(content, sign);
 //            if (!verifyResult) {
-//                WKLoggerUtils.getInstance().e("验证cmd错误");
+//                WKLoggerUtils.getInstance().e("verify cmd error");
 ////                return;
 //            } else {
 //                Log.e("cmd解密成功", "--->");
@@ -105,7 +108,7 @@ public class CMDManager extends BaseManager {
                     jsonObject.put("channel_type", json.optString("channel_type"));
                 }
             } catch (JSONException e) {
-                e.printStackTrace();
+               WKLoggerUtils.getInstance().e(TAG,"handleCMD put json error");
             }
             if (cmd.equalsIgnoreCase(WKCMDKeys.wk_memberUpdate)) {
                 //更新频道成员
@@ -169,12 +172,6 @@ public class CMDManager extends BaseManager {
 //                    wkChannel.deviceFlag = device_flag;
                     WKIM.getInstance().getChannelManager().saveOrUpdateChannel(wkChannel);
                 }
-            } else if (cmd.equals(WKCMDKeys.wk_syncMessageReaction)) {
-                if (jsonObject.has("channel_id") && jsonObject.has("channel_type")) {
-                    String channelId = jsonObject.optString("channel_id");
-                    byte channelType = (byte) jsonObject.optInt("channel_type");
-                    WKIM.getInstance().getMsgManager().setSyncMsgReaction(channelId, channelType);
-                }
             } else if (cmd.equals(WKCMDKeys.wk_message_erase)) {
                 String erase_type = "";
                 String from_uid = "";
@@ -230,7 +227,7 @@ public class CMDManager extends BaseManager {
             }
 
         } catch (JSONException e) {
-            e.printStackTrace();
+           WKLoggerUtils.getInstance().e(TAG,"handleCMD put json error");
             return;
         }
         handleCMD(jsonObject);
@@ -248,7 +245,7 @@ public class CMDManager extends BaseManager {
     }
 
     private void pushCMDs(WKCMD wkcmd) {
-        if (cmdListenerMap != null && cmdListenerMap.size() > 0) {
+        if (cmdListenerMap != null && !cmdListenerMap.isEmpty()) {
             runOnMainThread(() -> {
                 for (Map.Entry<String, ICMDListener> entry : cmdListenerMap.entrySet()) {
                     entry.getValue().onMsg(wkcmd);

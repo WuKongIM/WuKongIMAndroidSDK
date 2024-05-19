@@ -6,6 +6,7 @@ import com.xinbida.wukongim.db.RobotDBManager;
 import com.xinbida.wukongim.entity.WKRobot;
 import com.xinbida.wukongim.entity.WKRobotMenu;
 import com.xinbida.wukongim.interfaces.IRefreshRobotMenu;
+import com.xinbida.wukongim.utils.WKCommonUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -47,13 +48,13 @@ public class RobotManager extends BaseManager {
     }
 
     public void saveOrUpdateRobots(List<WKRobot> list) {
-        if (list != null && list.size() > 0) {
+        if (WKCommonUtils.isNotEmpty(list)) {
             RobotDBManager.getInstance().insertOrUpdateRobots(list);
         }
     }
 
     public void saveOrUpdateRobotMenus(List<WKRobotMenu> list) {
-        if (list != null && list.size() > 0) {
+        if (WKCommonUtils.isNotEmpty(list)) {
             RobotDBManager.getInstance().insertOrUpdateMenus(list);
         }
         setRefreshRobotMenu();

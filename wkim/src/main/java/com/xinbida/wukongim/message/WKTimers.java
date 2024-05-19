@@ -118,7 +118,7 @@ class WKTimers {
                 boolean is_have_network = WKIMApplication.getInstance().isNetworkConnected();
                 if (!is_have_network) {
                     WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.noNetwork, WKConnectReason.NoNetwork);
-                    WKLoggerUtils.getInstance().e("无网络连接...");
+                    WKLoggerUtils.getInstance().e("No network connection...");
                     WKConnection.getInstance().checkSendingMsg();
                 } else {
                     //有网络

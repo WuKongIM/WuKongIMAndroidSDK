@@ -62,6 +62,7 @@ import java.util.concurrent.TimeUnit;
  * IM connect
  */
 public class WKConnection {
+    private final String TAG = "WKConnection";
     private WKConnection() {
     }
 
@@ -138,7 +139,7 @@ public class WKConnection {
             return;
         }
         if (!WKIMApplication.getInstance().isCanConnect) {
-            WKLoggerUtils.getInstance().e("sdk判断不能重连-->");
+            WKLoggerUtils.getInstance().e(TAG,"SDK determines that reconnection is not possible");
             stopAll();
             return;
         }
@@ -148,21 +149,21 @@ public class WKConnection {
         lastRequestId = UUID.randomUUID().toString().replace("-", "");
         ConnectionManager.getInstance().getIpAndPort(lastRequestId, (requestId, ip, port) -> {
             if (TextUtils.isEmpty(ip) || port == 0) {
-                WKLoggerUtils.getInstance().e("返回连接IP或port错误，" + String.format("ip:%s & port:%s", ip, port));
+                WKLoggerUtils.getInstance().e(TAG,"Return connection IP or port error，" + String.format("ip:%s & port:%s", ip, port));
                 isReConnecting = false;
                 reconnectionHandler.postDelayed(reconnectionRunnable, reconnectDelay);
             } else {
                 if (lastRequestId.equals(requestId)) {
                     WKConnection.this.ip = ip;
                     WKConnection.this.port = port;
-                    WKLoggerUtils.getInstance().e("连接地址" + ip + ":" + port);
+                    WKLoggerUtils.getInstance().e(TAG,"connection address " + ip + ":" + port);
                     if (connectionIsNull()) {
                         executors.execute(WKConnection.this::connSocket);
                       //  new Thread(WKConnection.this::connSocket).start();
                     }
                 } else {
                     if (connectionIsNull()) {
-                        WKLoggerUtils.getInstance().e("请求IP的编号不一致，重连中");
+                        WKLoggerUtils.getInstance().e(TAG,"The IP number requested is inconsistent, reconnecting");
                         reconnectionHandler.postDelayed(reconnectionRunnable, reconnectDelay);
                     }
                 }
@@ -186,9 +187,8 @@ public class WKConnection {
                 connection.setAutoflush(true);
         } catch (Exception e) {
             isReConnecting = false;
-            WKLoggerUtils.getInstance().e("连接异常:" + e.getMessage());
+            WKLoggerUtils.getInstance().e(TAG,"connection exception:" + e.getMessage());
             reconnection();
-            e.printStackTrace();
         }
     }
 
@@ -249,8 +249,7 @@ public class WKConnection {
                     sendMessage(Objects.requireNonNull(sendingMsgHashMap.get(entry.getKey())).wkSendMsg);
                     try {
                         Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+                    } catch (InterruptedException ignored) {
                     }
                 }
             }
@@ -266,7 +265,7 @@ public class WKConnection {
 
     //处理登录消息状态
     private void handleLoginStatus(short status) {
-        WKLoggerUtils.getInstance().e("IM连接返回状态:" + status);
+        WKLoggerUtils.getInstance().e(TAG,"connection status:" + status);
         String reason = WKConnectReason.ConnectSuccess;
         if (status == WKConnectStatus.kicked) {
             reason = WKConnectReason.ReasonAuthFail;
@@ -288,20 +287,18 @@ public class WKConnection {
                     }
                 });
             } else {
-                WKLoggerUtils.getInstance().e("通知UI同步会话-->");
                 WKIM.getInstance().getConversationManager().setSyncConversationListener(syncChat -> {
                     WKIMApplication.getInstance().isCanConnect = true;
-                    WKLoggerUtils.getInstance().e("同步会话完成-->");
                     WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.success, WKConnectReason.ConnectSuccess);
                 });
             }
         } else if (status == WKConnectStatus.kicked) {
-            WKLoggerUtils.getInstance().e("解析登录返回被踢设置不能连接");
+            WKLoggerUtils.getInstance().e(TAG,"Received kicked message");
             MessageHandler.getInstance().updateLastSendingMsgFail();
             WKIMApplication.getInstance().isCanConnect = false;
             stopAll();
         } else {
-            WKLoggerUtils.getInstance().e("sdk解析登录返回错误类型:" + status);
+            WKLoggerUtils.getInstance().e(TAG,"parsing login returns error type:" + status);
             stopAll();
             reconnection();
         }
@@ -323,7 +320,7 @@ public class WKConnection {
         }
         int status = MessageHandler.getInstance().sendMessage(connection, mBaseMsg);
         if (status == 0) {
-            WKLoggerUtils.getInstance().e("发送消息失败");
+            WKLoggerUtils.getInstance().e(TAG,"send message failed");
             reconnection();
         }
     }
@@ -341,7 +338,7 @@ public class WKConnection {
     }
 
     private void removeSendingMsg() {
-        if (sendingMsgHashMap.size() > 0) {
+        if (!sendingMsgHashMap.isEmpty()) {
             Iterator<Map.Entry<Integer, WKSendingMsg>> it = sendingMsgHashMap.entrySet().iterator();
             while (it.hasNext()) {
                 Map.Entry<Integer, WKSendingMsg> entry = it.next();
@@ -355,7 +352,7 @@ public class WKConnection {
     //检测正在发送的消息
     synchronized void checkSendingMsg() {
         removeSendingMsg();
-        if (sendingMsgHashMap.size() > 0) {
+        if (!sendingMsgHashMap.isEmpty()) {
             Iterator<Map.Entry<Integer, WKSendingMsg>> it = sendingMsgHashMap.entrySet().iterator();
             while (it.hasNext()) {
                 Map.Entry<Integer, WKSendingMsg> item = it.next();
@@ -366,7 +363,7 @@ public class WKConnection {
                         MsgDbManager.getInstance().updateMsgStatus(item.getKey(), WKSendMsgResult.send_fail);
                         it.remove();
                         wkSendingMsg.isCanResend = false;
-                        WKLoggerUtils.getInstance().e("消息发送失败...");
+                        WKLoggerUtils.getInstance().e(TAG,"checkSendingMsg send message failed");
                     } else {
                         long nowTime = DateUtils.getInstance().getCurrentSeconds();
                         if (nowTime - wkSendingMsg.sendTime > 10) {
@@ -374,7 +371,7 @@ public class WKConnection {
                             sendingMsgHashMap.put(item.getKey(), wkSendingMsg);
                             wkSendingMsg.sendCount++;
                             sendMessage(Objects.requireNonNull(sendingMsgHashMap.get(item.getKey())).wkSendMsg);
-                            WKLoggerUtils.getInstance().e("消息发送失败...");
+                            WKLoggerUtils.getInstance().e(TAG,"checkSendingMsg send message failed");
                         }
                     }
                 }
@@ -556,7 +553,6 @@ public class WKConnection {
             checkNetWorkTimer = null;
         }
         checkNetWorkTimer = new Timer();
-        WKLoggerUtils.getInstance().e("开始计算IP请求时间");
         checkNetWorkTimer.schedule(new TimerTask() {
             @Override
             public void run() {
@@ -566,7 +562,7 @@ public class WKConnection {
                     checkNetWorkTimer.purge();
                     checkNetWorkTimer = null;
                     if (TextUtils.isEmpty(ip) || port == 0) {
-                        WKLoggerUtils.getInstance().e("请求IP已超时，开始重连--->");
+                        WKLoggerUtils.getInstance().e(TAG,"Request for IP has timed out");
                         isReConnecting = false;
                         reconnection();
                     }
@@ -575,9 +571,9 @@ public class WKConnection {
                         checkNetWorkTimer.cancel();
                         checkNetWorkTimer.purge();
                         checkNetWorkTimer = null;
-                        WKLoggerUtils.getInstance().e("请求IP倒计时已销毁--->");
+                        WKLoggerUtils.getInstance().e(TAG,"Request IP countdown has been destroyed");
                     } else {
-                        WKLoggerUtils.getInstance().e("请求IP倒计时中--->" + (nowTime - requestIPTime));
+                        WKLoggerUtils.getInstance().e(TAG,"Requesting IP countdown--->" + (nowTime - requestIPTime));
                     }
                 }
             }

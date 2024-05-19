@@ -1,7 +1,6 @@
 package com.xinbida.wukongim.message;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.xinbida.wukongim.WKIMApplication;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
@@ -24,7 +23,7 @@ import java.nio.BufferUnderflowException;
 class ConnectionClient implements IDataHandler, IConnectHandler,
         IDisconnectHandler, IConnectExceptionHandler,
         IConnectionTimeoutHandler, IIdleTimeoutHandler {
-
+    private final String TAG = "ConnectionClient";
     private boolean isConnectSuccess;
 
     ConnectionClient() {
@@ -33,7 +32,7 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
 
     @Override
     public boolean onConnectException(INonBlockingConnection iNonBlockingConnection, IOException e) {
-        WKLoggerUtils.getInstance().e("连接异常");
+        WKLoggerUtils.getInstance().e(TAG,"connection exception");
         WKConnection.getInstance().forcedReconnection();
         close(iNonBlockingConnection);
         return true;
@@ -42,7 +41,7 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
     @Override
     public boolean onConnect(INonBlockingConnection iNonBlockingConnection) throws BufferUnderflowException {
         if (WKConnection.getInstance().connection == null) {
-            Log.e("连接信息为空", "--->");
+            WKLoggerUtils.getInstance().e(TAG, "onConnect connection is null");
         }
         try {
             if (WKConnection.getInstance().connection != null && iNonBlockingConnection != null) {
@@ -52,15 +51,16 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
                 } else {
                     //连接成功
                     isConnectSuccess = true;
-                    WKLoggerUtils.getInstance().e("连接成功");
+                    WKLoggerUtils.getInstance().e(TAG, "connection success");
                     WKConnection.getInstance().sendConnectMsg();
                 }
             } else {
                 close(iNonBlockingConnection);
-                WKLoggerUtils.getInstance().e("连接成功连接对象为空");
+                WKLoggerUtils.getInstance().e(TAG, "Connection successful but connection object is empty");
                 WKConnection.getInstance().forcedReconnection();
             }
         } catch (Exception ignored) {
+            WKLoggerUtils.getInstance().e(TAG, "onConnect error");
         }
         return false;
 
@@ -69,7 +69,7 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
     @Override
     public boolean onConnectionTimeout(INonBlockingConnection iNonBlockingConnection) {
         if (!isConnectSuccess) {
-            WKLoggerUtils.getInstance().e("连接超时");
+            WKLoggerUtils.getInstance().e(TAG, "connection timeout");
             WKConnection.getInstance().forcedReconnection();
         }
         return true;
@@ -83,14 +83,14 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
                 return true;
             }
             if (!TextUtils.isEmpty(WKConnection.getInstance().socketSingleID) && !WKConnection.getInstance().socketSingleID.equals(id)) {
-                WKLoggerUtils.getInstance().e("收到的消息ID和连接的ID对应不上---");
+                WKLoggerUtils.getInstance().e(TAG, "onData method The received message ID does not match the connected ID");
                 try {
                     iNonBlockingConnection.close();
                     if (WKConnection.getInstance().connection != null) {
                         WKConnection.getInstance().connection.close();
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    WKLoggerUtils.getInstance().e(TAG, "onData close connection error");
                 }
                 if (WKIMApplication.getInstance().isCanConnect) {
                     WKConnection.getInstance().forcedReconnection();
@@ -124,15 +124,14 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
             }
 
         } catch (IOException e) {
-            e.printStackTrace();
-            WKLoggerUtils.getInstance().e("处理接受到到数据异常:" + e.getMessage());
+            WKLoggerUtils.getInstance().e(TAG,"Handling Received Data Exception:" + e.getMessage());
         }
         return true;
     }
 
     @Override
     public boolean onDisconnect(INonBlockingConnection iNonBlockingConnection) {
-        WKLoggerUtils.getInstance().e("连接断开");
+        WKLoggerUtils.getInstance().e(TAG,"Connection disconnected");
         try {
             if (iNonBlockingConnection != null && !TextUtils.isEmpty(iNonBlockingConnection.getId()) && iNonBlockingConnection.getAttachment() != null) {
                 String id = iNonBlockingConnection.getId();
@@ -148,7 +147,7 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
             if (WKIMApplication.getInstance().isCanConnect) {
                 WKConnection.getInstance().forcedReconnection();
             } else {
-                WKLoggerUtils.getInstance().e("不能重连-->");
+                WKLoggerUtils.getInstance().e(TAG,"No reconnection allowed");
             }
             close(iNonBlockingConnection);
         } catch (Exception ignored) {
@@ -161,7 +160,7 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
     @Override
     public boolean onIdleTimeout(INonBlockingConnection iNonBlockingConnection) {
         if (!isConnectSuccess) {
-            WKLoggerUtils.getInstance().e("Idle连接超时");
+            WKLoggerUtils.getInstance().e(TAG,"Idle timeout");
             WKConnection.getInstance().forcedReconnection();
             close(iNonBlockingConnection);
         }
@@ -173,7 +172,7 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
             if (iNonBlockingConnection != null)
                 iNonBlockingConnection.close();
         } catch (IOException e) {
-            e.printStackTrace();
+           WKLoggerUtils.getInstance().e(TAG,"close connection error");
         }
     }
 }

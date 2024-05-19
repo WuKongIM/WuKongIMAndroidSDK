@@ -24,9 +24,10 @@ import com.xinbida.wukongim.entity.WKMsgReaction;
 import com.xinbida.wukongim.entity.WKMsgSetting;
 import com.xinbida.wukongim.interfaces.IGetOrSyncHistoryMsgBack;
 import com.xinbida.wukongim.manager.MsgManager;
-import com.xinbida.wukongim.message.WKRead;
 import com.xinbida.wukongim.message.type.WKSendMsgResult;
 import com.xinbida.wukongim.msgmodel.WKMessageContent;
+import com.xinbida.wukongim.utils.WKCommonUtils;
+import com.xinbida.wukongim.utils.WKLoggerUtils;
 import com.xinbida.wukongim.utils.WKTypeUtils;
 
 import org.json.JSONException;
@@ -43,7 +44,8 @@ import java.util.List;
  * 消息管理
  */
 public class MsgDbManager {
-    private final String extraCols = "IFNULL(" + messageExtra + ".readed,0) as readed,IFNULL(" + messageExtra + ".readed_count,0) as readed_count,IFNULL(" + messageExtra + ".unread_count,0) as unread_count,IFNULL(" + messageExtra + ".revoke,0) as revoke,IFNULL(" + messageExtra + ".revoker,'') as revoker,IFNULL(" + messageExtra + ".extra_version,0) as extra_version,IFNULL(" + messageExtra + ".is_mutual_deleted,0) as is_mutual_deleted,IFNULL(" + messageExtra + ".content_edit,'') as content_edit,IFNULL(" + messageExtra + ".edited_at,0) as edited_at";
+    private final String TAG = "MsgDbManager";
+    private final String extraCols = "IFNULL(" + messageExtra + ".readed,0) as readed,IFNULL(" + messageExtra + ".readed_count,0) as readed_count,IFNULL(" + messageExtra + ".unread_count,0) as unread_count,IFNULL(" + messageExtra + ".revoke,0) as revoke,IFNULL(" + messageExtra + ".revoker,'') as revoker,IFNULL(" + messageExtra + ".extra_version,0) as extra_version,IFNULL(" + messageExtra + ".is_mutual_deleted,0) as is_mutual_deleted,IFNULL(" + messageExtra + ".content_edit,'') as content_edit,IFNULL(" + messageExtra + ".edited_at,0) as edited_at,IFNULL(" + messageExtra + ".is_pinned,0) as is_pinned";
     private final String messageCols = message + ".client_seq," + message + ".message_id," + message + ".message_seq," + message + ".channel_id," + message + ".channel_type," + message + ".timestamp," + message + ".from_uid," + message + ".type," + message + ".content," + message + ".status," + message + ".voice_status," + message + ".created_at," + message + ".updated_at," + message + ".searchable_word," + message + ".client_msg_no," + message + ".setting," + message + ".order_seq," + message + ".extra," + message + ".is_deleted," + message + ".flame," + message + ".flame_second," + message + ".viewed," + message + ".viewed_at," + message + ".expire_time," + message + ".expire_timestamp";
 
     private MsgDbManager() {
@@ -66,6 +68,7 @@ public class MsgDbManager {
         if (more == 0) {
             new Handler(Looper.getMainLooper()).post(() -> iGetOrSyncHistoryMsgBack.onResult(list));
             more = 1;
+            requestCount = 0;
             return;
         }
         //业务判断数据
@@ -75,7 +78,7 @@ public class MsgDbManager {
         }
 
         //先通过message_seq排序
-        if (tempList.size() > 0)
+        if (!tempList.isEmpty())
             Collections.sort(tempList, (o1, o2) -> (o1.messageSeq - o2.messageSeq));
         //获取最大和最小messageSeq
         long minMessageSeq = 0;
@@ -318,7 +321,7 @@ public class MsgDbManager {
         }
         //扩展消息
         List<WKMsgReaction> list = MsgReactionDBManager.getInstance().queryWithMessageIds(messageIds);
-        if (list != null && list.size() > 0) {
+        if (list != null && !list.isEmpty()) {
             for (int i = 0, size = msgList.size(); i < size; i++) {
                 for (int j = 0, len = list.size(); j < len; j++) {
                     if (list.get(j).messageID.equals(msgList.get(i).messageID)) {
@@ -332,7 +335,7 @@ public class MsgDbManager {
         // 发送者成员信息
         if (channelType == WKChannelType.GROUP) {
             List<WKChannelMember> memberList = ChannelMembersDbManager.getInstance().queryWithUIDs(channelId, channelType, fromUIDs);
-            if (memberList != null && memberList.size() > 0) {
+            if (memberList != null && !memberList.isEmpty()) {
                 for (WKChannelMember member : memberList) {
                     for (int i = 0, size = msgList.size(); i < size; i++) {
                         if (!TextUtils.isEmpty(msgList.get(i).fromUID) && msgList.get(i).fromUID.equals(member.memberUID)) {
@@ -344,7 +347,7 @@ public class MsgDbManager {
         }
         //消息发送者信息
         List<WKChannel> wkChannels = ChannelDBManager.getInstance().queryWithChannelIdsAndChannelType(fromUIDs, WKChannelType.PERSONAL);
-        if (wkChannels != null && wkChannels.size() > 0) {
+        if (WKCommonUtils.isNotEmpty(wkChannels)) {
             for (WKChannel wkChannel : wkChannels) {
                 for (int i = 0, size = msgList.size(); i < size; i++) {
                     if (!TextUtils.isEmpty(msgList.get(i).fromUID) && msgList.get(i).fromUID.equals(wkChannel.channelID)) {
@@ -354,9 +357,9 @@ public class MsgDbManager {
             }
         }
         // 被回复消息的编辑
-        if (replyMsgIds.size() > 0) {
+        if (!replyMsgIds.isEmpty()) {
             List<WKMsgExtra> msgExtraList = queryMsgExtrasWithMsgIds(replyMsgIds);
-            if (msgExtraList.size() > 0) {
+            if (!msgExtraList.isEmpty()) {
                 for (WKMsgExtra extra : msgExtraList) {
                     for (int i = 0, size = msgList.size(); i < size; i++) {
                         if (msgList.get(i).baseContentMsgModel != null
@@ -521,7 +524,7 @@ public class MsgDbManager {
     }
 
     public synchronized void insertMsgs(List<WKMsg> list) {
-        if (list == null || list.size() == 0) return;
+        if (WKCommonUtils.isEmpty(list)) return;
         if (list.size() == 1) {
             insert(list.get(0));
             return;
@@ -555,14 +558,14 @@ public class MsgDbManager {
             }
             if (msgIds.size() == 200) {
                 List<WKMsg> tempList = queryWithMsgIds(msgIds);
-                if (tempList != null && tempList.size() > 0) {
+                if (WKCommonUtils.isNotEmpty(tempList)) {
                     msgIdExistMsgList.addAll(tempList);
                 }
                 msgIds.clear();
             }
             if (clientMsgNos.size() == 200) {
                 List<WKMsg> tempList = queryWithClientMsgNos(clientMsgNos);
-                if (tempList != null && tempList.size() > 0)
+                if (WKCommonUtils.isNotEmpty(tempList))
                     existMsgList.addAll(tempList);
                 clientMsgNos.clear();
             }
@@ -572,16 +575,16 @@ public class MsgDbManager {
             if (!TextUtils.isEmpty(saveList.get(i).clientMsgNO))
                 clientMsgNos.add(saveList.get(i).clientMsgNO);
         }
-        if (msgIds.size() > 0) {
+        if (WKCommonUtils.isNotEmpty(msgIds)) {
             List<WKMsg> tempList = queryWithMsgIds(msgIds);
-            if (tempList != null && tempList.size() > 0) {
+            if (WKCommonUtils.isNotEmpty(tempList)) {
                 msgIdExistMsgList.addAll(tempList);
             }
             msgIds.clear();
         }
-        if (clientMsgNos.size() > 0) {
+        if (WKCommonUtils.isNotEmpty(clientMsgNos)) {
             List<WKMsg> tempList = queryWithClientMsgNos(clientMsgNos);
-            if (tempList != null && tempList.size() > 0) {
+            if (WKCommonUtils.isNotEmpty(tempList)) {
                 existMsgList.addAll(tempList);
             }
             clientMsgNos.clear();
@@ -611,7 +614,11 @@ public class MsgDbManager {
                         continue;
                     }
                     if (msg.messageID.equals(tempMsg.messageID)) {
-                        isAdd = false;
+                        if (msg.isDeleted != tempMsg.isDeleted && msg.isDeleted == 1) {
+                            msg.clientMsgNO = WKIM.getInstance().getMsgManager().createClientMsgNO();
+                        } else {
+                            isAdd = false;
+                        }
                         break;
                     }
                 }
@@ -674,7 +681,7 @@ public class MsgDbManager {
         try {
             cv = WKSqlContentValues.getContentValuesWithMsg(msg);
         } catch (Exception e) {
-            e.printStackTrace();
+            WKLoggerUtils.getInstance().e(TAG , " insert msg error");
         }
         long result = -1;
         try {
@@ -792,7 +799,6 @@ public class MsgDbManager {
         return msg;
     }
 
-
     /**
      * 删除消息
      *
@@ -861,7 +867,7 @@ public class MsgDbManager {
         String[] updateValue = new String[1];
         updateKey[0] = WKDBColumns.WKMessageColumns.is_deleted;
         updateValue[0] = "1";
-        String where = WKDBColumns.WKMessageColumns.message_id + "in (" + WKCursor.getPlaceholders(messageIDs.size()) + ")";
+        String where = WKDBColumns.WKMessageColumns.message_id + " in (" + WKCursor.getPlaceholders(messageIDs.size()) + ")";
         String[] whereValue = messageIDs.toArray(new String[0]);
         int row = WKIMApplication.getInstance().getDbHelper()
                 .update(message, updateKey, updateValue, where, whereValue);
@@ -889,6 +895,37 @@ public class MsgDbManager {
             }
         }
         return list;
+    }
+
+    public List<WKMsg> insertOrReplace(List<WKMsgExtra> list) {
+        List<String> msgIds = new ArrayList<>();
+        List<ContentValues> cvList = new ArrayList<>();
+        for (int i = 0, size = list.size(); i < size; i++) {
+            if (!TextUtils.isEmpty(list.get(i).messageID)) {
+                msgIds.add(list.get(i).messageID);
+            }
+            cvList.add(WKSqlContentValues.getCVWithMsgExtra(list.get(i)));
+        }
+        try {
+            WKIMApplication.getInstance().getDbHelper().getDb()
+                    .beginTransaction();
+            if (!cvList.isEmpty()) {
+                for (ContentValues cv : cvList) {
+                    WKIMApplication.getInstance().getDbHelper().insert(messageExtra, cv);
+                }
+            }
+            WKIMApplication.getInstance().getDbHelper().getDb()
+                    .setTransactionSuccessful();
+        } catch (Exception ignored) {
+            WKLoggerUtils.getInstance().e(TAG, "insertOrReplace error");
+        } finally {
+            if (WKIMApplication.getInstance().getDbHelper().getDb().inTransaction()) {
+                WKIMApplication.getInstance().getDbHelper().getDb()
+                        .endTransaction();
+            }
+        }
+        List<WKMsg> msgList = queryWithMsgIds(msgIds);
+        return msgList;
     }
 
     public List<WKMsg> insertOrUpdateMsgExtras(List<WKMsgExtra> list) {
@@ -1393,9 +1430,9 @@ public class MsgDbManager {
         } catch (Exception ignored) {
         }
 
-        if (gChannelIds.size() > 0) {
+        if (WKCommonUtils.isNotEmpty(gChannelIds)) {
             List<WKChannel> channels = ChannelDBManager.getInstance().queryWithChannelIdsAndChannelType(gChannelIds, WKChannelType.GROUP);
-            if (channels != null && channels.size() > 0) {
+            if (WKCommonUtils.isNotEmpty(channels)) {
                 for (WKChannel channel : channels) {
                     if (channel == null || TextUtils.isEmpty(channel.channelID)) continue;
                     for (int i = 0, size = list.size(); i < size; i++) {
@@ -1406,9 +1443,9 @@ public class MsgDbManager {
                 }
             }
         }
-        if (pChannelIds.size() > 0) {
+        if (WKCommonUtils.isNotEmpty(pChannelIds)) {
             List<WKChannel> channels = ChannelDBManager.getInstance().queryWithChannelIdsAndChannelType(pChannelIds, WKChannelType.PERSONAL);
-            if (channels != null && channels.size() > 0) {
+            if (WKCommonUtils.isNotEmpty(channels)) {
                 for (WKChannel channel : channels) {
                     if (channel == null || TextUtils.isEmpty(channel.channelID)) continue;
                     for (int i = 0, size = list.size(); i < size; i++) {
@@ -1420,9 +1457,9 @@ public class MsgDbManager {
             }
         }
 
-        if (fromChannelIds.size() > 0) {
+        if (WKCommonUtils.isNotEmpty(fromChannelIds)) {
             List<WKChannel> channels = ChannelDBManager.getInstance().queryWithChannelIdsAndChannelType(fromChannelIds, WKChannelType.PERSONAL);
-            if (channels != null && channels.size() > 0) {
+            if (WKCommonUtils.isNotEmpty(channels)) {
                 for (WKChannel channel : channels) {
                     if (channel == null || TextUtils.isEmpty(channel.channelID)) continue;
                     for (int i = 0, size = list.size(); i < size; i++) {
@@ -1534,7 +1571,7 @@ public class MsgDbManager {
 
     public List<WKMsgExtra> queryMsgExtraWithNeedUpload(int needUpload) {
         List<WKMsgExtra> list = new ArrayList<>();
-        String sql = "select * from " + messageExtra + " where needUpload=?";
+        String sql = "select * from " + messageExtra + " where need_upload=?";
         try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql, new Object[]{needUpload})) {
             if (cursor == null) {
                 return list;
@@ -1581,7 +1618,8 @@ public class MsgDbManager {
         extra.extraVersion = WKCursor.readLong(cursor, "extra_version");
         extra.editedAt = WKCursor.readLong(cursor, "edited_at");
         extra.contentEdit = WKCursor.readString(cursor, "content_edit");
-        extra.needUpload = WKCursor.readInt(cursor, "needUpload");
+        extra.needUpload = WKCursor.readInt(cursor, "need_upload");
+        extra.isPinned = WKCursor.readInt(cursor, "is_pinned");
         return extra;
     }
 
@@ -1627,7 +1665,7 @@ public class MsgDbManager {
                     hashMap.put(key, jsonObject.opt(key));
                 }
             } catch (JSONException e) {
-                e.printStackTrace();
+                WKLoggerUtils.getInstance().e(TAG ," serializeMsg error extra not json format");
             }
             msg.localExtraMap = hashMap;
         }
@@ -1645,7 +1683,7 @@ public class MsgDbManager {
             try {
                 jsonObject = new JSONObject(msg.content);
             } catch (JSONException e) {
-                e.printStackTrace();
+                WKLoggerUtils.getInstance().e(TAG , "getMsgModel error content not json format");
             }
         }
         return WKIM.getInstance()

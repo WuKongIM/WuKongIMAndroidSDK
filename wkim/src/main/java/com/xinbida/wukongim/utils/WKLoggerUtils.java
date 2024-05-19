@@ -144,10 +144,10 @@ public class WKLoggerUtils {
     /**
      * log.e
      */
-    public void error(String msg) {
+    public void error(String tag, String msg) {
         String message = createMessage(msg);
         if (WKIM.getInstance().isDebug()) {
-            Log.e(TAG, message);
+            Log.e(TAG + " " + tag, message);
         }
         if (WKIM.getInstance().isDebug()) {
             writeLog(message);
@@ -208,7 +208,11 @@ public class WKLoggerUtils {
 
 
     public void e(String msg) {
-        error(msg);
+        error("", msg);
+    }
+
+    public void e(String tag, String msg) {
+        error(tag, msg);
     }
 
     public void e(Exception e) {

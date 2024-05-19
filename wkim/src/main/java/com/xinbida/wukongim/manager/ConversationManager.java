@@ -2,6 +2,7 @@ package com.xinbida.wukongim.manager;
 
 import android.content.ContentValues;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.WKIMApplication;
@@ -22,14 +23,13 @@ import com.xinbida.wukongim.interfaces.IRefreshConversationMsg;
 import com.xinbida.wukongim.interfaces.ISyncConversationChat;
 import com.xinbida.wukongim.interfaces.ISyncConversationChatBack;
 import com.xinbida.wukongim.message.type.WKConnectStatus;
+import com.xinbida.wukongim.utils.WKCommonUtils;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +40,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * 最近会话管理
  */
 public class ConversationManager extends BaseManager {
+    private final String TAG = "ConversationManager";
+
     private ConversationManager() {
     }
 
@@ -135,7 +137,7 @@ public class ConversationManager extends BaseManager {
      * 设置刷新最近会话
      */
     public void setOnRefreshMsg(WKUIConversationMsg conversationMsg, boolean isEnd, String from) {
-        if (refreshMsgList != null && refreshMsgList.size() > 0 && conversationMsg != null) {
+        if (refreshMsgList != null && !refreshMsgList.isEmpty() && conversationMsg != null) {
             runOnMainThread(() -> {
                 for (Map.Entry<String, IRefreshConversationMsg> entry : refreshMsgList.entrySet()) {
                     entry.getValue().onRefreshConversationMsg(conversationMsg, isEnd);
@@ -158,7 +160,7 @@ public class ConversationManager extends BaseManager {
 
     // 删除某个最近会话
     public void setDeleteMsg(String channelID, byte channelType) {
-        if (iDeleteMsgList != null && iDeleteMsgList.size() > 0) {
+        if (iDeleteMsgList != null && !iDeleteMsgList.isEmpty()) {
             runOnMainThread(() -> {
                 for (Map.Entry<String, IDeleteConversationMsg> entry : iDeleteMsgList.entrySet()) {
                     entry.getValue().onDelete(channelID, channelType);
@@ -255,7 +257,7 @@ public class ConversationManager extends BaseManager {
         List<WKMsg> msgList = new ArrayList<>();
         List<WKMsgReaction> msgReactionList = new ArrayList<>();
         List<WKMsgExtra> msgExtraList = new ArrayList<>();
-        if (syncChat.conversations != null && syncChat.conversations.size() > 0) {
+        if (WKCommonUtils.isNotEmpty(syncChat.conversations)) {
             for (int i = 0, size = syncChat.conversations.size(); i < size; i++) {
                 //最近会话消息对象
                 WKConversationMsg conversationMsg = new WKConversationMsg();
@@ -274,10 +276,10 @@ public class ConversationManager extends BaseManager {
                 conversationMsg.unreadCount = syncChat.conversations.get(i).unread;
                 conversationMsg.version = syncChat.conversations.get(i).version;
                 //聊天消息对象
-                if (syncChat.conversations.get(i).recents != null && syncChat.conversations.get(i).recents.size() > 0) {
+                if (syncChat.conversations.get(i).recents != null && WKCommonUtils.isNotEmpty(syncChat.conversations)) {
                     for (WKSyncRecent wkSyncRecent : syncChat.conversations.get(i).recents) {
                         WKMsg msg = MsgManager.getInstance().WKSyncRecent2WKMsg(wkSyncRecent);
-                        if (msg.reactionList != null && msg.reactionList.size() > 0) {
+                        if (WKCommonUtils.isNotEmpty(msg.reactionList)) {
                             msgReactionList.addAll(msg.reactionList);
                         }
                         //判断会话列表的fromUID
@@ -295,16 +297,16 @@ public class ConversationManager extends BaseManager {
                 conversationMsgList.add(conversationMsg);
             }
         }
-        if (msgExtraList.size() > 0) {
-            MsgDbManager.getInstance().insertOrUpdateMsgExtras(msgExtraList);
+        if (WKCommonUtils.isNotEmpty(msgExtraList)) {
+            MsgDbManager.getInstance().insertOrReplace(msgExtraList);
         }
         List<WKUIConversationMsg> uiMsgList = new ArrayList<>();
-        if (conversationMsgList.size() > 0 || msgList.size() > 0) {
-            if (msgList.size() > 0) {
+        if (WKCommonUtils.isNotEmpty(conversationMsgList)) {
+            if (WKCommonUtils.isNotEmpty(msgList)) {
                 MsgDbManager.getInstance().insertMsgs(msgList);
             }
             try {
-                if (conversationMsgList.size() > 0) {
+                if (WKCommonUtils.isNotEmpty(conversationMsgList)) {
                     List<ContentValues> cvList = new ArrayList<>();
                     for (int i = 0, size = conversationMsgList.size(); i < size; i++) {
                         ContentValues cv = ConversationDbManager.getInstance().getInsertSyncCV(conversationMsgList.get(i));
@@ -323,18 +325,18 @@ public class ConversationManager extends BaseManager {
                             .setTransactionSuccessful();
                 }
             } catch (Exception ignored) {
-                WKLoggerUtils.getInstance().e("同步会话消息保存异常");
+                WKLoggerUtils.getInstance().e(TAG, "Save synchronization session message exception");
             } finally {
                 if (WKIMApplication.getInstance().getDbHelper().getDb().inTransaction()) {
                     WKIMApplication.getInstance().getDbHelper().getDb()
                             .endTransaction();
                 }
             }
-            if (msgReactionList.size() > 0) {
+            if (WKCommonUtils.isNotEmpty(msgReactionList)) {
                 MsgManager.getInstance().saveMsgReactions(msgReactionList);
             }
             // fixme 离线消息应该不能push给UI
-            if (msgList.size() > 0) {
+            if (WKCommonUtils.isNotEmpty(msgList)) {
                 HashMap<String, List<WKMsg>> allMsgMap = new HashMap<>();
                 for (WKMsg wkMsg : msgList) {
                     if (TextUtils.isEmpty(wkMsg.channelID)) continue;
@@ -366,14 +368,14 @@ public class ConversationManager extends BaseManager {
 
 
             }
-            if (uiMsgList.size() > 0) {
+            if (WKCommonUtils.isNotEmpty(uiMsgList)) {
                 for (int i = 0, size = uiMsgList.size(); i < size; i++) {
                     WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsgList.get(i), i == uiMsgList.size() - 1, "saveSyncChat");
                 }
             }
         }
 
-        if (syncChat.cmds != null && syncChat.cmds.size() > 0) {
+        if (WKCommonUtils.isNotEmpty(syncChat.cmds)) {
             try {
                 for (int i = 0, size = syncChat.cmds.size(); i < size; i++) {
                     JSONObject jsonObject = new JSONObject();
@@ -383,7 +385,7 @@ public class ConversationManager extends BaseManager {
                     CMDManager.getInstance().handleCMD(jsonObject);
                 }
             } catch (JSONException e) {
-                e.printStackTrace();
+                Log.e(TAG, "saveSyncChat cmd not json struct");
             }
         }
         WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.syncCompleted, "");

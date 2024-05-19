@@ -10,6 +10,8 @@ import com.xinbida.wukongim.interfaces.IChannelInfoListener;
 import com.xinbida.wukongim.interfaces.IGetChannelInfo;
 import com.xinbida.wukongim.interfaces.IRefreshChannel;
 import com.xinbida.wukongim.interfaces.IRefreshChannelAvatar;
+import com.xinbida.wukongim.utils.WKCommonUtils;
+import com.xinbida.wukongim.utils.WKLoggerUtils;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -26,6 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * channel管理
  */
 public class ChannelManager extends BaseManager {
+    private final String TAG = "ChannelManager";
+
     private ChannelManager() {
     }
 
@@ -218,7 +222,7 @@ public class ChannelManager extends BaseManager {
      * @param list 频道数据
      */
     public void saveOrUpdateChannels(List<WKChannel> list) {
-        if (list == null || list.size() == 0) return;
+        if (WKCommonUtils.isEmpty(list)) return;
         // 先修改内存数据
         for (int i = 0, size = list.size(); i < size; i++) {
             updateChannel(list.get(i));
@@ -330,7 +334,7 @@ public class ChannelManager extends BaseManager {
                 try {
                     jsonObject.put(key, hashExtra.get(key));
                 } catch (JSONException e) {
-                    e.printStackTrace();
+                    WKLoggerUtils.getInstance().e(TAG, "updateLocalExtra error");
                 }
             }
             ChannelDBManager.getInstance().updateWithField(channelID, channelType, WKDBColumns.WKChannelColumns.localExtra, jsonObject.toString());

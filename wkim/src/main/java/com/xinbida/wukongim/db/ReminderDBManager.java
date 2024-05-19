@@ -10,6 +10,7 @@ import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.WKIMApplication;
 import com.xinbida.wukongim.entity.WKReminder;
 import com.xinbida.wukongim.entity.WKUIConversationMsg;
+import com.xinbida.wukongim.utils.WKLoggerUtils;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -20,6 +21,8 @@ import java.util.Iterator;
 import java.util.List;
 
 public class ReminderDBManager {
+    private static final String TAG = "ReminderDBManager";
+
     private ReminderDBManager() {
     }
 
@@ -155,12 +158,12 @@ public class ReminderDBManager {
         try {
             WKIMApplication.getInstance().getDbHelper().getDb()
                     .beginTransaction();
-            if (insertCVs.size() > 0) {
+            if (!insertCVs.isEmpty()) {
                 for (ContentValues cv : insertCVs) {
                     WKIMApplication.getInstance().getDbHelper().insert(reminders, cv);
                 }
             }
-            if (updateCVs.size() > 0) {
+            if (!updateCVs.isEmpty()) {
                 for (ContentValues cv : updateCVs) {
                     String[] update = new String[1];
                     update[0] = cv.getAsString("reminder_id");
@@ -193,7 +196,7 @@ public class ReminderDBManager {
 
     private HashMap<String, List<WKReminder>> listToMap(List<WKReminder> list) {
         HashMap<String, List<WKReminder>> map = new HashMap<>();
-        if (list == null || list.size() == 0) {
+        if (list == null || list.isEmpty()) {
             return map;
         }
         for (WKReminder reminder : list) {
@@ -222,7 +225,7 @@ public class ReminderDBManager {
         reminder.version = WKCursor.readLong(cursor, "version");
         reminder.done = WKCursor.readInt(cursor, "done");
         String data = WKCursor.readString(cursor, "data");
-        reminder.needUpload = WKCursor.readInt(cursor, "needUpload");
+        reminder.needUpload = WKCursor.readInt(cursor, "need_upload");
         reminder.publisher = WKCursor.readString(cursor, "publisher");
         if (!TextUtils.isEmpty(data)) {
             HashMap<String, Object> hashMap = new HashMap<>();
@@ -234,7 +237,7 @@ public class ReminderDBManager {
                     hashMap.put(key, jsonObject.opt(key));
                 }
             } catch (JSONException e) {
-                e.printStackTrace();
+                WKLoggerUtils.getInstance().e(TAG , "serializeReminder error");
             }
             reminder.data = hashMap;
         }
