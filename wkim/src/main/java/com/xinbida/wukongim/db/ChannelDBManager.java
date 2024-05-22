@@ -10,7 +10,6 @@ import android.text.TextUtils;
 import com.xinbida.wukongim.WKIMApplication;
 import com.xinbida.wukongim.entity.WKChannel;
 import com.xinbida.wukongim.entity.WKChannelSearchResult;
-import com.xinbida.wukongim.utils.WKCommonUtils;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
 
 import org.json.JSONException;
@@ -124,13 +123,10 @@ public class ChannelDBManager {
     }
 
     public synchronized void insertChannels(List<WKChannel> list) {
-        List<ContentValues> updateCVList = new ArrayList<>();
         List<ContentValues> newCVList = new ArrayList<>();
         for (WKChannel channel : list) {
-            boolean isExist = isExist(channel.channelID, channel.channelType);
             ContentValues cv = WKSqlContentValues.getContentValuesWithChannel(channel);
-            if (isExist) updateCVList.add(cv);
-            else newCVList.add(cv);
+            newCVList.add(cv);
         }
         try {
             if (WKIMApplication.getInstance().getDbHelper() == null) {
@@ -138,19 +134,9 @@ public class ChannelDBManager {
             }
             WKIMApplication.getInstance().getDbHelper().getDb()
                     .beginTransaction();
-            if (WKCommonUtils.isNotEmpty(updateCVList)) {
-                for (ContentValues cv : updateCVList) {
-                    String[] update = new String[2];
-                    update[0] = cv.getAsString(WKDBColumns.WKChannelColumns.channel_id);
-                    update[1] = String.valueOf(cv.getAsByte(WKDBColumns.WKChannelColumns.channel_type));
-                    WKIMApplication.getInstance().getDbHelper()
-                            .update(channel, cv, WKDBColumns.WKChannelColumns.channel_id + "=? and " + WKDBColumns.WKChannelColumns.channel_type + "=?", update);
-                }
-            } else {
-                for (ContentValues cv : newCVList) {
-                    WKIMApplication.getInstance().getDbHelper()
-                            .insert(channel, cv);
-                }
+            for (ContentValues cv : newCVList) {
+                WKIMApplication.getInstance().getDbHelper()
+                        .insert(channel, cv);
             }
             WKIMApplication.getInstance().getDbHelper().getDb()
                     .setTransactionSuccessful();

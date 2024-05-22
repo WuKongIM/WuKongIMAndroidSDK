@@ -211,30 +211,14 @@ public class ChannelMembersDbManager {
      * @param list List<WKChannelMember>
      */
     public void insertMembers(List<WKChannelMember> list) {
-        List<ContentValues> updateCVList = new ArrayList<>();
         List<ContentValues> newCVList = new ArrayList<>();
         for (WKChannelMember member : list) {
             ContentValues cv = WKSqlContentValues.getContentValuesWithChannelMember(member);
-            boolean isExist = isExist(member.channelID, member.channelType, member.memberUID);
-            if (isExist) {
-                updateCVList.add(cv);
-            } else {
-                newCVList.add(cv);
-            }
+            newCVList.add(cv);
         }
         try {
             WKIMApplication.getInstance().getDbHelper().getDb()
                     .beginTransaction();
-            if (WKCommonUtils.isNotEmpty(updateCVList)) {
-                for (ContentValues cv : updateCVList) {
-                    String[] update = new String[3];
-                    update[0] = cv.getAsString(WKDBColumns.WKChannelMembersColumns.channel_id);
-                    update[1] = String.valueOf(cv.getAsByte(WKDBColumns.WKChannelMembersColumns.channel_type));
-                    update[2] = cv.getAsString(WKDBColumns.WKChannelMembersColumns.member_uid);
-                    WKIMApplication.getInstance().getDbHelper()
-                            .update(channelMembers, cv, WKDBColumns.WKChannelMembersColumns.channel_id + "=? and " + WKDBColumns.WKChannelMembersColumns.channel_type + "=? and " + WKDBColumns.WKChannelMembersColumns.member_uid + "=?", update);
-                }
-            }
             if (WKCommonUtils.isNotEmpty(newCVList)) {
                 for (ContentValues cv : newCVList) {
                     WKIMApplication.getInstance().getDbHelper().insert(channelMembers, cv);
