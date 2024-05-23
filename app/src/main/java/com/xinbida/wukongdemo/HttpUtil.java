@@ -49,7 +49,6 @@ public class HttpUtil {
             OutputStream outputStream = conn.getOutputStream();
             outputStream.write(data.toString().getBytes(StandardCharsets.UTF_8));
             outputStream.flush();
-            Log.e("返回状态", conn.getResponseCode() + "");
             if (conn.getResponseCode() == 200) {
                 InputStream inputStream = conn.getInputStream();
                 ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();

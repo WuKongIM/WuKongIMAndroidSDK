@@ -1,7 +1,6 @@
 package com.xinbida.wukongim.manager;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.WKIMApplication;
@@ -807,7 +806,7 @@ public class MsgManager extends BaseManager {
                 deleteMsgIds.add(list.get(i).message_id);
             }
         }
-        List<WKMsg> updatedMsgList = MsgDbManager.getInstance().insertOrReplace(extraList);
+        List<WKMsg> updatedMsgList = MsgDbManager.getInstance().insertOrReplaceExtra(extraList);
         if (!deleteMsgIds.isEmpty()) {
             boolean isSuccess = MsgDbManager.getInstance().deleteWithMessageIDs(deleteMsgIds);
             if (!isSuccess) {
@@ -935,7 +934,7 @@ public class MsgManager extends BaseManager {
             }
         }
         if (WKCommonUtils.isNotEmpty(msgExtraList)) {
-            MsgDbManager.getInstance().insertOrReplace(msgExtraList);
+            MsgDbManager.getInstance().insertOrReplaceExtra(msgExtraList);
         }
         if (WKCommonUtils.isNotEmpty(msgList)) {
             MsgDbManager.getInstance().insertMsgs(msgList);
@@ -1171,7 +1170,7 @@ public class MsgManager extends BaseManager {
         wkMsgExtra.needUpload = 1;
         List<WKMsgExtra> list = new ArrayList<>();
         list.add(wkMsgExtra);
-        List<WKMsg> wkMsgList = MsgDbManager.getInstance().insertOrReplace(list);
+        List<WKMsg> wkMsgList = MsgDbManager.getInstance().insertOrReplaceExtra(list);
         List<String> messageIds = new ArrayList<>();
         messageIds.add(msgID);
         if (WKCommonUtils.isNotEmpty(wkMsgList)) {

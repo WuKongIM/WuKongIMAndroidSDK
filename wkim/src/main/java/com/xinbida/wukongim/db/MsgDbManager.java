@@ -59,17 +59,17 @@ public class MsgDbManager {
     }
 
     private int requestCount;
-    private int more = 1;
+//    private int more = 1;
 
     public void queryOrSyncHistoryMessages(String channelId, byte channelType, long oldestOrderSeq, boolean contain, int pullMode, int limit, final IGetOrSyncHistoryMsgBack iGetOrSyncHistoryMsgBack) {
         //获取原始数据
         List<WKMsg> list = queryMessages(channelId, channelType, oldestOrderSeq, contain, pullMode, limit);
-        if (more == 0) {
-            new Handler(Looper.getMainLooper()).post(() -> iGetOrSyncHistoryMsgBack.onResult(list));
-            more = 1;
-            requestCount = 0;
-            return;
-        }
+//        if (more == 0) {
+//            new Handler(Looper.getMainLooper()).post(() -> iGetOrSyncHistoryMsgBack.onResult(list));
+//            more = 1;
+//            requestCount = 0;
+//            return;
+//        }
         //业务判断数据
         List<WKMsg> tempList = new ArrayList<>();
         for (int i = 0, size = list.size(); i < size; i++) {
@@ -102,36 +102,26 @@ public class MsgDbManager {
             oldestMsgSeq = queryMsgSeq(channelId, channelType, oldestOrderSeq, pullMode);
         else oldestMsgSeq = oldestOrderSeq / 1000;
         if (pullMode == 0) {
-            //下拉获取消息
+            //下拉获取消息 大->小
             if (maxMessageSeq != 0 && oldestMsgSeq != 0 && oldestMsgSeq - maxMessageSeq > 1) {
                 isSyncMsg = true;
-                startMsgSeq = oldestMsgSeq;
+                if (contain) {
+                    startMsgSeq = oldestMsgSeq;
+                } else {
+                    startMsgSeq = oldestMsgSeq - 1;
+                }
                 endMsgSeq = maxMessageSeq;
-                // 从大往小同步
-//                if (oldestMsgSeq - maxMessageSeq > 1) {
-//                    startMsgSeq = oldestMsgSeq;
-//                    endMsgSeq = maxMessageSeq;
-//                } else {
-//                    startMsgSeq = maxMessageSeq;
-//                    endMsgSeq = oldestMsgSeq;
-//                }
-
             }
         } else {
-            //上拉获取消息
+            //上拉获取消息 小->大
             if (minMessageSeq != 0 && oldestMsgSeq != 0 && minMessageSeq - oldestMsgSeq > 1) {
                 isSyncMsg = true;
-                startMsgSeq = oldestMsgSeq;
+                if (contain) {
+                    startMsgSeq = oldestMsgSeq;
+                } else {
+                    startMsgSeq = oldestMsgSeq + 1;
+                }
                 endMsgSeq = minMessageSeq;
-                // 从小往大同步
-//                if (minMessageSeq - oldestMsgSeq > 1) {
-//                    startMsgSeq = oldestMsgSeq;
-//                    endMsgSeq = minMessageSeq;
-//                } else {
-//                    startMsgSeq = minMessageSeq;
-//                    endMsgSeq = oldestMsgSeq;
-//                }
-
             }
         }
         if (!isSyncMsg) {
@@ -153,13 +143,20 @@ public class MsgDbManager {
                             }
                             if (pullMode == 0) {
                                 // 下拉
-                                startMsgSeq = max;
-                                endMsgSeq = min;
+                                if (max > startMsgSeq) {
+                                    startMsgSeq = max;
+                                }
+                                if (endMsgSeq ==0 || min < endMsgSeq) {
+                                    endMsgSeq = min;
+                                }
                             } else {
-                                startMsgSeq = min;
-                                endMsgSeq = max;
+                                if (startMsgSeq == 0 || min < startMsgSeq) {
+                                    startMsgSeq = min;
+                                }
+                                if (max > endMsgSeq) {
+                                    endMsgSeq = max;
+                                }
                             }
-                            break;
                         }
                     }
                 }
@@ -173,7 +170,7 @@ public class MsgDbManager {
         if (!isSyncMsg) {
             if (minMessageSeq == 1) {
                 requestCount = 0;
-                more = 1;
+//                more = 1;
                 new Handler(Looper.getMainLooper()).post(() -> iGetOrSyncHistoryMsgBack.onResult(list));
                 return;
             }
@@ -181,7 +178,15 @@ public class MsgDbManager {
         //计算最后一页后是否还存在消息
         if (!isSyncMsg && tempList.size() < limit) {
             isSyncMsg = true;
-            startMsgSeq = oldestMsgSeq;
+            if (contain) {
+                startMsgSeq = oldestMsgSeq;
+            } else {
+                if (pullMode == 0) {
+                    startMsgSeq = oldestMsgSeq - 1;
+                } else {
+                    startMsgSeq = oldestMsgSeq + 1;
+                }
+            }
             endMsgSeq = 0;
         }
         if (startMsgSeq == 0 && endMsgSeq == 0 && tempList.size() < limit) {
@@ -189,7 +194,6 @@ public class MsgDbManager {
             endMsgSeq = oldestMsgSeq;
             startMsgSeq = 0;
         }
-
         if (isSyncMsg && requestCount < 5) {
             if (requestCount == 0) {
                 new Handler(Looper.getMainLooper()).post(iGetOrSyncHistoryMsgBack::onSyncing);
@@ -201,17 +205,17 @@ public class MsgDbManager {
                     if (oldestMsgSeq == 0) {
                         requestCount = 5;
                     }
-                    more = syncChannelMsg.more;
+//                    more = syncChannelMsg.more;
                     queryOrSyncHistoryMessages(channelId, channelType, oldestOrderSeq, contain, pullMode, limit, iGetOrSyncHistoryMsgBack);
                 } else {
                     requestCount = 0;
-                    more = 1;
+//                    more = 1;
                     new Handler(Looper.getMainLooper()).post(() -> iGetOrSyncHistoryMsgBack.onResult(list));
                 }
             });
         } else {
             requestCount = 0;
-            more = 1;
+//            more = 1;
             new Handler(Looper.getMainLooper()).post(() -> iGetOrSyncHistoryMsgBack.onResult(list));
         }
 
@@ -294,6 +298,7 @@ public class MsgDbManager {
         List<String> messageIds = new ArrayList<>();
         List<String> replyMsgIds = new ArrayList<>();
         List<String> fromUIDs = new ArrayList<>();
+
         try {
             cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql, args);
             if (cursor == null) {
@@ -544,9 +549,9 @@ public class MsgDbManager {
             saveList.add(list.get(i));
         }
         List<String> clientMsgNos = new ArrayList<>();
-        List<String> msgIds = new ArrayList<>();
+//        List<String> msgIds = new ArrayList<>();
         List<WKMsg> existMsgList = new ArrayList<>();
-        List<WKMsg> msgIdExistMsgList = new ArrayList<>();
+//        List<WKMsg> msgIdExistMsgList = new ArrayList<>();
         for (int i = 0, size = saveList.size(); i < size; i++) {
             boolean isSave = WKIM.getInstance().getMsgManager().setMessageStoreBeforeIntercept(saveList.get(i));
             if (!isSave) {
@@ -555,32 +560,32 @@ public class MsgDbManager {
             if (saveList.get(i).setting == null) {
                 saveList.get(i).setting = new WKMsgSetting();
             }
-            if (msgIds.size() == 200) {
-                List<WKMsg> tempList = queryWithMsgIds(msgIds);
-                if (WKCommonUtils.isNotEmpty(tempList)) {
-                    msgIdExistMsgList.addAll(tempList);
-                }
-                msgIds.clear();
-            }
+//            if (msgIds.size() == 200) {
+//                List<WKMsg> tempList = queryWithMsgIds(msgIds);
+//                if (WKCommonUtils.isNotEmpty(tempList)) {
+//                    msgIdExistMsgList.addAll(tempList);
+//                }
+//                msgIds.clear();
+//            }
             if (clientMsgNos.size() == 200) {
                 List<WKMsg> tempList = queryWithClientMsgNos(clientMsgNos);
                 if (WKCommonUtils.isNotEmpty(tempList))
                     existMsgList.addAll(tempList);
                 clientMsgNos.clear();
             }
-            if (!TextUtils.isEmpty(saveList.get(i).messageID)) {
-                msgIds.add(saveList.get(i).messageID);
-            }
+//            if (!TextUtils.isEmpty(saveList.get(i).messageID)) {
+//                msgIds.add(saveList.get(i).messageID);
+//            }
             if (!TextUtils.isEmpty(saveList.get(i).clientMsgNO))
                 clientMsgNos.add(saveList.get(i).clientMsgNO);
         }
-        if (WKCommonUtils.isNotEmpty(msgIds)) {
-            List<WKMsg> tempList = queryWithMsgIds(msgIds);
-            if (WKCommonUtils.isNotEmpty(tempList)) {
-                msgIdExistMsgList.addAll(tempList);
-            }
-            msgIds.clear();
-        }
+//        if (WKCommonUtils.isNotEmpty(msgIds)) {
+//            List<WKMsg> tempList = queryWithMsgIds(msgIds);
+//            if (WKCommonUtils.isNotEmpty(tempList)) {
+//                msgIdExistMsgList.addAll(tempList);
+//            }
+//            msgIds.clear();
+//        }
         if (WKCommonUtils.isNotEmpty(clientMsgNos)) {
             List<WKMsg> tempList = queryWithClientMsgNos(clientMsgNos);
             if (WKCommonUtils.isNotEmpty(tempList)) {
@@ -607,21 +612,22 @@ public class MsgDbManager {
                     break;
                 }
             }
-            if (isAdd) {
-                for (WKMsg tempMsg : msgIdExistMsgList) {
-                    if (tempMsg == null || TextUtils.isEmpty(tempMsg.messageID)) {
-                        continue;
-                    }
-                    if (msg.messageID.equals(tempMsg.messageID)) {
-                        if (msg.isDeleted != tempMsg.isDeleted && msg.isDeleted == 1) {
-                            msg.clientMsgNO = WKIM.getInstance().getMsgManager().createClientMsgNO();
-                        } else {
-                            isAdd = false;
-                        }
-                        break;
-                    }
-                }
-            }
+//            if (isAdd) {
+//                for (WKMsg tempMsg : msgIdExistMsgList) {
+//                    if (tempMsg == null || TextUtils.isEmpty(tempMsg.messageID)) {
+//                        continue;
+//                    }
+//                    if (msg.messageID.equals(tempMsg.messageID)) {
+//                        msg.localExtraMap = tempMsg.localExtraMap;
+////                        if (msg.isDeleted != tempMsg.isDeleted && msg.isDeleted == 1) {
+////                            msg.clientMsgNO = WKIM.getInstance().getMsgManager().createClientMsgNO();
+////                        } else {
+////                            isAdd = false;
+////                        }
+//                        break;
+//                    }
+//                }
+//            }
             if (isAdd) {
                 insertMsgList.add(msg);
             }
@@ -680,7 +686,7 @@ public class MsgDbManager {
         try {
             cv = WKSqlContentValues.getContentValuesWithMsg(msg);
         } catch (Exception e) {
-            WKLoggerUtils.getInstance().e(TAG , " insert msg error");
+            WKLoggerUtils.getInstance().e(TAG, " insert msg error");
         }
         long result = -1;
         try {
@@ -896,7 +902,7 @@ public class MsgDbManager {
         return list;
     }
 
-    public List<WKMsg> insertOrReplace(List<WKMsgExtra> list) {
+    public List<WKMsg> insertOrReplaceExtra(List<WKMsgExtra> list) {
         List<String> msgIds = new ArrayList<>();
         List<ContentValues> cvList = new ArrayList<>();
         for (int i = 0, size = list.size(); i < size; i++) {
@@ -927,57 +933,6 @@ public class MsgDbManager {
         return msgList;
     }
 
-    public List<WKMsg> insertOrUpdateMsgExtras(List<WKMsgExtra> list) {
-        List<String> msgIds = new ArrayList<>();
-        for (int i = 0, size = list.size(); i < size; i++) {
-            if (!TextUtils.isEmpty(list.get(i).messageID)) {
-                msgIds.add(list.get(i).messageID);
-            }
-        }
-        List<WKMsgExtra> existList = queryMsgExtrasWithMsgIds(msgIds);
-        List<ContentValues> insertCVList = new ArrayList<>();
-        List<ContentValues> updateCVList = new ArrayList<>();
-        for (int i = 0, size = list.size(); i < size; i++) {
-            boolean isAdd = true;
-            for (WKMsgExtra extra : existList) {
-                if (list.get(i).messageID.equals(extra.messageID)) {
-                    updateCVList.add(WKSqlContentValues.getCVWithMsgExtra(list.get(i)));
-                    isAdd = false;
-                    break;
-                }
-            }
-            if (isAdd) {
-                insertCVList.add(WKSqlContentValues.getCVWithMsgExtra(list.get(i)));
-            }
-        }
-        try {
-            WKIMApplication.getInstance().getDbHelper().getDb()
-                    .beginTransaction();
-            if (!insertCVList.isEmpty()) {
-                for (ContentValues cv : insertCVList) {
-                    WKIMApplication.getInstance().getDbHelper().insert(messageExtra, cv);
-                }
-            }
-            if (!updateCVList.isEmpty()) {
-                for (ContentValues cv : updateCVList) {
-                    String[] update = new String[1];
-                    update[0] = cv.getAsString("message_id");
-                    WKIMApplication.getInstance().getDbHelper()
-                            .update(messageExtra, cv, "message_id=?", update);
-                }
-            }
-            WKIMApplication.getInstance().getDbHelper().getDb()
-                    .setTransactionSuccessful();
-        } catch (Exception ignored) {
-        } finally {
-            if (WKIMApplication.getInstance().getDbHelper().getDb().inTransaction()) {
-                WKIMApplication.getInstance().getDbHelper().getDb()
-                        .endTransaction();
-            }
-        }
-        List<WKMsg> msgList = queryWithMsgIds(msgIds);
-        return msgList;
-    }
 
     /**
      * 查询按日期分组的消息数量
@@ -1664,7 +1619,7 @@ public class MsgDbManager {
                     hashMap.put(key, jsonObject.opt(key));
                 }
             } catch (JSONException e) {
-                WKLoggerUtils.getInstance().e(TAG ," serializeMsg error extra not json format");
+                WKLoggerUtils.getInstance().e(TAG, " serializeMsg error extra not json format");
             }
             msg.localExtraMap = hashMap;
         }
@@ -1682,7 +1637,7 @@ public class MsgDbManager {
             try {
                 jsonObject = new JSONObject(msg.content);
             } catch (JSONException e) {
-                WKLoggerUtils.getInstance().e(TAG , "getMsgModel error content not json format");
+                WKLoggerUtils.getInstance().e(TAG, "getMsgModel error content not json format");
             }
         }
         return WKIM.getInstance()

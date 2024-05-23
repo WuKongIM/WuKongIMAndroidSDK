@@ -131,7 +131,6 @@ public class MainActivity extends AppCompatActivity {
                     JSONObject jsonObject = new JSONObject(data);
                     String tcp_addr = jsonObject.optString("tcp_addr");
                     String[] strings = tcp_addr.split(":");
-                    Log.e("获取连接的IP","-->"+data);
                     andPortListener.onGetSocketIpAndPort(strings[0], Integer.parseInt(strings[1]));
                 } catch (JSONException e) {
                     throw new RuntimeException(e);

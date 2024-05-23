@@ -298,7 +298,7 @@ public class ConversationManager extends BaseManager {
             }
         }
         if (WKCommonUtils.isNotEmpty(msgExtraList)) {
-            MsgDbManager.getInstance().insertOrReplace(msgExtraList);
+            MsgDbManager.getInstance().insertOrReplaceExtra(msgExtraList);
         }
         List<WKUIConversationMsg> uiMsgList = new ArrayList<>();
         if (WKCommonUtils.isNotEmpty(conversationMsgList)) {
@@ -385,7 +385,7 @@ public class ConversationManager extends BaseManager {
                     CMDManager.getInstance().handleCMD(jsonObject);
                 }
             } catch (JSONException e) {
-                Log.e(TAG, "saveSyncChat cmd not json struct");
+                WKLoggerUtils.getInstance().e(TAG, "saveSyncChat cmd not json struct");
             }
         }
         WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.syncCompleted, "");
