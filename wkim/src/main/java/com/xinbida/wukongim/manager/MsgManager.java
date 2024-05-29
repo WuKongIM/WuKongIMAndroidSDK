@@ -812,6 +812,28 @@ public class MsgManager extends BaseManager {
             if (!isSuccess) {
                 WKLoggerUtils.getInstance().e(TAG, "saveRemoteExtraMsg delete message error");
             }
+            String deletedMsgId = "";
+            WKConversationMsg conversationMsg = ConversationDbManager.getInstance().queryWithChannel(channel.channelID, channel.channelType);
+            if (conversationMsg != null && !TextUtils.isEmpty(conversationMsg.lastClientMsgNO)) {
+                WKMsg msg = getWithClientMsgNO(conversationMsg.lastClientMsgNO);
+                if (msg != null && !TextUtils.isEmpty(msg.messageID) && msg.messageSeq != 0) {
+                    for (String msgId : deleteMsgIds) {
+                        if (msg.messageID.equals(msgId)) {
+                            deletedMsgId = msgId;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (!TextUtils.isEmpty(deletedMsgId) && conversationMsg != null) {
+                int rowNo = WKIM.getInstance().getMsgManager().getRowNoWithMessageID(channel.channelID, channel.channelType, deletedMsgId);
+                if (rowNo < conversationMsg.unreadCount) {
+                    conversationMsg.unreadCount--;
+                }
+                WKIM.getInstance().getConversationManager().updateWithMsg(conversationMsg);
+                WKUIConversationMsg wkuiConversationMsg = WKIM.getInstance().getConversationManager().getUIConversationMsg(channel.channelID, channel.channelType);
+                WKIM.getInstance().getConversationManager().setOnRefreshMsg(wkuiConversationMsg, true, TAG + " saveRemoteExtraMsg");
+            }
         }
         getMsgReactionsAndRefreshMsg(messageIds, updatedMsgList);
     }

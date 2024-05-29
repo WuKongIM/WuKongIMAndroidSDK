@@ -10,14 +10,10 @@ import android.text.TextUtils;
 import com.xinbida.wukongim.WKIMApplication;
 import com.xinbida.wukongim.entity.WKChannel;
 import com.xinbida.wukongim.entity.WKChannelSearchResult;
+import com.xinbida.wukongim.utils.WKCommonUtils;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -394,26 +390,8 @@ public class ChannelDBManager {
         channel.parentChannelType = WKCursor.readByte(cursor, WKDBColumns.WKChannelColumns.parent_channel_type);
         String extra = WKCursor.readString(cursor, WKDBColumns.WKChannelColumns.localExtra);
         String remoteExtra = WKCursor.readString(cursor, WKDBColumns.WKChannelColumns.remote_extra);
-        channel.localExtra = getChannelExtra(extra);
-        channel.remoteExtraMap = getChannelExtra(remoteExtra);
+        channel.localExtra = WKCommonUtils.str2HashMap(extra);
+        channel.remoteExtraMap = WKCommonUtils.str2HashMap(remoteExtra);
         return channel;
     }
-
-    public HashMap<String, Object> getChannelExtra(String extra) {
-        HashMap<String, Object> hashMap = new HashMap<>();
-        if (!TextUtils.isEmpty(extra)) {
-            try {
-                JSONObject jsonObject = new JSONObject(extra);
-                Iterator<String> keys = jsonObject.keys();
-                while (keys.hasNext()) {
-                    String key = keys.next();
-                    hashMap.put(key, jsonObject.opt(key));
-                }
-            } catch (JSONException e) {
-                WKLoggerUtils.getInstance().e(TAG , "get channel getChannelExtra error");
-            }
-        }
-        return hashMap;
-    }
-
 }

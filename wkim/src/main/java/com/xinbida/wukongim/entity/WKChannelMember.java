@@ -4,6 +4,9 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import com.xinbida.wukongim.utils.DateUtils;
+import com.xinbida.wukongim.utils.WKCommonUtils;
+
+import org.json.JSONObject;
 
 import java.util.HashMap;
 
@@ -69,12 +72,13 @@ public class WKChannelMember implements Parcelable {
         createdAt = in.readString();
         updatedAt = in.readString();
         version = in.readLong();
-        extraMap = in.readHashMap(HashMap.class.getClassLoader());
         remark = in.readString();
         memberInviteUID = in.readString();
         robot = in.readInt();
         forbiddenExpirationTime = in.readLong();
         memberAvatarCacheKey = in.readString();
+        String extraStr = in.readString();
+        extraMap = WKCommonUtils.str2HashMap(extraStr);
     }
 
     @Override
@@ -92,12 +96,17 @@ public class WKChannelMember implements Parcelable {
         dest.writeString(createdAt);
         dest.writeString(updatedAt);
         dest.writeLong(version);
-        dest.writeMap(extraMap);
         dest.writeString(remark);
         dest.writeString(memberInviteUID);
         dest.writeInt(robot);
         dest.writeLong(forbiddenExpirationTime);
         dest.writeString(memberAvatarCacheKey);
+        String extraStr = "";
+        if (extraMap != null && !extraMap.isEmpty()) {
+            JSONObject jsonObject = new JSONObject(extraMap);
+            extraStr = jsonObject.toString();
+        }
+        dest.writeString(extraStr);
     }
 
     @Override

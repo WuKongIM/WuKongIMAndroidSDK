@@ -9,6 +9,7 @@ import com.xinbida.wukongim.manager.ChannelMembersManager;
 import com.xinbida.wukongim.message.type.WKSendMsgResult;
 import com.xinbida.wukongim.msgmodel.WKMessageContent;
 import com.xinbida.wukongim.utils.DateUtils;
+import com.xinbida.wukongim.utils.WKCommonUtils;
 
 import org.json.JSONObject;
 
@@ -119,7 +120,8 @@ public class WKMsg implements Parcelable {
         createdAt = in.readString();
         updatedAt = in.readString();
         searchableWord = in.readString();
-        localExtraMap = in.readHashMap(HashMap.class.getClassLoader());
+        String localExtraStr = in.readString();
+        localExtraMap = WKCommonUtils.str2HashMap(localExtraStr);
         baseContentMsgModel = in.readParcelable(WKMsg.class
                 .getClassLoader());
         from = in.readParcelable(WKChannel.class.getClassLoader());
@@ -175,7 +177,7 @@ public class WKMsg implements Parcelable {
         dest.writeString(createdAt);
         dest.writeString(updatedAt);
         dest.writeString(searchableWord);
-        dest.writeMap(localExtraMap);
+        dest.writeString(getLocalMapExtraString());
         dest.writeParcelable(baseContentMsgModel, flags);
         dest.writeParcelable(from, flags);
         dest.writeParcelable(memberOfFrom, flags);
@@ -194,7 +196,7 @@ public class WKMsg implements Parcelable {
 
     public String getLocalMapExtraString() {
         String extras = "";
-        if (localExtraMap != null && localExtraMap.size() > 0) {
+        if (localExtraMap != null && !localExtraMap.isEmpty()) {
             JSONObject jsonObject = new JSONObject(localExtraMap);
             extras = jsonObject.toString();
         }

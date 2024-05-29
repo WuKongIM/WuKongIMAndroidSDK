@@ -4,6 +4,9 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import com.xinbida.wukongim.utils.DateUtils;
+import com.xinbida.wukongim.utils.WKCommonUtils;
+
+import org.json.JSONObject;
 
 import java.util.HashMap;
 
@@ -101,7 +104,6 @@ public class WKChannel implements Parcelable {
         updatedAt = in.readString();
         avatar = in.readString();
         version = in.readLong();
-        localExtra = in.readHashMap(HashMap.class.getClassLoader());
         online = in.readInt();
         lastOffline = in.readLong();
         category = in.readString();
@@ -109,13 +111,15 @@ public class WKChannel implements Parcelable {
         robot = in.readInt();
         username = in.readString();
         avatarCacheKey = in.readString();
-        remoteExtraMap = in.readHashMap(HashMap.class.getClassLoader());
         flame = in.readInt();
         flameSecond = in.readInt();
         deviceFlag = in.readInt();
         parentChannelID = in.readString();
         parentChannelType = in.readByte();
-//        mainDeviceFlag = in.readInt();
+        String localStr = in.readString();
+        localExtra = WKCommonUtils.str2HashMap(localStr);
+        String remoteStr = in.readString();
+        remoteExtraMap = WKCommonUtils.str2HashMap(remoteStr);
     }
 
     @Override
@@ -138,7 +142,6 @@ public class WKChannel implements Parcelable {
         dest.writeString(updatedAt);
         dest.writeString(avatar);
         dest.writeLong(version);
-        dest.writeMap(localExtra);
         dest.writeInt(online);
         dest.writeLong(lastOffline);
         dest.writeString(category);
@@ -146,13 +149,23 @@ public class WKChannel implements Parcelable {
         dest.writeInt(robot);
         dest.writeString(username);
         dest.writeString(avatarCacheKey);
-        dest.writeMap(remoteExtraMap);
         dest.writeInt(flame);
         dest.writeInt(flameSecond);
         dest.writeInt(deviceFlag);
         dest.writeString(parentChannelID);
         dest.writeByte(parentChannelType);
-//        dest.writeInt(mainDeviceFlag);
+        String localExtraStr = "";
+        String remoteExtraStr = "";
+        if (localExtra != null && !localExtra.isEmpty()) {
+            JSONObject jsonObject = new JSONObject(localExtra);
+            localExtraStr = jsonObject.toString();
+        }
+        dest.writeString(localExtraStr);
+        if (remoteExtraMap != null && !remoteExtraMap.isEmpty()) {
+            JSONObject jsonObject = new JSONObject(remoteExtraMap);
+            remoteExtraStr = jsonObject.toString();
+        }
+        dest.writeString(remoteExtraStr);
     }
 
     @Override

@@ -142,9 +142,9 @@ public class ConversationDbManager {
         WKChannel channel = ChannelDBManager.getInstance().serializableChannel(cursor);
         if (channel != null) {
             String extra = WKCursor.readString(cursor, "channel_extra");
-            channel.localExtra = ChannelDBManager.getInstance().getChannelExtra(extra);
+            channel.localExtra = WKCommonUtils.str2HashMap(extra);
             String remoteExtra = WKCursor.readString(cursor, "channel_remote_extra");
-            channel.remoteExtraMap = ChannelDBManager.getInstance().getChannelExtra(remoteExtra);
+            channel.remoteExtraMap = WKCommonUtils.str2HashMap(remoteExtra);
             channel.status = WKCursor.readInt(cursor, "channel_status");
             channel.version = WKCursor.readLong(cursor, "channel_version");
             channel.parentChannelID = WKCursor.readString(cursor, "c_parent_channel_id");

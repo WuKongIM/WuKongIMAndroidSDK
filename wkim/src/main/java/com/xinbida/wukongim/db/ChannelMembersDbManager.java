@@ -199,7 +199,7 @@ public class ChannelMembersDbManager {
         try {
             cv = WKSqlContentValues.getContentValuesWithChannelMember(channelMember);
         } catch (Exception e) {
-            WKLoggerUtils.getInstance().e(TAG , "insert error");
+            WKLoggerUtils.getInstance().e(TAG, "insert error");
         }
         WKIMApplication.getInstance().getDbHelper()
                 .insert(channelMembers, cv);
@@ -237,19 +237,19 @@ public class ChannelMembersDbManager {
 
     public void insertMembers(List<WKChannelMember> allMemberList, List<WKChannelMember> existList) {
         List<ContentValues> insertCVList = new ArrayList<>();
-        List<ContentValues> updateCVList = new ArrayList<>();
+//        List<ContentValues> updateCVList = new ArrayList<>();
         for (WKChannelMember channelMember : allMemberList) {
-            boolean isAdd = true;
-            for (WKChannelMember cm : existList) {
-                if (channelMember.memberUID.equals(cm.memberUID)) {
-                    isAdd = false;
-                    updateCVList.add(WKSqlContentValues.getContentValuesWithChannelMember(channelMember));
-                    break;
-                }
-            }
-            if (isAdd) {
-                insertCVList.add(WKSqlContentValues.getContentValuesWithChannelMember(channelMember));
-            }
+//            boolean isAdd = true;
+//            for (WKChannelMember cm : existList) {
+//                if (channelMember.memberUID.equals(cm.memberUID)) {
+//                    isAdd = false;
+//                    updateCVList.add(WKSqlContentValues.getContentValuesWithChannelMember(channelMember));
+//                    break;
+//                }
+//            }
+//            if (isAdd) {
+            insertCVList.add(WKSqlContentValues.getContentValuesWithChannelMember(channelMember));
+//            }
         }
         WKIMApplication.getInstance().getDbHelper().getDb()
                 .beginTransaction();
@@ -259,16 +259,16 @@ public class ChannelMembersDbManager {
                     WKIMApplication.getInstance().getDbHelper().insert(channelMembers, cv);
                 }
             }
-            if (WKCommonUtils.isNotEmpty(updateCVList)) {
-                for (ContentValues cv : updateCVList) {
-                    String[] update = new String[3];
-                    update[0] = cv.getAsString(WKDBColumns.WKChannelMembersColumns.channel_id);
-                    update[1] = String.valueOf(cv.getAsByte(WKDBColumns.WKChannelMembersColumns.channel_type));
-                    update[2] = cv.getAsString(WKDBColumns.WKChannelMembersColumns.member_uid);
-                    WKIMApplication.getInstance().getDbHelper()
-                            .update(channelMembers, cv, WKDBColumns.WKChannelMembersColumns.channel_id + "=? and " + WKDBColumns.WKChannelMembersColumns.channel_type + "=? and " + WKDBColumns.WKChannelMembersColumns.member_uid + "=?", update);
-                }
-            }
+//            if (WKCommonUtils.isNotEmpty(updateCVList)) {
+//                for (ContentValues cv : updateCVList) {
+//                    String[] update = new String[3];
+//                    update[0] = cv.getAsString(WKDBColumns.WKChannelMembersColumns.channel_id);
+//                    update[1] = String.valueOf(cv.getAsByte(WKDBColumns.WKChannelMembersColumns.channel_type));
+//                    update[2] = cv.getAsString(WKDBColumns.WKChannelMembersColumns.member_uid);
+//                    WKIMApplication.getInstance().getDbHelper()
+//                            .update(channelMembers, cv, WKDBColumns.WKChannelMembersColumns.channel_id + "=? and " + WKDBColumns.WKChannelMembersColumns.channel_type + "=? and " + WKDBColumns.WKChannelMembersColumns.member_uid + "=?", update);
+//                }
+//            }
             WKIMApplication.getInstance().getDbHelper().getDb().setTransactionSuccessful();
         } finally {
             if (WKIMApplication.getInstance().getDbHelper().getDb().inTransaction()) {
@@ -301,7 +301,7 @@ public class ChannelMembersDbManager {
         try {
             cv = WKSqlContentValues.getContentValuesWithChannelMember(channelMember);
         } catch (Exception e) {
-            WKLoggerUtils.getInstance().e(TAG , "update error");
+            WKLoggerUtils.getInstance().e(TAG, "update error");
         }
         WKIMApplication.getInstance().getDbHelper()
                 .update(channelMembers, cv, WKDBColumns.WKChannelMembersColumns.channel_id + "=? and " + WKDBColumns.WKChannelMembersColumns.channel_type + "=? and " + WKDBColumns.WKChannelMembersColumns.member_uid + "=?", update);
@@ -524,7 +524,7 @@ public class ChannelMembersDbManager {
                     hashMap.put(key, jsonObject.opt(key));
                 }
             } catch (JSONException e) {
-                WKLoggerUtils.getInstance().e(TAG , "serializableChannelMember extra error");
+                WKLoggerUtils.getInstance().e(TAG, "serializableChannelMember extra error");
             }
             channelMember.extraMap = hashMap;
         }

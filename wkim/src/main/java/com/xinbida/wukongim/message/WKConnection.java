@@ -538,7 +538,6 @@ public class WKConnection {
                 connection.setAttachment("close" + connection.getId());
                 connection.close();
             } catch (IOException e) {
-                e.printStackTrace();
                 WKLoggerUtils.getInstance().e("stop connection IOException" + e.getMessage());
             }
         }
