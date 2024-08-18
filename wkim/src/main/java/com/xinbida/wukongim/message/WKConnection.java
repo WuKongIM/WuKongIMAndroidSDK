@@ -25,7 +25,6 @@ import com.xinbida.wukongim.message.type.WKSendMsgResult;
 import com.xinbida.wukongim.message.type.WKSendingMsg;
 import com.xinbida.wukongim.msgmodel.WKImageContent;
 import com.xinbida.wukongim.msgmodel.WKMediaMessageContent;
-import com.xinbida.wukongim.msgmodel.WKMessageContent;
 import com.xinbida.wukongim.msgmodel.WKVideoContent;
 import com.xinbida.wukongim.protocol.WKBaseMsg;
 import com.xinbida.wukongim.protocol.WKConnectMsg;
@@ -379,33 +378,6 @@ public class WKConnection {
         }
     }
 
-    public void sendMessage(WKMessageContent baseContentModel, WKMsgSetting wkMsgSetting, String channelID, byte channelType) {
-        final WKMsg wkMsg = new WKMsg();
-        wkMsg.type = baseContentModel.type;
-        wkMsg.setting = wkMsgSetting;
-        //设置会话信息
-        wkMsg.channelID = channelID;
-        wkMsg.channelType = channelType;
-        //检查频道信息
-        wkMsg.baseContentMsgModel = baseContentModel;
-        wkMsg.baseContentMsgModel.fromUID = wkMsg.fromUID;
-        wkMsg.flame = baseContentModel.flame;
-        wkMsg.flameSecond = baseContentModel.flameSecond;
-        wkMsg.topicID = baseContentModel.topicID;
-        sendMessage(wkMsg);
-    }
-
-    /**
-     * 发送消息
-     *
-     * @param baseContentModel 消息model
-     * @param channelID        频道ID
-     * @param channelType      频道类型
-     */
-    public void sendMessage(WKMessageContent baseContentModel, String channelID, byte channelType) {
-        WKMsgSetting setting = new WKMsgSetting();
-        sendMessage(baseContentModel, setting, channelID, channelType);
-    }
 
     public void sendMessage(WKMsg msg) {
         if (TextUtils.isEmpty(msg.fromUID)) {

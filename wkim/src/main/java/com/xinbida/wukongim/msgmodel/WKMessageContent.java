@@ -16,9 +16,15 @@ import java.util.List;
 public class WKMessageContent implements Parcelable {
     //内容
     public String content;
-    //发送者id
+    /**
+     * Deprecated 后续版本将删除该字段
+     */
+    @Deprecated
     public String fromUID;
-    //发送者名称
+    /**
+     * Deprecated 后续版本将删除该字段
+     */
+    @Deprecated
     public String fromName;
     //消息内容类型
     public int type;
@@ -31,11 +37,25 @@ public class WKMessageContent implements Parcelable {
     //搜索关键字
     public String searchableWord;
     //最近会话提示文字
-    public String displayContent;
-//    public int isDelete;
+    private String displayContent;
+    /**
+     * Deprecated 后续版本将删除该字段
+     */
+    @Deprecated
     public String robotID;
+    /**
+     * Deprecated 后续版本将删除该字段
+     */
+    @Deprecated
     public int flame;
+    /**
+     * Deprecated 后续版本将删除该字段
+     */
+    @Deprecated
     public int flameSecond;
+    /**
+     * Deprecated 后续版本将删除该字段
+     */
     @Deprecated
     public String topicID;
     public List<WKMsgEntity> entities;
@@ -54,7 +74,6 @@ public class WKMessageContent implements Parcelable {
         searchableWord = in.readString();
         displayContent = in.readString();
         reply = in.readParcelable(WKReply.class.getClassLoader());
-//        isDelete = in.readInt();
         robotID = in.readString();
         entities = in.createTypedArrayList(WKMsgEntity.CREATOR);
         flame = in.readInt();
@@ -73,7 +92,6 @@ public class WKMessageContent implements Parcelable {
         dest.writeString(searchableWord);
         dest.writeString(displayContent);
         dest.writeParcelable(reply, flags);
-//        dest.writeInt(isDelete);
         dest.writeString(robotID);
         dest.writeTypedList(entities);
         dest.writeInt(flame);

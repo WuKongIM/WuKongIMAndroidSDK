@@ -55,7 +55,7 @@ public class WKReceivedMsg extends WKBaseMsg {
     public int topicIDContentLength = 0;
 
     public WKReceivedMsg() {
-        packetType = WKMsgType.RECVEIVED;
+        packetType = WKMsgType.RECEIVED;
     }
 
     public int getPayloadLength(int remainingLength) {

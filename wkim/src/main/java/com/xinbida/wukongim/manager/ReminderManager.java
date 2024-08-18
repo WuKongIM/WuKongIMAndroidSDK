@@ -52,9 +52,9 @@ public class ReminderManager extends BaseManager {
     /**
      * 获取某个类型的提醒
      *
-     * @param channelID       频道ID
-     * @param channelType     频道类型
-     * @param type 提醒类型
+     * @param channelID   频道ID
+     * @param channelType 频道类型
+     * @param type        提醒类型
      * @return WKReminder
      */
     public WKReminder getReminder(String channelID, byte channelType, int type) {
@@ -81,7 +81,7 @@ public class ReminderManager extends BaseManager {
     }
 
     public List<WKReminder> getRemindersWithType(String channelID, byte channelType, int type) {
-        return ReminderDBManager.getInstance().queryWithChannelAndTypeAndDone(channelID, channelType, type,0);
+        return ReminderDBManager.getInstance().queryWithChannelAndTypeAndDone(channelID, channelType, type, 0);
     }
 
     public void saveOrUpdateReminders(List<WKReminder> reminderList) {
@@ -95,4 +95,7 @@ public class ReminderManager extends BaseManager {
         return ReminderDBManager.getInstance().queryMaxVersion();
     }
 
+    public void done() {
+
+    }
 }

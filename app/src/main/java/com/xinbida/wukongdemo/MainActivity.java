@@ -3,7 +3,6 @@ package com.xinbida.wukongdemo;
 import android.content.Context;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -16,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.lxj.xpopup.XPopup;
 import com.xinbida.wukongim.WKIM;
+import com.xinbida.wukongim.entity.WKChannel;
 import com.xinbida.wukongim.entity.WKChannelType;
 import com.xinbida.wukongim.entity.WKMsg;
 import com.xinbida.wukongim.message.type.WKConnectStatus;
@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
 
-            WKIM.getInstance().getMsgManager().sendMessage(new WKTextContent(content), channelID, channelType);
+            WKIM.getInstance().getMsgManager().send(new WKTextContent(content), new WKChannel(channelID,channelType));
             contentEt.setText("");
         });
 

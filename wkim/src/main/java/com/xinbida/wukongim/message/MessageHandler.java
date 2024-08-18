@@ -114,7 +114,7 @@ public class MessageHandler {
                 System.arraycopy(available_bytes, 0, temp, cacheData.length, available_bytes.length);
                 cacheData = temp;
             } catch (Exception e) {
-                WKLoggerUtils.getInstance().e(TAG,"cutBytes Merge message error" + e.getMessage());
+                WKLoggerUtils.getInstance().e(TAG, "cutBytes Merge message error" + e.getMessage());
             }
 
         }
@@ -208,7 +208,7 @@ public class MessageHandler {
 
                     mIReceivedMsgListener
                             .sendAckMsg(sendAckMsg);
-                } else if (g_msg.packetType == WKMsgType.RECVEIVED) {
+                } else if (g_msg.packetType == WKMsgType.RECEIVED) {
                     //收到消息
                     WKMsg message = WKProto.getInstance().baseMsg2WKMsg(g_msg);
                     message.header.noPersist = no_persist == 1;
@@ -328,22 +328,8 @@ public class MessageHandler {
             if (lastMsg == null) {
                 continue;
             }
-            JSONObject jsonObject = null;
-            if (!TextUtils.isEmpty(list.get(i).wkMsg.content)) {
-                try {
-                    jsonObject = new JSONObject(list.get(i).wkMsg.content);
-                } catch (JSONException e) {
-                    WKLoggerUtils.getInstance().e(TAG, "groupMsg content is not a JSON struct");
-                    jsonObject = new JSONObject();
-                }
-            }
-            if (lastMsg.baseContentMsgModel == null) {
-                lastMsg.baseContentMsgModel = WKIM.getInstance().getMsgManager().getMsgContentModel(lastMsg.type, jsonObject);
-                if (lastMsg.baseContentMsgModel != null) {
-                    lastMsg.flame = lastMsg.baseContentMsgModel.flame;
-                    lastMsg.flameSecond = lastMsg.baseContentMsgModel.flameSecond;
-                }
-            }
+
+            lastMsg = parsingMsg(lastMsg);
             boolean isSave = false;
             if (lastMsg.baseContentMsgModel != null && lastMsg.baseContentMsgModel.mentionAll == 1 && list.get(i).red_dot == 1) {
                 isSave = true;
@@ -390,29 +376,37 @@ public class MessageHandler {
     }
 
     public WKMsg parsingMsg(WKMsg message) {
-        JSONObject json = null;
-        if (message.type != WKMsgContentType.WK_SIGNAL_DECRYPT_ERROR) {
-            try {
-                if (TextUtils.isEmpty(message.content)) return message;
-                json = new JSONObject(message.content);
-                if (json.has(WKDBColumns.WKMessageColumns.type)) {
-                    message.content = json.toString();
-                    message.type = json.optInt(WKDBColumns.WKMessageColumns.type);
-                }
-                if (TextUtils.isEmpty(message.fromUID)) {
-                    if (json.has(WKDBColumns.WKMessageColumns.from_uid)) {
-                        message.fromUID = json.optString(WKDBColumns.WKMessageColumns.from_uid);
-                    } else {
-                        message.fromUID = message.channelID;
-                    }
-                }
-
-            } catch (JSONException e) {
-                message.type = WKMsgContentType.WK_CONTENT_FORMAT_ERROR;
-                WKLoggerUtils.getInstance().e(TAG, "Parsing message error, message is not a JSON structure");
-            }
+        if (message.type == WKMsgContentType.WK_SIGNAL_DECRYPT_ERROR || message.type == WKMsgContentType.WK_CONTENT_FORMAT_ERROR) {
+            return message;
         }
-
+        JSONObject json = null;
+        try {
+            if (TextUtils.isEmpty(message.content)) return message;
+            json = new JSONObject(message.content);
+            if (json.has("type")) {
+                message.content = json.toString();
+                message.type = json.optInt("type");
+            }
+            if (TextUtils.isEmpty(message.fromUID)) {
+                if (json.has("from_uid")) {
+                    message.fromUID = json.optString("from_uid");
+                } else {
+                    message.fromUID = message.channelID;
+                }
+            }
+            if (json.has("flame")) {
+                message.flame = json.optInt("flame");
+            }
+            if (json.has("flame_second")) {
+                message.flameSecond = json.optInt("flame_second");
+            }
+            if (json.has("root_id")) {
+                message.robotID = json.optString("root_id");
+            }
+        } catch (JSONException e) {
+            message.type = WKMsgContentType.WK_CONTENT_FORMAT_ERROR;
+            WKLoggerUtils.getInstance().e(TAG, "Parsing message error, message is not a JSON structure");
+        }
 
         if (json == null) {
             if (message.type != WKMsgContentType.WK_SIGNAL_DECRYPT_ERROR)
@@ -421,15 +415,10 @@ public class MessageHandler {
 
         if (message.type == WKMsgContentType.WK_INSIDE_MSG) {
             CMDManager.getInstance().handleCMD(json, message.channelID, message.channelType);
-        }
-        if (message.type != WKMsgContentType.WK_SIGNAL_DECRYPT_ERROR && message.type != WKMsgContentType.WK_CONTENT_FORMAT_ERROR) {
-            message.baseContentMsgModel = WKIM.getInstance().getMsgManager().getMsgContentModel(message.type, json);
-            if (message.baseContentMsgModel != null) {
-                message.flame = message.baseContentMsgModel.flame;
-                message.flameSecond = message.baseContentMsgModel.flameSecond;
-            }
+            return message;
         }
 
+        message.baseContentMsgModel = WKIM.getInstance().getMsgManager().getMsgContentModel(message.type, json);
         //如果是单聊先将channelId改成发送者ID
         if (!TextUtils.isEmpty(message.channelID)
                 && !TextUtils.isEmpty(message.fromUID)

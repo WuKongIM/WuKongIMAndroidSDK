@@ -22,7 +22,6 @@ import java.util.UUID;
 public class WKIMApplication {
     private final String sharedName = "wk_account_config";
     //协议版本
-    public final byte defaultProtocolVersion = 4;
     public byte protocolVersion = 4;
 
     private WKIMApplication() {
@@ -208,38 +207,6 @@ public class WKIMApplication {
             }
         }
         return false;
-//
-//        ConnectivityManager connectivity = (ConnectivityManager) mContext.get().getSystemService(Context.CONNECTIVITY_SERVICE);
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-//            if (connectivity != null) {
-//                Network networks = connectivity.getActiveNetwork();
-//                NetworkCapabilities networkCapabilities = connectivity.getNetworkCapabilities(networks);
-//                if (networkCapabilities != null) {
-//                    if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
-//                        success = true;
-//                    } else if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
-//                        success = true;
-//                    }
-//                } else {
-//                    success = false;
-//                }
-//            }
-//
-//        } else {
-//            NetworkInfo.State state = connectivity.getNetworkInfo(
-//                    ConnectivityManager.TYPE_WIFI).getState(); // 获取网络连接状态
-//            if (NetworkInfo.State.CONNECTED == state) {
-//                // 判断是否正在使用WIFI网络
-//                success = true;
-//            } else {
-//                state = connectivity.getNetworkInfo(
-//                        ConnectivityManager.TYPE_MOBILE).getState(); // 获取网络连接状态
-//                if (NetworkInfo.State.CONNECTED == state) { // 判断是否正在使用GPRS网络
-//                    success = true;
-//                }
-//            }
-//        }
-
     }
 
     public void setFileCacheDir(String fileDir) {

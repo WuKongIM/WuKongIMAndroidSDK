@@ -1,6 +1,7 @@
 package com.xinbida.wukongim.message;
 
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.WKIMApplication;
@@ -33,6 +34,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.util.Arrays;
 
 /**
  * 5/21/21 11:28 AM
@@ -57,6 +59,8 @@ class WKProto {
         if (msg.packetType == WKMsgType.CONNECT) {
             // 连接
             bytes = WKProto.getInstance().enConnectMsg((WKConnectMsg) msg);
+            String str = Arrays.toString(bytes);
+            WKLoggerUtils.getInstance().e(str);
         } else if (msg.packetType == WKMsgType.REVACK) {
             // 收到消息回执
             bytes = WKProto.getInstance().enReceivedAckMsg((WKReceivedAckMsg) msg);
@@ -72,7 +76,6 @@ class WKProto {
     }
 
     byte[] enConnectMsg(WKConnectMsg connectMsg) {
-        WKIMApplication.getInstance().protocolVersion = WKIMApplication.getInstance().defaultProtocolVersion;
         byte[] remainingBytes = WKTypeUtils.getInstance().getRemainingLengthByte(connectMsg.getRemainingLength());
         int totalLen = connectMsg.getTotalLen();
         WKWrite wkWrite = new WKWrite(totalLen);
@@ -252,7 +255,7 @@ class WKProto {
                 return deSendAckMsg(wkRead);
             } else if (packetType == WKMsgType.DISCONNECT) {
                 return deDisconnectMsg(wkRead);
-            } else if (packetType == WKMsgType.RECVEIVED) {
+            } else if (packetType == WKMsgType.RECEIVED) {
                 return deReceivedMsg(wkRead);
             } else if (packetType == WKMsgType.PONG) {
                 return new WKPongMsg();
@@ -306,6 +309,9 @@ class WKProto {
             if (!TextUtils.isEmpty(msg.baseContentMsgModel.robotID)) {
                 jsonObject.put("robot_id", msg.baseContentMsgModel.robotID);
             }
+            if (!TextUtils.isEmpty(msg.robotID)) {
+                jsonObject.put("robot_id", msg.robotID);
+            }
             if (WKCommonUtils.isNotEmpty(msg.baseContentMsgModel.entities)) {
                 JSONArray jsonArray = new JSONArray();
                 for (WKMsgEntity entity : msg.baseContentMsgModel.entities) {
@@ -322,10 +328,10 @@ class WKProto {
                 jsonObject.put("flame_second", msg.flameSecond);
                 jsonObject.put("flame", msg.flame);
             }
-            if (msg.baseContentMsgModel.flame != 0) {
-                jsonObject.put("flame_second", msg.baseContentMsgModel.flameSecond);
-                jsonObject.put("flame", msg.baseContentMsgModel.flame);
-            }
+//            if (msg.baseContentMsgModel.flame != 0) {
+//                jsonObject.put("flame_second", msg.baseContentMsgModel.flameSecond);
+//                jsonObject.put("flame", msg.baseContentMsgModel.flame);
+//            }
         } catch (JSONException e) {
             WKLoggerUtils.getInstance().e(TAG, "getSendPayload error");
         }

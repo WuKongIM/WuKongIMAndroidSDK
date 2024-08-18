@@ -271,6 +271,10 @@ public class ChannelManager extends BaseManager {
         return ChannelDBManager.getInstance().queryWithChannelIdsAndChannelType(channelIds, channelType);
     }
 
+    public List<WKChannel> getChannels(List<String> channelIds) {
+        return ChannelDBManager.getInstance().queryWithChannelIds(channelIds);
+    }
+
     /**
      * 搜索频道
      *

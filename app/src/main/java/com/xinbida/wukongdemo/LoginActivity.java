@@ -30,7 +30,7 @@ public class LoginActivity extends AppCompatActivity {
     private void onListener() {
         EditText urlET = findViewById(R.id.urlET);
         String url = urlET.getText().toString();
-        if (!TextUtils.isEmpty(url)){
+        if (!TextUtils.isEmpty(url)) {
             HttpUtil.getInstance().apiURL = url;
         }
 

@@ -23,10 +23,10 @@ afterEvaluate {
 }
 
 android {
-    compileSdk 33
+    compileSdk 34
     defaultConfig {
-        minSdkVersion 19
-        targetSdkVersion 33
+        minSdkVersion 21
+        targetSdkVersion 34
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"

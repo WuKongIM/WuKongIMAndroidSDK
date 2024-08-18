@@ -16,7 +16,7 @@ public class WKMsgType {
     //收到消息确认的报文(s2c)
     public static final short SENDACK = 4;
     //收取消息(s2c)
-    public static final short RECVEIVED = 5;
+    public static final short RECEIVED = 5;
     //收取消息确认(c2s)
     public static final short REVACK = 6;
     //ping请求

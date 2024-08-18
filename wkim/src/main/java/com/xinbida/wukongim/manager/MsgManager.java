@@ -1,6 +1,9 @@
 package com.xinbida.wukongim.manager;
 
 import android.text.TextUtils;
+import android.util.Log;
+
+import androidx.annotation.NonNull;
 
 import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.WKIMApplication;
@@ -17,6 +20,7 @@ import com.xinbida.wukongim.entity.WKMsg;
 import com.xinbida.wukongim.entity.WKMsgExtra;
 import com.xinbida.wukongim.entity.WKMsgReaction;
 import com.xinbida.wukongim.entity.WKMsgSetting;
+import com.xinbida.wukongim.entity.WKSendOptions;
 import com.xinbida.wukongim.entity.WKSyncExtraMsg;
 import com.xinbida.wukongim.entity.WKSyncMsg;
 import com.xinbida.wukongim.entity.WKSyncMsgReaction;
@@ -39,13 +43,16 @@ import com.xinbida.wukongim.interfaces.IUploadAttachmentListener;
 import com.xinbida.wukongim.interfaces.IUploadMsgExtraListener;
 import com.xinbida.wukongim.message.MessageHandler;
 import com.xinbida.wukongim.message.WKConnection;
+import com.xinbida.wukongim.message.WKRead;
 import com.xinbida.wukongim.message.type.WKMsgContentType;
 import com.xinbida.wukongim.message.type.WKSendMsgResult;
+import com.xinbida.wukongim.msgmodel.WKFormatErrorContent;
 import com.xinbida.wukongim.msgmodel.WKImageContent;
 import com.xinbida.wukongim.msgmodel.WKMessageContent;
 import com.xinbida.wukongim.msgmodel.WKMsgEntity;
 import com.xinbida.wukongim.msgmodel.WKReply;
 import com.xinbida.wukongim.msgmodel.WKTextContent;
+import com.xinbida.wukongim.msgmodel.WKUnknownContent;
 import com.xinbida.wukongim.msgmodel.WKVideoContent;
 import com.xinbida.wukongim.msgmodel.WKVoiceContent;
 import com.xinbida.wukongim.utils.DateUtils;
@@ -157,6 +164,9 @@ public class MsgManager extends BaseManager {
     }
 
     public WKMessageContent getMsgContentModel(String jsonStr) {
+        if (TextUtils.isEmpty(jsonStr)) {
+            return new WKFormatErrorContent();
+        }
         JSONObject jsonObject = null;
         try {
             jsonObject = new JSONObject(jsonStr);
@@ -164,77 +174,78 @@ public class MsgManager extends BaseManager {
             WKLoggerUtils.getInstance().e(TAG, "getMsgContentModel The parameter is not a JSON");
         }
         if (jsonObject == null) {
-            return new WKMessageContent();
-        } else
-            return getMsgContentModel(jsonObject);
+            return new WKFormatErrorContent();
+        }
+        return getMsgContentModel(jsonObject);
     }
 
     public WKMessageContent getMsgContentModel(int contentType, JSONObject jsonObject) {
         if (jsonObject == null) jsonObject = new JSONObject();
         WKMessageContent baseContentMsgModel = getContentMsgModel(contentType, jsonObject);
-        if (baseContentMsgModel != null) {
-            //解析@成员列表
-            if (jsonObject.has("mention")) {
-                JSONObject tempJson = jsonObject.optJSONObject("mention");
-                if (tempJson != null) {
-                    //是否@所有人
-                    if (tempJson.has("all"))
-                        baseContentMsgModel.mentionAll = tempJson.optInt("all");
-                    JSONArray uidList = tempJson.optJSONArray("uids");
+        if (baseContentMsgModel == null) {
+            baseContentMsgModel = new WKUnknownContent();
+        }
+        //解析@成员列表
+        if (jsonObject.has("mention")) {
+            JSONObject tempJson = jsonObject.optJSONObject("mention");
+            if (tempJson != null) {
+                //是否@所有人
+                if (tempJson.has("all"))
+                    baseContentMsgModel.mentionAll = tempJson.optInt("all");
+                JSONArray uidList = tempJson.optJSONArray("uids");
 
-                    if (uidList != null && uidList.length() > 0) {
-                        WKMentionInfo mentionInfo = new WKMentionInfo();
-                        List<String> mentionInfoUIDs = new ArrayList<>();
-                        for (int i = 0, size = uidList.length(); i < size; i++) {
-                            String uid = uidList.optString(i);
-                            if (uid.equals(WKIMApplication.getInstance().getUid())) {
-                                mentionInfo.isMentionMe = true;
-                            }
-                            mentionInfoUIDs.add(uid);
-                        }
-                        mentionInfo.uids = mentionInfoUIDs;
-                        if (baseContentMsgModel.mentionAll == 1) {
+                if (uidList != null && uidList.length() > 0) {
+                    WKMentionInfo mentionInfo = new WKMentionInfo();
+                    List<String> mentionInfoUIDs = new ArrayList<>();
+                    for (int i = 0, size = uidList.length(); i < size; i++) {
+                        String uid = uidList.optString(i);
+                        if (uid.equals(WKIMApplication.getInstance().getUid())) {
                             mentionInfo.isMentionMe = true;
                         }
-                        baseContentMsgModel.mentionInfo = mentionInfo;
+                        mentionInfoUIDs.add(uid);
                     }
-                }
-            }
-
-            if (jsonObject.has("from_uid"))
-                baseContentMsgModel.fromUID = jsonObject.optString("from_uid");
-            if (jsonObject.has("flame"))
-                baseContentMsgModel.flame = jsonObject.optInt("flame");
-            if (jsonObject.has("flame_second"))
-                baseContentMsgModel.flameSecond = jsonObject.optInt("flame_second");
-            //判断消息中是否包含回复情况
-            if (jsonObject.has("reply")) {
-                baseContentMsgModel.reply = new WKReply();
-                JSONObject replyJson = jsonObject.optJSONObject("reply");
-                if (replyJson != null) {
-                    baseContentMsgModel.reply = baseContentMsgModel.reply.decodeMsg(replyJson);
-                }
-            }
-            if (jsonObject.has("robot_id"))
-                baseContentMsgModel.robotID = jsonObject.optString("robot_id");
-            if (jsonObject.has("entities")) {
-                JSONArray jsonArray = jsonObject.optJSONArray("entities");
-                if (jsonArray != null && jsonArray.length() > 0) {
-                    List<WKMsgEntity> list = new ArrayList<>();
-                    for (int i = 0; i < jsonArray.length(); i++) {
-                        WKMsgEntity entity = new WKMsgEntity();
-                        JSONObject jo = jsonArray.optJSONObject(i);
-                        entity.type = jo.optString("type");
-                        entity.offset = jo.optInt("offset");
-                        entity.length = jo.optInt("length");
-                        entity.value = jo.optString("value");
-                        list.add(entity);
+                    mentionInfo.uids = mentionInfoUIDs;
+                    if (baseContentMsgModel.mentionAll == 1) {
+                        mentionInfo.isMentionMe = true;
                     }
-                    baseContentMsgModel.entities = list;
+                    baseContentMsgModel.mentionInfo = mentionInfo;
                 }
-
             }
+        }
 
+        if (jsonObject.has("from_uid"))
+            baseContentMsgModel.fromUID = jsonObject.optString("from_uid");
+        if (jsonObject.has("flame"))
+            baseContentMsgModel.flame = jsonObject.optInt("flame");
+        if (jsonObject.has("flame_second"))
+            baseContentMsgModel.flameSecond = jsonObject.optInt("flame_second");
+        if (jsonObject.has("robot_id"))
+            baseContentMsgModel.robotID = jsonObject.optString("robot_id");
+
+        //判断消息中是否包含回复情况
+        if (jsonObject.has("reply")) {
+            baseContentMsgModel.reply = new WKReply();
+            JSONObject replyJson = jsonObject.optJSONObject("reply");
+            if (replyJson != null) {
+                baseContentMsgModel.reply = baseContentMsgModel.reply.decodeMsg(replyJson);
+            }
+        }
+
+        if (jsonObject.has("entities")) {
+            JSONArray jsonArray = jsonObject.optJSONArray("entities");
+            if (jsonArray != null && jsonArray.length() > 0) {
+                List<WKMsgEntity> list = new ArrayList<>();
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    WKMsgEntity entity = new WKMsgEntity();
+                    JSONObject jo = jsonArray.optJSONObject(i);
+                    entity.type = jo.optString("type");
+                    entity.offset = jo.optInt("offset");
+                    entity.length = jo.optInt("length");
+                    entity.value = jo.optString("value");
+                    list.add(entity);
+                }
+                baseContentMsgModel.entities = list;
+            }
         }
         return baseContentMsgModel;
     }
@@ -259,6 +270,7 @@ public class MsgManager extends BaseManager {
             } catch (IllegalAccessException | InstantiationException | NoSuchMethodException |
                      InvocationTargetException e) {
                 WKLoggerUtils.getInstance().e(TAG, "getContentMsgModel error" + e.getLocalizedMessage());
+                return new WKUnknownContent();
             }
         }
         try {
@@ -268,8 +280,9 @@ public class MsgManager extends BaseManager {
             }
         } catch (IllegalAccessException | InstantiationException e) {
             WKLoggerUtils.getInstance().e(TAG, "getContentMsgModel decodeMsg error");
+            return new WKUnknownContent();
         }
-        return null;
+        return new WKUnknownContent();
     }
 
     private long getOrNearbyMsgSeq(long orderSeq) {
@@ -934,7 +947,6 @@ public class MsgManager extends BaseManager {
         }
     }
 
-
     public void saveSyncChannelMSGs(List<WKSyncRecent> list) {
         if (WKCommonUtils.isEmpty(list)) return;
         List<WKMsg> msgList = new ArrayList<>();
@@ -1122,29 +1134,11 @@ public class MsgManager extends BaseManager {
             JSONObject jsonObject = new JSONObject(wkSyncRecent.payload);
             msg.content = jsonObject.toString();
         }
-        JSONObject jsonObject = null;
-        if (!TextUtils.isEmpty(msg.content)) {
-            try {
-                jsonObject = new JSONObject(msg.content);
-                if (jsonObject.has("type"))
-                    msg.type = jsonObject.optInt("type");
-                jsonObject.put(WKDBColumns.WKMessageColumns.from_uid, msg.fromUID);
-                if (jsonObject.has("flame"))
-                    msg.flame = jsonObject.optInt("flame");
-                if (jsonObject.has("flame_second"))
-                    msg.flameSecond = jsonObject.optInt("flame_second");
-                msg.content = jsonObject.toString();
-            } catch (JSONException e) {
-                WKLoggerUtils.getInstance().e(TAG, "WKSyncRecent2WKMsg message content not a JSON");
-            }
-        }
         // 处理消息回应
         if (WKCommonUtils.isNotEmpty(wkSyncRecent.reactions)) {
             msg.reactionList = getMsgReaction(wkSyncRecent);
         }
-        if (msg.type != WKMsgContentType.WK_SIGNAL_DECRYPT_ERROR && msg.type != WKMsgContentType.WK_CONTENT_FORMAT_ERROR)
-            msg.baseContentMsgModel = WKIM.getInstance().getMsgManager().getMsgContentModel(msg.type, jsonObject);
-
+        msg = MessageHandler.getInstance().parsingMsg(msg);
         return msg;
     }
 
@@ -1209,7 +1203,7 @@ public class MsgManager extends BaseManager {
             @Override
             public void run() {
                 List<WKMsgExtra> list = MsgDbManager.getInstance().queryMsgExtraWithNeedUpload(1);
-                if (list != null && list.size() > 0) {
+                if (WKCommonUtils.isNotEmpty(list)) {
                     for (WKMsgExtra extra : list) {
                         if (iUploadMsgExtraListener != null) {
                             iUploadMsgExtraListener.onUpload(extra);
@@ -1236,7 +1230,7 @@ public class MsgManager extends BaseManager {
     }
 
     public void pushNewMsg(List<WKMsg> wkMsgList) {
-        if (newMsgListenerMap != null && newMsgListenerMap.size() > 0) {
+        if (newMsgListenerMap != null && !newMsgListenerMap.isEmpty()) {
             runOnMainThread(() -> {
                 for (Map.Entry<String, INewMsgListener> entry : newMsgListenerMap.entrySet()) {
                     entry.getValue().newMsg(wkMsgList);
@@ -1257,13 +1251,35 @@ public class MsgManager extends BaseManager {
         pushNewMsg(msgs);
     }
 
-
+    /**
+     * Deprecated 后续版本将会移除
+     *
+     * @param messageContent 消息体
+     * @param channelID      频道ID
+     * @param channelType    频道类型
+     */
+    @Deprecated
     public void sendMessage(WKMessageContent messageContent, String channelID, byte channelType) {
-        WKConnection.getInstance().sendMessage(messageContent, channelID, channelType);
+        send(messageContent, new WKChannel(channelID, channelType));
     }
 
+    /**
+     * Deprecated 后续版本将会移除
+     *
+     * @param messageContent 消息体
+     * @param setting        消息设置
+     * @param channelID      频道ID
+     * @param channelType    频道类型
+     */
+    @Deprecated
     public void sendMessage(WKMessageContent messageContent, WKMsgSetting setting, String channelID, byte channelType) {
-        WKConnection.getInstance().sendMessage(messageContent, setting, channelID, channelType);
+        WKSendOptions options = new WKSendOptions();
+        options.setting = setting;
+        WKChannel channel = WKIM.getInstance().getChannelManager().getChannel(channelID, channelType);
+        if (channel == null) {
+            channel = new WKChannel(channelID, channelType);
+        }
+        sendWithOptions(messageContent, channel, options);
     }
 
     /**
@@ -1271,8 +1287,45 @@ public class MsgManager extends BaseManager {
      *
      * @param msg 消息对象
      */
-    public void sendMessage(WKMsg msg) {
+    public void sendMessage(@NonNull WKMsg msg) {
         WKConnection.getInstance().sendMessage(msg);
+    }
+
+    /**
+     * 发送消息
+     *
+     * @param contentModel 消息体
+     * @param channel      频道
+     */
+    public void send(@NonNull WKMessageContent contentModel, @NonNull WKChannel channel) {
+        sendWithOptions(contentModel, channel, new WKSendOptions());
+    }
+
+    /**
+     * 发送消息
+     *
+     * @param contentModel 消息体
+     * @param channel      频道
+     * @param options      高级设置
+     */
+    public void sendWithOptions(@NonNull WKMessageContent contentModel, @NonNull WKChannel channel, @NonNull WKSendOptions options) {
+        final WKMsg wkMsg = new WKMsg();
+        wkMsg.type = contentModel.type;
+        wkMsg.channelID = channel.channelID;
+        wkMsg.channelType = channel.channelType;
+        wkMsg.baseContentMsgModel = contentModel;
+        wkMsg.flame = options.flame;
+        wkMsg.flameSecond = options.flameSecond;
+        wkMsg.expireTime = options.expire;
+        if (!TextUtils.isEmpty(options.topicID)) {
+            wkMsg.topicID = options.topicID;
+        }
+        if (!TextUtils.isEmpty(options.robotID)) {
+            wkMsg.robotID = options.robotID;
+        }
+        wkMsg.setting = options.setting;
+        wkMsg.header = options.header;
+        sendMessage(wkMsg);
     }
 
     public String createClientMsgNO() {

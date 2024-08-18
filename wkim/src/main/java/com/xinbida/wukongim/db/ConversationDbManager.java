@@ -16,6 +16,7 @@ import com.xinbida.wukongim.entity.WKChannelType;
 import com.xinbida.wukongim.entity.WKConversationMsg;
 import com.xinbida.wukongim.entity.WKConversationMsgExtra;
 import com.xinbida.wukongim.entity.WKMsg;
+import com.xinbida.wukongim.entity.WKMsgExtra;
 import com.xinbida.wukongim.entity.WKUIConversationMsg;
 import com.xinbida.wukongim.manager.ConversationManager;
 import com.xinbida.wukongim.utils.WKCommonUtils;
@@ -85,16 +86,86 @@ public class ConversationDbManager {
             if (cursor == null) {
                 return list;
             }
+            List<String> clientMsgNos = new ArrayList<>();
             for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
                 WKConversationMsg msg = serializeMsg(cursor);
                 if (msg.isDeleted == 0) {
                     WKUIConversationMsg uiMsg = getUIMsg(msg, cursor);
                     list.add(uiMsg);
+                    clientMsgNos.add(uiMsg.clientMsgNo);
                 }
             }
-        } catch (Exception ignored) {
+            if (!clientMsgNos.isEmpty()) {
+                List<WKMsg> msgList = queryWithClientMsgNos(clientMsgNos);
+                List<String> msgIds = new ArrayList<>();
+                if (WKCommonUtils.isNotEmpty(msgList)) {
+                    for (WKUIConversationMsg uiMsg : list) {
+                        for (WKMsg msg : msgList) {
+                            if (uiMsg.clientMsgNo.equals(msg.clientMsgNO)) {
+                                uiMsg.setWkMsg(msg);
+                                if (!TextUtils.isEmpty(msg.messageID)) {
+                                    msgIds.add(msg.messageID);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+                List<WKMsgExtra> extraList = queryWithMsgIds(msgIds);
+                if (WKCommonUtils.isNotEmpty(extraList)) {
+                    for (WKUIConversationMsg uiMsg : list) {
+                        for (WKMsgExtra extra : extraList) {
+                            if (uiMsg.getWkMsg() != null && !TextUtils.isEmpty(uiMsg.getWkMsg().messageID) && uiMsg.getWkMsg().messageID.equals(extra.messageID)) {
+                                uiMsg.getWkMsg().remoteExtra = extra;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            WKLoggerUtils.getInstance().e(TAG, "queryAll error");
         }
         return list;
+    }
+
+    private List<WKMsgExtra> queryWithMsgIds(List<String> msgIds) {
+        List<WKMsgExtra> msgExtraList = new ArrayList<>();
+        List<String> ids = new ArrayList<>();
+        for (int i = 0, size = msgIds.size(); i < size; i++) {
+            if (ids.size() == 200) {
+                List<WKMsgExtra> list = MsgDbManager.getInstance().queryMsgExtrasWithMsgIds(ids);
+                if (WKCommonUtils.isNotEmpty(list)) {
+                    msgExtraList.addAll(list);
+                }
+                ids.clear();
+            }
+            ids.add(msgIds.get(i));
+        }
+        return msgExtraList;
+    }
+
+    private List<WKMsg> queryWithClientMsgNos(List<String> clientMsgNos) {
+        List<WKMsg> msgList = new ArrayList<>();
+        List<String> nos = new ArrayList<>();
+        for (int i = 0, size = clientMsgNos.size(); i < size; i++) {
+            if (nos.size() == 200) {
+                List<WKMsg> list = MsgDbManager.getInstance().queryWithClientMsgNos(nos);
+                if (WKCommonUtils.isNotEmpty(list)) {
+                    msgList.addAll(list);
+                }
+                nos.clear();
+            }
+            nos.add(clientMsgNos.get(i));
+        }
+        if (!nos.isEmpty()) {
+            List<WKMsg> list = MsgDbManager.getInstance().queryWithClientMsgNos(nos);
+            if (WKCommonUtils.isNotEmpty(list)) {
+                msgList.addAll(list);
+            }
+            nos.clear();
+        }
+        return msgList;
     }
 
     public List<WKUIConversationMsg> queryWithChannelIds(List<String> channelIds) {
@@ -211,7 +282,7 @@ public class ConversationDbManager {
             cv.put(WKDBColumns.WKCoverMessageColumns.last_msg_seq, lastMsgSeq);
             cv.put(WKDBColumns.WKCoverMessageColumns.unread_count, count);
         } catch (Exception e) {
-            WKLoggerUtils.getInstance().e(TAG , "updateMsg error");
+            WKLoggerUtils.getInstance().e(TAG, "updateMsg error");
         }
         WKIMApplication.getInstance().getDbHelper()
                 .update(conversation, cv, WKDBColumns.WKCoverMessageColumns.channel_id + "=? and " + WKDBColumns.WKCoverMessageColumns.channel_type + "=?", update);
@@ -241,7 +312,7 @@ public class ConversationDbManager {
         try {
             cv.put(WKDBColumns.WKCoverMessageColumns.is_deleted, isDeleted);
         } catch (Exception e) {
-            WKLoggerUtils.getInstance().e(TAG , "deleteWithChannel error");
+            WKLoggerUtils.getInstance().e(TAG, "deleteWithChannel error");
         }
 
         boolean result = WKIMApplication.getInstance().getDbHelper()
@@ -294,7 +365,7 @@ public class ConversationDbManager {
         try {
             cv = WKSqlContentValues.getContentValuesWithCoverMsg(msg, false);
         } catch (Exception e) {
-            WKLoggerUtils.getInstance().e(TAG,"insert error");
+            WKLoggerUtils.getInstance().e(TAG, "insert error");
         }
         long result = -1;
         try {
@@ -319,7 +390,7 @@ public class ConversationDbManager {
         try {
             cv = WKSqlContentValues.getContentValuesWithCoverMsg(msg, false);
         } catch (Exception e) {
-            WKLoggerUtils.getInstance().e(TAG,"update error");
+            WKLoggerUtils.getInstance().e(TAG, "update error");
         }
         return WKIMApplication.getInstance().getDbHelper()
                 .update(conversation, cv, WKDBColumns.WKCoverMessageColumns.channel_id + "=? and " + WKDBColumns.WKCoverMessageColumns.channel_type + "=?", update);
@@ -504,7 +575,7 @@ public class ConversationDbManager {
                     hashMap.put(key, jsonObject.opt(key));
                 }
             } catch (JSONException e) {
-                WKLoggerUtils.getInstance().e(TAG , "serializeMsg error");
+                WKLoggerUtils.getInstance().e(TAG, "serializeMsg error");
             }
             msg.localExtraMap = hashMap;
         }

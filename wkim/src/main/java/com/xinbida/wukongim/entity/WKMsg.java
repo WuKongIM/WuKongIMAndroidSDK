@@ -76,6 +76,7 @@ public class WKMsg implements Parcelable {
     public int viewed;
     // 查看时间戳
     public long viewedAt;
+    public String robotID;
     // 话题ID
     public String topicID;
     //消息设置
@@ -97,6 +98,7 @@ public class WKMsg implements Parcelable {
         this.expireTimestamp = 0;
         status = WKSendMsgResult.send_loading;
         clientMsgNO = WKIM.getInstance().getMsgManager().createClientMsgNO();
+        setting=new WKMsgSetting();
         header = new WKMsgHeader();
         remoteExtra = new WKMsgExtra();
     }
@@ -138,6 +140,7 @@ public class WKMsg implements Parcelable {
         topicID = in.readString();
         expireTime = in.readInt();
         expireTimestamp = in.readLong();
+        robotID = in.readString();
     }
 
     public static final Creator<WKMsg> CREATOR = new Creator<WKMsg>() {
@@ -192,6 +195,7 @@ public class WKMsg implements Parcelable {
         dest.writeString(topicID);
         dest.writeInt(expireTime);
         dest.writeLong(expireTimestamp);
+        dest.writeString(robotID);
     }
 
     public String getLocalMapExtraString() {

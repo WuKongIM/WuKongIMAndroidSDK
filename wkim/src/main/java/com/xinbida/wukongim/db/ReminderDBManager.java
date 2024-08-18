@@ -34,6 +34,16 @@ public class ReminderDBManager {
         return ReminderDBManagerBinder.binder;
     }
 
+    public void doneWithReminderIds(List<Long> ids) {
+        ContentValues cv = new ContentValues();
+        cv.put("done", 1);
+        String[] strings = new String[ids.size()];
+        for (int i = 0; i < ids.size(); i++) {
+            strings[i] = ids.get(i) + "";
+        }
+        WKIMApplication.getInstance().getDbHelper().update(reminders, cv, "reminder_id in (" + WKCursor.getPlaceholders(ids.size()) + ")", strings);
+    }
+
     public long queryMaxVersion() {
         String sql = "select * from " + reminders + " order by version desc limit 1";
         long version = 0;
@@ -237,7 +247,7 @@ public class ReminderDBManager {
                     hashMap.put(key, jsonObject.opt(key));
                 }
             } catch (JSONException e) {
-                WKLoggerUtils.getInstance().e(TAG , "serializeReminder error");
+                WKLoggerUtils.getInstance().e(TAG, "serializeReminder error");
             }
             reminder.data = hashMap;
         }

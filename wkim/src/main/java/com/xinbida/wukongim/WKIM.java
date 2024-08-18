@@ -13,13 +13,12 @@ import com.xinbida.wukongim.manager.ReminderManager;
 import com.xinbida.wukongim.manager.RobotManager;
 import com.xinbida.wukongim.message.MessageHandler;
 import com.xinbida.wukongim.utils.CryptoUtils;
-import com.xinbida.wukongim.utils.WKLoggerUtils;
 
 /**
  * 5/20/21 5:25 PM
  */
 public class WKIM {
-    private final String Version = "V1.1.7";
+    private final String Version = "V1.1.9";
 
     private WKIM() {
 

@@ -233,7 +233,7 @@ class WKSqlContentValues {
         cv.put("keep_message_seq", extra.keepMessageSeq);
         cv.put("keep_offset_y", extra.keepOffsetY);
         cv.put("draft", extra.draft);
-        cv.put("draft_updated_at", extra.version);
+        cv.put("draft_updated_at", extra.draftUpdatedAt);
         cv.put("version", extra.version);
         return cv;
     }

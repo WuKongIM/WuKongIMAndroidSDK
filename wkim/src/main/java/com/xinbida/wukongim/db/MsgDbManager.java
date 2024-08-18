@@ -21,9 +21,12 @@ import com.xinbida.wukongim.entity.WKMsg;
 import com.xinbida.wukongim.entity.WKMsgExtra;
 import com.xinbida.wukongim.entity.WKMsgReaction;
 import com.xinbida.wukongim.entity.WKMsgSetting;
+import com.xinbida.wukongim.entity.WKSyncChannelMsg;
+import com.xinbida.wukongim.entity.WKSyncRecent;
 import com.xinbida.wukongim.interfaces.IGetOrSyncHistoryMsgBack;
 import com.xinbida.wukongim.manager.MsgManager;
 import com.xinbida.wukongim.message.type.WKSendMsgResult;
+import com.xinbida.wukongim.msgmodel.WKFormatErrorContent;
 import com.xinbida.wukongim.msgmodel.WKMessageContent;
 import com.xinbida.wukongim.utils.WKCommonUtils;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
@@ -59,7 +62,8 @@ public class MsgDbManager {
     }
 
     private int requestCount;
-//    private int more = 1;
+    //    private int more = 1;
+    private final HashMap<String, Long> channelMinMsgSeqs = new HashMap<>();
 
     public void queryOrSyncHistoryMessages(String channelId, byte channelType, long oldestOrderSeq, boolean contain, int pullMode, int limit, final IGetOrSyncHistoryMsgBack iGetOrSyncHistoryMsgBack) {
         //获取原始数据
@@ -146,7 +150,7 @@ public class MsgDbManager {
                                 if (max > startMsgSeq) {
                                     startMsgSeq = max;
                                 }
-                                if (endMsgSeq ==0 || min < endMsgSeq) {
+                                if (endMsgSeq == 0 || min < endMsgSeq) {
                                     endMsgSeq = min;
                                 }
                             } else {
@@ -167,8 +171,16 @@ public class MsgDbManager {
             startMsgSeq = 0;
             endMsgSeq = 0;
         }
+        String key = channelId + "_" + channelType;
         if (!isSyncMsg) {
-            if (minMessageSeq == 1) {
+            long minSeq = 1;
+            if (channelMinMsgSeqs.containsKey(key)) {
+                Object s = channelMinMsgSeqs.get(key);
+                if (s != null) {
+                    minSeq = Long.parseLong(s.toString());
+                }
+            }
+            if (minMessageSeq == minSeq) {
                 requestCount = 0;
 //                more = 1;
                 new Handler(Looper.getMainLooper()).post(() -> iGetOrSyncHistoryMsgBack.onResult(list));
@@ -202,10 +214,9 @@ public class MsgDbManager {
             requestCount++;
             MsgManager.getInstance().setSyncChannelMsgListener(channelId, channelType, startMsgSeq, endMsgSeq, limit, pullMode, syncChannelMsg -> {
                 if (syncChannelMsg != null) {
-                    if (oldestMsgSeq == 0) {
+                    if (oldestMsgSeq == 0 || (syncChannelMsg.messages != null && syncChannelMsg.messages.size() < limit)) {
                         requestCount = 5;
                     }
-//                    more = syncChannelMsg.more;
                     queryOrSyncHistoryMessages(channelId, channelType, oldestOrderSeq, contain, pullMode, limit, iGetOrSyncHistoryMsgBack);
                 } else {
                     requestCount = 0;
@@ -218,7 +229,30 @@ public class MsgDbManager {
 //            more = 1;
             new Handler(Looper.getMainLooper()).post(() -> iGetOrSyncHistoryMsgBack.onResult(list));
         }
+    }
 
+    private long getMinSeq(WKSyncChannelMsg syncChannelMsg, List<WKMsg> tempList) {
+        long minSeq = 0;
+        if (WKCommonUtils.isNotEmpty(syncChannelMsg.messages)) {
+            for (WKSyncRecent recent : syncChannelMsg.messages) {
+                if (minSeq == 0) {
+                    minSeq = recent.message_seq;
+                } else {
+                    minSeq = Math.min(minSeq, recent.message_seq);
+                }
+            }
+        } else {
+            if (WKCommonUtils.isNotEmpty(tempList)) {
+                for (WKMsg msg : tempList) {
+                    if (minSeq == 0) {
+                        minSeq = msg.messageSeq;
+                    } else {
+                        minSeq = Math.min(minSeq, msg.messageSeq);
+                    }
+                }
+            }
+        }
+        return minSeq;
     }
 
     public List<WKMsg> queryWithFlame() {
@@ -888,7 +922,7 @@ public class MsgDbManager {
 
     }
 
-    private List<WKMsgExtra> queryMsgExtrasWithMsgIds(List<String> msgIds) {
+    public List<WKMsgExtra> queryMsgExtrasWithMsgIds(List<String> msgIds) {
         List<WKMsgExtra> list = new ArrayList<>();
         try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().select(messageExtra, "message_id in (" + WKCursor.getPlaceholders(msgIds.size()) + ")", msgIds.toArray(new String[0]), null)) {
             if (cursor == null) {
@@ -1638,6 +1672,7 @@ public class MsgDbManager {
                 jsonObject = new JSONObject(msg.content);
             } catch (JSONException e) {
                 WKLoggerUtils.getInstance().e(TAG, "getMsgModel error content not json format");
+                return new WKFormatErrorContent();
             }
         }
         return WKIM.getInstance()

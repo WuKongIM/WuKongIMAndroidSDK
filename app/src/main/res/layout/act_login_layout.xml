@@ -9,10 +9,10 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="30dp"
         android:gravity="center"
-        android:textStyle="bold"
         android:text="悟空IM登录"
         android:textColor="@color/black"
-        android:textSize="28sp" />
+        android:textSize="28sp"
+        android:textStyle="bold" />
 
     <TextView
         android:id="@+id/descTv"
@@ -22,7 +22,7 @@
         android:layout_marginTop="10dp"
         android:layout_marginEnd="30dp"
         android:gravity="center"
-        android:text="悟空IM演示程序。当前SDK版本：V1.0.0"
+        android:text="悟空IM演示程序。当前SDK版本："
         android:textColor="@color/black"
         android:textSize="18sp" />
 

@@ -1,6 +1,5 @@
 package com.xinbida.wukongim.protocol;
 
-import com.xinbida.wukongim.WKIMApplication;
 import com.xinbida.wukongim.message.type.WKMsgType;
 
 /**

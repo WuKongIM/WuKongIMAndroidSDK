@@ -34,6 +34,29 @@ public class ChannelDBManager {
         return ChannelDBManagerBinder.channelDBManager;
     }
 
+    public List<WKChannel> queryWithChannelIds(List<String> channelIDs) {
+        List<WKChannel> list = new ArrayList<>();
+        if (WKIMApplication
+                .getInstance()
+                .getDbHelper() == null) {
+            return list;
+        }
+        try (Cursor cursor = WKIMApplication
+                .getInstance()
+                .getDbHelper()
+                .select(channel, "channel_id in (" + WKCursor.getPlaceholders(channelIDs.size()) + ")", channelIDs.toArray(new String[0]), null)) {
+            if (cursor == null) {
+                return list;
+            }
+            for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
+                WKChannel channel = serializableChannel(cursor);
+                list.add(channel);
+            }
+        } catch (Exception ignored) {
+        }
+        return list;
+    }
+
     public List<WKChannel> queryWithChannelIdsAndChannelType(List<String> channelIDs, byte channelType) {
         List<WKChannel> list = new ArrayList<>();
         if (WKIMApplication
@@ -158,7 +181,7 @@ public class ChannelDBManager {
         try {
             cv = WKSqlContentValues.getContentValuesWithChannel(wkChannel);
         } catch (Exception e) {
-            WKLoggerUtils.getInstance().e(TAG , "insert channel error");
+            WKLoggerUtils.getInstance().e(TAG, "insert channel error");
         }
         if (WKIMApplication.getInstance().getDbHelper() == null) {
             return;
@@ -175,7 +198,7 @@ public class ChannelDBManager {
         try {
             cv = WKSqlContentValues.getContentValuesWithChannel(wkChannel);
         } catch (Exception e) {
-            WKLoggerUtils.getInstance().e(TAG , "update channel error");
+            WKLoggerUtils.getInstance().e(TAG, "update channel error");
         }
         if (WKIMApplication.getInstance().getDbHelper() == null) {
             return;
