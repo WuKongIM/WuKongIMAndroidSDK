@@ -1,7 +1,6 @@
 package com.xinbida.wukongim.manager;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -43,8 +42,6 @@ import com.xinbida.wukongim.interfaces.IUploadAttachmentListener;
 import com.xinbida.wukongim.interfaces.IUploadMsgExtraListener;
 import com.xinbida.wukongim.message.MessageHandler;
 import com.xinbida.wukongim.message.WKConnection;
-import com.xinbida.wukongim.message.WKRead;
-import com.xinbida.wukongim.message.type.WKMsgContentType;
 import com.xinbida.wukongim.message.type.WKSendMsgResult;
 import com.xinbida.wukongim.msgmodel.WKFormatErrorContent;
 import com.xinbida.wukongim.msgmodel.WKImageContent;
@@ -52,7 +49,6 @@ import com.xinbida.wukongim.msgmodel.WKMessageContent;
 import com.xinbida.wukongim.msgmodel.WKMsgEntity;
 import com.xinbida.wukongim.msgmodel.WKReply;
 import com.xinbida.wukongim.msgmodel.WKTextContent;
-import com.xinbida.wukongim.msgmodel.WKUnknownContent;
 import com.xinbida.wukongim.msgmodel.WKVideoContent;
 import com.xinbida.wukongim.msgmodel.WKVoiceContent;
 import com.xinbida.wukongim.utils.DateUtils;
@@ -182,8 +178,8 @@ public class MsgManager extends BaseManager {
     public WKMessageContent getMsgContentModel(int contentType, JSONObject jsonObject) {
         if (jsonObject == null) jsonObject = new JSONObject();
         WKMessageContent baseContentMsgModel = getContentMsgModel(contentType, jsonObject);
-        if (baseContentMsgModel == null) {
-            baseContentMsgModel = new WKUnknownContent();
+        if (baseContentMsgModel == null){
+            baseContentMsgModel  = new WKMessageContent();
         }
         //解析@成员列表
         if (jsonObject.has("mention")) {
@@ -270,7 +266,7 @@ public class MsgManager extends BaseManager {
             } catch (IllegalAccessException | InstantiationException | NoSuchMethodException |
                      InvocationTargetException e) {
                 WKLoggerUtils.getInstance().e(TAG, "getContentMsgModel error" + e.getLocalizedMessage());
-                return new WKUnknownContent();
+                return null;
             }
         }
         try {
@@ -280,9 +276,9 @@ public class MsgManager extends BaseManager {
             }
         } catch (IllegalAccessException | InstantiationException e) {
             WKLoggerUtils.getInstance().e(TAG, "getContentMsgModel decodeMsg error");
-            return new WKUnknownContent();
+            return  null;
         }
-        return new WKUnknownContent();
+        return null;
     }
 
     private long getOrNearbyMsgSeq(long orderSeq) {
