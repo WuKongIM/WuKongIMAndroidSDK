@@ -21,12 +21,6 @@ public class WKMsgContentType {
     public static final int WK_CARD = 7;
     //文件
     public static final int WK_FILE = 8;
-    //红包
-    @Deprecated
-    public static final int WK_REDPACKET = 9;
-    //转账
-    @Deprecated
-    public static final int WK_TRANSFER = 10;
     //合并转发消息
     public static final int WK_MULTIPLE_FORWARD = 11;
     //矢量贴图
