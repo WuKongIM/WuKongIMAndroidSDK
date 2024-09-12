@@ -2,7 +2,6 @@ package com.xinbida.wukongdemo;
 
 import android.text.TextUtils;
 import android.util.Base64;
-import android.util.Log;
 
 import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.entity.WKMsg;
@@ -25,7 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class HttpUtil {
-    public String apiURL = "https://api.githubim.com";
+//    public String apiURL = "https://api.githubim.com";
+    public String apiURL = "http://175.27.245.108:15001";
 
     private static class HttpUtilTypeClass {
         private static final HttpUtil instance = new HttpUtil();
