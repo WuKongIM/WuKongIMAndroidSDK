@@ -23,6 +23,7 @@ import com.xinbida.wukongim.interfaces.IRefreshConversationMsg;
 import com.xinbida.wukongim.interfaces.ISyncConversationChat;
 import com.xinbida.wukongim.interfaces.ISyncConversationChatBack;
 import com.xinbida.wukongim.message.type.WKConnectStatus;
+import com.xinbida.wukongim.message.type.WKMsgContentType;
 import com.xinbida.wukongim.utils.WKCommonUtils;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
 
@@ -279,6 +280,9 @@ public class ConversationManager extends BaseManager {
                 if (syncChat.conversations.get(i).recents != null && WKCommonUtils.isNotEmpty(syncChat.conversations)) {
                     for (WKSyncRecent wkSyncRecent : syncChat.conversations.get(i).recents) {
                         WKMsg msg = MsgManager.getInstance().WKSyncRecent2WKMsg(wkSyncRecent);
+                        if (msg.type == WKMsgContentType.WK_INSIDE_MSG) {
+                            continue;
+                        }
                         if (WKCommonUtils.isNotEmpty(msg.reactionList)) {
                             msgReactionList.addAll(msg.reactionList);
                         }

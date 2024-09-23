@@ -6,7 +6,6 @@ import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.WKIMApplication;
 import com.xinbida.wukongim.db.ConversationDbManager;
 import com.xinbida.wukongim.db.MsgDbManager;
-import com.xinbida.wukongim.db.WKDBColumns;
 import com.xinbida.wukongim.entity.WKChannelType;
 import com.xinbida.wukongim.entity.WKMsg;
 import com.xinbida.wukongim.entity.WKSyncMsg;
@@ -229,7 +228,9 @@ public class MessageHandler {
 
     private void handleReceiveMsg(WKMsg message) {
         message = parsingMsg(message);
-        addReceivedMsg(message);
+        if (message.type != WKMsgContentType.WK_INSIDE_MSG) {
+            addReceivedMsg(message);
+        }
     }
 
     private synchronized void addReceivedMsg(WKMsg msg) {

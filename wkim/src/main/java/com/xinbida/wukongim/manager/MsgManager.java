@@ -42,6 +42,7 @@ import com.xinbida.wukongim.interfaces.IUploadAttachmentListener;
 import com.xinbida.wukongim.interfaces.IUploadMsgExtraListener;
 import com.xinbida.wukongim.message.MessageHandler;
 import com.xinbida.wukongim.message.WKConnection;
+import com.xinbida.wukongim.message.type.WKMsgContentType;
 import com.xinbida.wukongim.message.type.WKSendMsgResult;
 import com.xinbida.wukongim.msgmodel.WKFormatErrorContent;
 import com.xinbida.wukongim.msgmodel.WKImageContent;
@@ -951,6 +952,9 @@ public class MsgManager extends BaseManager {
         List<String> msgIds = new ArrayList<>();
         for (int j = 0, len = list.size(); j < len; j++) {
             WKMsg wkMsg = WKSyncRecent2WKMsg(list.get(j));
+            if (wkMsg.type == WKMsgContentType.WK_INSIDE_MSG){
+                continue;
+            }
             msgList.add(wkMsg);
             if (!TextUtils.isEmpty(wkMsg.messageID)) {
                 msgIds.add(wkMsg.messageID);
