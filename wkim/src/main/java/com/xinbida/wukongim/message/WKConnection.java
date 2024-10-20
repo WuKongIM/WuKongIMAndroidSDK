@@ -62,6 +62,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class WKConnection {
     private final String TAG = "WKConnection";
+
     private WKConnection() {
     }
 
@@ -132,13 +133,8 @@ public class WKConnection {
     }
 
     private synchronized void getIPAndPort() {
-        if (!WKIMApplication.getInstance().isNetworkConnected()) {
-            isReConnecting = false;
-            reconnectionHandler.postDelayed(reconnectionRunnable, reconnectDelay);
-            return;
-        }
         if (!WKIMApplication.getInstance().isCanConnect) {
-            WKLoggerUtils.getInstance().e(TAG,"SDK determines that reconnection is not possible");
+            WKLoggerUtils.getInstance().e(TAG, "SDK determines that reconnection is not possible");
             stopAll();
             return;
         }
@@ -147,30 +143,29 @@ public class WKConnection {
         startRequestIPTimer();
         lastRequestId = UUID.randomUUID().toString().replace("-", "");
         ConnectionManager.getInstance().getIpAndPort(lastRequestId, (requestId, ip, port) -> {
+            WKLoggerUtils.getInstance().e(TAG, "connection address " + ip + ":" + port);
             if (TextUtils.isEmpty(ip) || port == 0) {
-                WKLoggerUtils.getInstance().e(TAG,"Return connection IP or port error，" + String.format("ip:%s & port:%s", ip, port));
+                WKLoggerUtils.getInstance().e(TAG, "Return connection IP or port error，" + String.format("ip:%s & port:%s", ip, port));
                 isReConnecting = false;
                 reconnectionHandler.postDelayed(reconnectionRunnable, reconnectDelay);
-            } else {
-                if (lastRequestId.equals(requestId)) {
-                    WKConnection.this.ip = ip;
-                    WKConnection.this.port = port;
-                    WKLoggerUtils.getInstance().e(TAG,"connection address " + ip + ":" + port);
-                    if (connectionIsNull()) {
-                        executors.execute(WKConnection.this::connSocket);
-                      //  new Thread(WKConnection.this::connSocket).start();
-                    }
-                } else {
-                    if (connectionIsNull()) {
-                        WKLoggerUtils.getInstance().e(TAG,"The IP number requested is inconsistent, reconnecting");
-                        reconnectionHandler.postDelayed(reconnectionRunnable, reconnectDelay);
-                    }
+                return;
+            }
+            if (lastRequestId.equals(requestId)) {
+                WKConnection.this.ip = ip;
+                WKConnection.this.port = port;
+                if (connectionIsNull()) {
+                    executors.execute(WKConnection.this::connSocket);
                 }
+                return;
+            }
+            if (connectionIsNull()) {
+                WKLoggerUtils.getInstance().e(TAG, "The IP number requested is inconsistent, reconnecting");
+                reconnectionHandler.postDelayed(reconnectionRunnable, reconnectDelay);
             }
         });
     }
 
-    private void connSocket() {
+    private synchronized void connSocket() {
         closeConnect();
         try {
             socketSingleID = UUID.randomUUID().toString().replace("-", "");
@@ -186,7 +181,7 @@ public class WKConnection {
                 connection.setAutoflush(true);
         } catch (Exception e) {
             isReConnecting = false;
-            WKLoggerUtils.getInstance().e(TAG,"connection exception:" + e.getMessage());
+            WKLoggerUtils.getInstance().e(TAG, "connection exception:" + e.getMessage());
             reconnection();
         }
     }
@@ -253,7 +248,6 @@ public class WKConnection {
                 }
             }
         }).start();
-
     }
 
     //将要发送的消息添加到队列
@@ -264,7 +258,7 @@ public class WKConnection {
 
     //处理登录消息状态
     private void handleLoginStatus(short status) {
-        WKLoggerUtils.getInstance().e(TAG,"connection status:" + status);
+        WKLoggerUtils.getInstance().e(TAG, "connection status:" + status);
         String reason = WKConnectReason.ConnectSuccess;
         if (status == WKConnectStatus.kicked) {
             reason = WKConnectReason.ReasonAuthFail;
@@ -292,12 +286,12 @@ public class WKConnection {
                 });
             }
         } else if (status == WKConnectStatus.kicked) {
-            WKLoggerUtils.getInstance().e(TAG,"Received kicked message");
+            WKLoggerUtils.getInstance().e(TAG, "Received kicked message");
             MessageHandler.getInstance().updateLastSendingMsgFail();
             WKIMApplication.getInstance().isCanConnect = false;
             stopAll();
         } else {
-            WKLoggerUtils.getInstance().e(TAG,"parsing login returns error type:" + status);
+            WKLoggerUtils.getInstance().e(TAG, "parsing login returns error type:" + status);
             stopAll();
             reconnection();
         }
@@ -319,7 +313,7 @@ public class WKConnection {
         }
         int status = MessageHandler.getInstance().sendMessage(connection, mBaseMsg);
         if (status == 0) {
-            WKLoggerUtils.getInstance().e(TAG,"send message failed");
+            WKLoggerUtils.getInstance().e(TAG, "send message failed");
             reconnection();
         }
     }
@@ -362,7 +356,7 @@ public class WKConnection {
                         MsgDbManager.getInstance().updateMsgStatus(item.getKey(), WKSendMsgResult.send_fail);
                         it.remove();
                         wkSendingMsg.isCanResend = false;
-                        WKLoggerUtils.getInstance().e(TAG,"checkSendingMsg send message failed");
+                        WKLoggerUtils.getInstance().e(TAG, "checkSendingMsg send message failed");
                     } else {
                         long nowTime = DateUtils.getInstance().getCurrentSeconds();
                         if (nowTime - wkSendingMsg.sendTime > 10) {
@@ -370,7 +364,7 @@ public class WKConnection {
                             sendingMsgHashMap.put(item.getKey(), wkSendingMsg);
                             wkSendingMsg.sendCount++;
                             sendMessage(Objects.requireNonNull(sendingMsgHashMap.get(item.getKey())).wkSendMsg);
-                            WKLoggerUtils.getInstance().e(TAG,"checkSendingMsg send message failed");
+                            WKLoggerUtils.getInstance().e(TAG, "checkSendingMsg send message failed");
                         }
                     }
                 }
@@ -502,7 +496,7 @@ public class WKConnection {
         System.gc();
     }
 
-    private void closeConnect() {
+    private synchronized void closeConnect() {
         if (connection != null && connection.isOpen()) {
             try {
                 WKLoggerUtils.getInstance().e("stop connection:" + connection.getId());
@@ -533,7 +527,7 @@ public class WKConnection {
                     checkNetWorkTimer.purge();
                     checkNetWorkTimer = null;
                     if (TextUtils.isEmpty(ip) || port == 0) {
-                        WKLoggerUtils.getInstance().e(TAG,"Request for IP has timed out");
+                        WKLoggerUtils.getInstance().e(TAG, "Request for IP has timed out");
                         isReConnecting = false;
                         reconnection();
                     }
@@ -542,9 +536,9 @@ public class WKConnection {
                         checkNetWorkTimer.cancel();
                         checkNetWorkTimer.purge();
                         checkNetWorkTimer = null;
-                        WKLoggerUtils.getInstance().e(TAG,"Request IP countdown has been destroyed");
+                        WKLoggerUtils.getInstance().e(TAG, "Request IP countdown has been destroyed");
                     } else {
-                        WKLoggerUtils.getInstance().e(TAG,"Requesting IP countdown--->" + (nowTime - requestIPTime));
+                        WKLoggerUtils.getInstance().e(TAG, "Requesting IP countdown--->" + (nowTime - requestIPTime));
                     }
                 }
             }

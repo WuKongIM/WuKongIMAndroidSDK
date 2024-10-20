@@ -54,19 +54,19 @@ public class WKSendMsg extends WKBaseMsg {
     }
 
     public String getSendContent() {
-        if (TextUtils.isEmpty(cryptoPayload)) {
+//        if (TextUtils.isEmpty(cryptoPayload)) {
             cryptoPayload = CryptoUtils.getInstance().base64Encode(CryptoUtils.getInstance().aesEncrypt(payload));
-        }
+//        }
         return cryptoPayload;
     }
 
     public String getMsgKey() {
-        if (TextUtils.isEmpty(msgKey)) {
+//        if (TextUtils.isEmpty(msgKey)) {
             String sendContent = getSendContent();
             String key = clientSeq + clientMsgNo + channelId + channelType + sendContent;
             byte[] msgKeyByte = CryptoUtils.getInstance().aesEncrypt(key);
             msgKey = CryptoUtils.getInstance().digestMD5(CryptoUtils.getInstance().base64Encode(msgKeyByte));
-        }
+//        }
         return msgKey;
     }
 

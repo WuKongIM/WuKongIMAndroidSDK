@@ -18,7 +18,7 @@ import com.xinbida.wukongim.utils.CryptoUtils;
  * 5/20/21 5:25 PM
  */
 public class WKIM {
-    private final String Version = "V1.1.9";
+    private final String Version = "V1.2.3";
 
     private WKIM() {
 

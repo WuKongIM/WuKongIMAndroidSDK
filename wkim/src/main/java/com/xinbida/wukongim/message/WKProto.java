@@ -76,6 +76,7 @@ class WKProto {
     }
 
     byte[] enConnectMsg(WKConnectMsg connectMsg) {
+        CryptoUtils.getInstance().initKey();
         byte[] remainingBytes = WKTypeUtils.getInstance().getRemainingLengthByte(connectMsg.getRemainingLength());
         int totalLen = connectMsg.getTotalLen();
         WKWrite wkWrite = new WKWrite(totalLen);
@@ -89,7 +90,6 @@ class WKProto {
             wkWrite.writeString(WKIMApplication.getInstance().getToken());
             wkWrite.writeLong(connectMsg.clientTimestamp);
             wkWrite.writeString(CryptoUtils.getInstance().getPublicKey());
-
         } catch (UnsupportedEncodingException e) {
             WKLoggerUtils.getInstance().e(TAG, "enConnectMsg error");
         }

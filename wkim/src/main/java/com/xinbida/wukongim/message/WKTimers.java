@@ -107,6 +107,7 @@ class WKTimers {
         }, 1000 * 7, 1000 * 7);
     }
 
+    boolean isForcedReconnect;
 
     //开启检测网络定时器
     void startCheckNetWorkTimer() {
@@ -117,13 +118,16 @@ class WKTimers {
             public void run() {
                 boolean is_have_network = WKIMApplication.getInstance().isNetworkConnected();
                 if (!is_have_network) {
+                    isForcedReconnect = true;
                     WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.noNetwork, WKConnectReason.NoNetwork);
                     WKLoggerUtils.getInstance().e("No network connection...");
                     WKConnection.getInstance().checkSendingMsg();
                 } else {
                     //有网络
-                    if (WKConnection.getInstance().connectionIsNull())
+                    if (WKConnection.getInstance().connectionIsNull() || isForcedReconnect  ) {
                         WKConnection.getInstance().reconnection();
+                        isForcedReconnect = false;
+                    }
                 }
                 if (WKConnection.getInstance().connection == null || !WKConnection.getInstance().connection.isOpen()) {
                     WKConnection.getInstance().reconnection();
