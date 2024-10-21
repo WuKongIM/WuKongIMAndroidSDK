@@ -59,8 +59,8 @@ class WKProto {
         if (msg.packetType == WKMsgType.CONNECT) {
             // 连接
             bytes = WKProto.getInstance().enConnectMsg((WKConnectMsg) msg);
-            String str = Arrays.toString(bytes);
-            WKLoggerUtils.getInstance().e(str);
+//            String str = Arrays.toString(bytes);
+//            WKLoggerUtils.getInstance().e(str);
         } else if (msg.packetType == WKMsgType.REVACK) {
             // 收到消息回执
             bytes = WKProto.getInstance().enReceivedAckMsg((WKReceivedAckMsg) msg);

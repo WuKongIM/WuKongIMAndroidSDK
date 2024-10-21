@@ -90,7 +90,9 @@ public class WKConnection {
     volatile INonBlockingConnection connection;
     volatile ConnectionClient connectionClient;
     private long requestIPTime;
+    private long connAckTime;
     private final long requestIPTimeoutTime = 6;
+    private final long connAckTimeoutTime = 2;
     public String socketSingleID;
     private String lastRequestId;
     private final long reconnectDelay = 1500;
@@ -188,6 +190,7 @@ public class WKConnection {
 
     //发送连接消息
     void sendConnectMsg() {
+        startConnAckTimer();
         sendMessage(new WKConnectMsg());
     }
 
@@ -263,6 +266,7 @@ public class WKConnection {
         if (status == WKConnectStatus.kicked) {
             reason = WKConnectReason.ReasonAuthFail;
         }
+        connectStatus = status;
         WKIM.getInstance().getConnectionManager().setConnectionStatus(status, reason);
         if (status == WKConnectStatus.success) {
             //等待中
@@ -298,9 +302,12 @@ public class WKConnection {
     }
 
     void sendMessage(WKBaseMsg mBaseMsg) {
-        if (mBaseMsg == null) return;
+        if (mBaseMsg == null) {
+            return;
+        }
         if (mBaseMsg.packetType != WKMsgType.CONNECT) {
             if (connectStatus != WKConnectStatus.success) {
+                reconnection();
                 return;
             }
         }
@@ -511,6 +518,36 @@ public class WKConnection {
     }
 
     private Timer checkNetWorkTimer;
+    private Timer checkConnectionAckTimer;
+
+    private synchronized void startConnAckTimer() {
+        if (checkConnectionAckTimer != null) {
+            checkConnectionAckTimer.cancel();
+            checkConnectionAckTimer = null;
+        }
+        checkConnectionAckTimer = new Timer();
+        connAckTime = DateUtils.getInstance().getCurrentSeconds();
+        checkConnectionAckTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                long nowTime = DateUtils.getInstance().getCurrentSeconds();
+                if (nowTime - connAckTime > connAckTimeoutTime && connectStatus != WKConnectStatus.success) {
+                    checkConnectionAckTimer.cancel();
+                    checkConnectionAckTimer.purge();
+                    checkConnectionAckTimer = null;
+                    isReConnecting = false;
+                    closeConnect();
+                    reconnection();
+                } else {
+                    if (connectStatus == WKConnectStatus.success) {
+                        checkConnectionAckTimer.cancel();
+                        checkConnectionAckTimer.purge();
+                        checkConnectionAckTimer = null;
+                    }
+                }
+            }
+        }, 100, 1000);
+    }
 
     private synchronized void startRequestIPTimer() {
         if (checkNetWorkTimer != null) {
