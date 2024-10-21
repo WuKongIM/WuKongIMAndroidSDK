@@ -976,8 +976,8 @@ public class MsgManager extends BaseManager {
         if (WKCommonUtils.isNotEmpty(reactionList)) {
             MsgDbManager.getInstance().insertMsgReactions(reactionList);
         }
-        List<WKMsg> saveList = MsgDbManager.getInstance().queryWithMsgIds(msgIds);
-        getMsgReactionsAndRefreshMsg(msgIds, saveList);
+//        List<WKMsg> saveList = MsgDbManager.getInstance().queryWithMsgIds(msgIds);
+//        getMsgReactionsAndRefreshMsg(msgIds, saveList);
     }
 
     public void addOnSendMsgAckListener(String key, ISendACK iSendACKListener) {
