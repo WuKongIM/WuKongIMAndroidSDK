@@ -74,6 +74,10 @@ public class ConversationDbManager {
 
     public synchronized List<WKUIConversationMsg> queryAll() {
         List<WKUIConversationMsg> list = new ArrayList<>();
+        if (WKIMApplication.getInstance().getDbHelper() == null || WKIMApplication.getInstance().getDbHelper().getDb() == null) {
+            return list;
+        }
+
         String sql = "SELECT " + conversation + ".*," + channelCols + "," + extraCols + " FROM "
                 + conversation + " LEFT JOIN " + channel + " ON "
                 + conversation + ".channel_id = " + channel + ".channel_id AND "
@@ -267,6 +271,9 @@ public class ConversationDbManager {
     }
 
     public synchronized boolean updateRedDot(String channelID, byte channelType, int redDot) {
+        if (WKIMApplication.getInstance().getDbHelper() == null || WKIMApplication.getInstance().getDbHelper().getDb() == null) {
+            return false;
+        }
         ContentValues cv = new ContentValues();
         cv.put(WKDBColumns.WKCoverMessageColumns.unread_count, redDot);
         return WKIMApplication.getInstance().getDbHelper().update(conversation, WKDBColumns.WKCoverMessageColumns.channel_id + "='" + channelID + "' and " + WKDBColumns.WKCoverMessageColumns.channel_type + "=" + channelType, cv);
