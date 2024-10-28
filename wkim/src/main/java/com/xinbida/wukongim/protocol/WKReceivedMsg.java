@@ -79,4 +79,26 @@ public class WKReceivedMsg extends WKBaseMsg {
         }
         return remainingLength - length;
     }
+
+    @Override
+    public String toString() {
+        return "WKReceivedMsg{" +
+                "messageID='" + messageID + '\'' +
+                ", messageSeq=" + messageSeq +
+                ", messageTimestamp=" + messageTimestamp +
+                ", clientMsgNo='" + clientMsgNo + '\'' +
+                ", channelID='" + channelID + '\'' +
+                ", channelType=" + channelType +
+                ", fromUID='" + fromUID + '\'' +
+                ", topicID='" + topicID + '\'' +
+                ", payload='" + payload + '\'' +
+                ", msgKey='" + msgKey + '\'' +
+                ", setting=" + setting +
+                ", streamNO='" + streamNO + '\'' +
+                ", streamSeq=" + streamSeq +
+                ", streamFlag=" + streamFlag +
+                ", expire=" + expire +
+                ", settingLength=" + settingLength +
+                '}';
+    }
 }

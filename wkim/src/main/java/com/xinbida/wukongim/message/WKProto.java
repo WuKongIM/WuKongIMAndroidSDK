@@ -1,7 +1,6 @@
 package com.xinbida.wukongim.message;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.WKIMApplication;
@@ -34,7 +33,6 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
-import java.util.Arrays;
 
 /**
  * 5/21/21 11:28 AM
@@ -234,7 +232,10 @@ class WKProto {
             byte[] result = CryptoUtils.getInstance().aesEncrypt(msgKey);
             String base64Result = CryptoUtils.getInstance().base64Encode(result);
             String localMsgKey = CryptoUtils.getInstance().digestMD5(base64Result);
+            WKLoggerUtils.getInstance().e("Receive message:");
+            WKLoggerUtils.getInstance().e(receivedMsg.toString());
             if (!localMsgKey.equals(receivedMsg.msgKey)) {
+                WKLoggerUtils.getInstance().e("Illegal messages,localMsgKey:" + localMsgKey + ",msgKey:" + msgKey);
                 return null;
             }
         } catch (IOException e) {
