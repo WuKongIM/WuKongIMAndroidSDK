@@ -230,11 +230,23 @@ public class MessageHandler {
         message = parsingMsg(message);
         if (message.type != WKMsgContentType.WK_INSIDE_MSG) {
             addReceivedMsg(message);
+        } else {
+            WKReceivedAckMsg receivedAckMsg = getReceivedAckMsg(message);
+            WKConnection.getInstance().sendMessage(receivedAckMsg);
         }
     }
 
-    private synchronized void addReceivedMsg(WKMsg msg) {
+    private WKReceivedAckMsg getReceivedAckMsg(WKMsg message) {
+        WKReceivedAckMsg receivedAckMsg = new WKReceivedAckMsg();
+        receivedAckMsg.messageID = message.messageID;
+        receivedAckMsg.messageSeq = message.messageSeq;
+        receivedAckMsg.no_persist = message.header.noPersist;
+        receivedAckMsg.red_dot = message.header.redDot;
+        receivedAckMsg.sync_once = message.header.syncOnce;
+        return receivedAckMsg;
+    }
 
+    private synchronized void addReceivedMsg(WKMsg msg) {
         if (receivedMsgList == null) receivedMsgList = new ArrayList<>();
         WKSyncMsg syncMsg = new WKSyncMsg();
         syncMsg.no_persist = msg.header.noPersist ? 1 : 0;
@@ -245,18 +257,11 @@ public class MessageHandler {
     }
 
     public synchronized void saveReceiveMsg() {
-
         if (WKCommonUtils.isNotEmpty(receivedMsgList)) {
             saveSyncMsg(receivedMsgList);
-
             List<WKReceivedAckMsg> list = new ArrayList<>();
             for (int i = 0, size = receivedMsgList.size(); i < size; i++) {
-                WKReceivedAckMsg receivedAckMsg = new WKReceivedAckMsg();
-                receivedAckMsg.messageID = receivedMsgList.get(i).wkMsg.messageID;
-                receivedAckMsg.messageSeq = receivedMsgList.get(i).wkMsg.messageSeq;
-                receivedAckMsg.no_persist = receivedMsgList.get(i).no_persist == 1;
-                receivedAckMsg.red_dot = receivedMsgList.get(i).red_dot == 1;
-                receivedAckMsg.sync_once = receivedMsgList.get(i).sync_once == 1;
+                WKReceivedAckMsg receivedAckMsg = getReceivedAckMsg(receivedMsgList.get(i).wkMsg);
                 list.add(receivedAckMsg);
             }
             sendAck(list);
