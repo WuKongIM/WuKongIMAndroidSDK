@@ -9,7 +9,10 @@
     <string name="connect_success">连接成功</string>
     <string name="connect_fail">连接失败</string>
     <string name="connecting">连接中…</string>
+    <string name="connect_syncing">同步中…</string>
     <string name="no_net">无网络</string>
     <string name="other_device_login">被踢</string>
     <string name="input_content">请输入聊天内容</string>
+    <string name="send">发送</string>
+    <string name="input">请输入内容</string>
 </resources>

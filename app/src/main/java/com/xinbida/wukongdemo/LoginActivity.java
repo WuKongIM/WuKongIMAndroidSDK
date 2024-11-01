@@ -49,11 +49,18 @@ public class LoginActivity extends AppCompatActivity {
                 }
                 new Thread(() -> HttpUtil.getInstance().post("/user/token", jsonObject, (code, data) -> {
                     if (code == 200) {
-                        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                        intent.putExtra("uid", uid);
-                        intent.putExtra("token", token);
-                        startActivity(intent);
-                        finish();
+                        runOnUiThread(()->{
+                            Const.Companion.setToken(token);
+                            Const.Companion.setUid(uid);
+                            Intent intent = new Intent(LoginActivity.this, ConversationActivity.class);
+
+//                        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+//                        intent.putExtra("uid", uid);
+//                        intent.putExtra("token", token);
+                            startActivity(intent);
+                            finish();
+                        });
+
                     } else {
                         runOnUiThread(() -> Toast.makeText(LoginActivity.this, "登录失败【" + code + "】", Toast.LENGTH_SHORT).show());
                     }

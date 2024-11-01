@@ -5,7 +5,7 @@ import com.xinbida.wukongim.entity.WKMsg;
 
 class UIMessageEntity implements MultiItemEntity {
     public WKMsg msg;
-    public int itemType = 1;
+    public int itemType;
 
     UIMessageEntity(WKMsg msg, int itemType) {
         this.itemType = itemType;

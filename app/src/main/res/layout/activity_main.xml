@@ -17,7 +17,6 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-
             android:layout_weight="1"
             android:gravity="center|start">
 
@@ -38,16 +37,11 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/inputChannelIDTV"
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/addIV"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:layout_marginStart="20dp"
-            android:hint="@string/input_uid"
-            android:textColorHint="@color/error"
-            android:textColor="@color/error"
-            android:textSize="16sp" />
+            android:src="@mipmap/menu_add" />
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
@@ -66,13 +60,13 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="请输入内容..."
+            android:hint="@string/input"
             android:textSize="16sp" />
 
         <Button
             android:id="@+id/sendBtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="发送" />
+            android:text="@string/send" />
     </LinearLayout>
 </LinearLayout>

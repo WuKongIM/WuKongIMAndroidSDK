@@ -6,10 +6,13 @@
     <string name="input_channel_id">Input chat id</string>
     <string name="input_group_id">Input group id</string>
     <string name="input_uid">Input uid</string>
-    <string name="connect_success">connect success</string>
-    <string name="connect_fail">connect failed</string>
-    <string name="connecting">connection…</string>
+    <string name="connect_success">Connect success</string>
+    <string name="connect_fail">Connect failed</string>
+    <string name="connecting">Connection…</string>
+    <string name="connect_syncing">Sync…</string>
     <string name="no_net">No network</string>
     <string name="other_device_login">Kicked</string>
     <string name="input_content">Input content</string>
+    <string name="send">Send</string>
+    <string name="input">Input…</string>
 </resources>

@@ -2,10 +2,11 @@ package com.xinbida.wukongdemo;
 
 import android.text.TextUtils;
 import android.util.Base64;
+import android.util.Log;
 
-import com.xinbida.wukongim.WKIM;
-import com.xinbida.wukongim.entity.WKMsg;
-import com.xinbida.wukongim.message.type.WKSendMsgResult;
+import com.xinbida.wukongim.entity.WKSyncChannelMsg;
+import com.xinbida.wukongim.entity.WKSyncRecent;
+import com.xinbida.wukongim.utils.WKLoggerUtils;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -21,10 +22,11 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Iterator;
 
 public class HttpUtil {
-//    public String apiURL = "https://api.githubim.com";
+    //    public String apiURL = "https://api.githubim.com";
     public String apiURL = "http://175.27.245.108:15001";
 
     private static class HttpUtilTypeClass {
@@ -103,54 +105,34 @@ public class HttpUtil {
         }
     }
 
-    public void getHistoryMsg(String loginUID, String channelID, byte channelType, final IMsgResult iMsgResult) {
+    public void getHistoryMsg(String loginUID, String channelID, byte channelType, long startSeq, long endSeq, int limit, int pullMode, final IMsgResult iMsgResult) {
         JSONObject jsonObject = new JSONObject();
         try {
             jsonObject.put("login_uid", loginUID);
             jsonObject.put("channel_id", channelID);
             jsonObject.put("channel_type", channelType);
-            jsonObject.put("start_message_seq", 0);
-            jsonObject.put("end_message_seq", 0);
-            jsonObject.put("limit", 50);
-            jsonObject.put("pull_mode", 1);
+            jsonObject.put("start_message_seq", startSeq);
+            jsonObject.put("end_message_seq", endSeq);
+            jsonObject.put("limit", limit);
+            jsonObject.put("pull_mode", pullMode);
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }
         post("/channel/messagesync", jsonObject, (code, data) -> {
             if (code == 200) {
                 try {
-                    List<UIMessageEntity> list = new ArrayList<>();
+                    WKSyncChannelMsg msg = new WKSyncChannelMsg();
+                    msg.messages = new ArrayList<>();
                     JSONObject resultJson = new JSONObject(data);
                     JSONArray jsonArray = resultJson.optJSONArray("messages");
                     if (jsonArray != null) {
                         for (int i = 0, size = jsonArray.length(); i < size; i++) {
                             JSONObject msgJson = jsonArray.optJSONObject(i);
-                            String from_uid = msgJson.optString("from_uid");
-                            String client_msg_no = msgJson.optString("client_msg_no");
-                            String channel_id = msgJson.optString("channel_id");
-                            byte channel_type = (byte) msgJson.optInt("channel_type");
-                            long timestamp = msgJson.optLong("timestamp");
-                            String payload = msgJson.optString("payload");
-                            byte[] b = Base64.decode(payload, Base64.DEFAULT);
-                            String content = new String(b);
-                            WKMsg wkMsg = new WKMsg();
-                            wkMsg.clientMsgNO = client_msg_no;
-                            wkMsg.fromUID = from_uid;
-                            wkMsg.channelID = channel_id;
-                            wkMsg.channelType = channel_type;
-                            wkMsg.timestamp = timestamp;
-                            wkMsg.content = content;
-                            wkMsg.status = WKSendMsgResult.send_success;
-                            wkMsg.baseContentMsgModel = WKIM.getInstance().getMsgManager().getMsgContentModel(content);
-                            int itemType = 0;
-                            if (!TextUtils.isEmpty(from_uid) && from_uid.equals(loginUID)) {
-                                itemType = 1;
-                            }
-                            UIMessageEntity uiMessageEntity = new UIMessageEntity(wkMsg, itemType);
-                            list.add(uiMessageEntity);
+                            WKSyncRecent recent = getWKSyncRecent(msgJson);
+                            msg.messages.add(recent);
                         }
                     }
-                    iMsgResult.onResult(list);
+                    iMsgResult.onResult(msg);
                 } catch (JSONException e) {
                     throw new RuntimeException(e);
                 }
@@ -158,11 +140,51 @@ public class HttpUtil {
         });
     }
 
+    public WKSyncRecent getWKSyncRecent(JSONObject msgJson) {
+        String from_uid = msgJson.optString("from_uid");
+        String client_msg_no = msgJson.optString("client_msg_no");
+        String channel_id = msgJson.optString("channel_id");
+        byte channel_type = (byte) msgJson.optInt("channel_type");
+        long timestamp = msgJson.optLong("timestamp");
+        String payload = msgJson.optString("payload");
+        byte[] b = Base64.decode(payload, Base64.DEFAULT);
+        String content = new String(b);
+        WKSyncRecent recent = new WKSyncRecent();
+        recent.from_uid = from_uid;
+        recent.message_id = msgJson.optString("message_id");
+        recent.message_seq = msgJson.optInt("message_seq");
+        recent.client_msg_no = client_msg_no;
+        recent.channel_id = channel_id;
+        recent.channel_type = channel_type;
+        recent.timestamp = timestamp;
+        if (!TextUtils.isEmpty(content)) {
+            HashMap<String, Object> hashMap = new HashMap<>();
+            JSONObject jsonObject = getJSON(content);
+            if (jsonObject != null) {
+                Iterator<String> keys = jsonObject.keys();
+                while (keys.hasNext()) {
+                    String key = keys.next();
+                    hashMap.put(key, jsonObject.opt(key));
+                }
+                recent.payload = hashMap;
+            }
+        }
+        return recent;
+    }
+
+    public JSONObject getJSON(String test) {
+        try {
+            return new JSONObject(test);
+        } catch (JSONException ex) {
+            return null;
+        }
+    }
+
     public interface IResult {
         void onResult(int code, String data);
     }
 
     public interface IMsgResult {
-        void onResult(List<UIMessageEntity> list);
+        void onResult(WKSyncChannelMsg msg);
     }
 }

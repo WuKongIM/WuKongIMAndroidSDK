@@ -1,6 +1,7 @@
 package com.xinbida.wukongdemo;
 
-import android.content.Context;
+import static androidx.recyclerview.widget.RecyclerView.SCROLL_STATE_IDLE;
+
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
@@ -8,23 +9,22 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.lxj.xpopup.XPopup;
 import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.entity.WKChannel;
 import com.xinbida.wukongim.entity.WKChannelType;
 import com.xinbida.wukongim.entity.WKMsg;
+import com.xinbida.wukongim.interfaces.IGetOrSyncHistoryMsgBack;
 import com.xinbida.wukongim.message.type.WKConnectStatus;
 import com.xinbida.wukongim.msgmodel.WKTextContent;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -34,33 +34,61 @@ public class MainActivity extends AppCompatActivity {
     private View statusIv;
     private String channelID;
     private byte channelType;
-    private TextView inputChannelIDTV;
     private EditText contentEt;
-    private String loginUID;
+    private boolean isLoading; // 是否加载历史中
+    private boolean isCanMore; // 是否能加载更多
+    private boolean isCanRefresh = true; // 是否能刷新
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        channelID = getIntent().getStringExtra("channel_id");
+        channelType = getIntent().getByteExtra("channel_type", WKChannelType.PERSONAL);
         recyclerView = findViewById(R.id.recycleView);
         statusTv = findViewById(R.id.connectionTv);
         statusIv = findViewById(R.id.connectionIv);
-        inputChannelIDTV = findViewById(R.id.inputChannelIDTV);
         contentEt = findViewById(R.id.contentEt);
-        loginUID = getIntent().getStringExtra("uid");
-        String token = getIntent().getStringExtra("token");
-        channelType = WKChannelType.PERSONAL;
         adapter = new MessageAdapter();
         recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         recyclerView.setAdapter(adapter);
         onListener();
-        WKIM.getInstance().setDebug(true);
-        WKIM.getInstance().init(MainActivity.this, loginUID, token);
+        long orderSeq = getIntent().getLongExtra("old_order_seq", 0);
+        getData(orderSeq, 0, true,true);
+    }
+
+    private void refresh() {
+        if (isLoading) {
+            return;
+        }
+        long orderSeq = adapter.getData().get(0).msg.orderSeq;
+        getData(orderSeq, 0, false,false);
+    }
+
+    private void more() {
+        if (isLoading) {
+            return;
+        }
+        long orderSeq = adapter.getData().get(adapter.getData().size() - 1).msg.orderSeq;
+        getData(orderSeq, 1, false,false);
     }
 
     void onListener() {
-        inputChannelIDTV.setOnClickListener(v -> showInputChannelIDDialog(MainActivity.this));
-
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+                if (newState == SCROLL_STATE_IDLE) {
+                    if (!recyclerView.canScrollVertically(1)) { // 到达底部
+                        more();
+                    } else if (!recyclerView.canScrollVertically(-1)) { // 到达顶部
+                        if (isCanRefresh) {
+                            refresh();
+                        }
+                    }
+                }
+            }
+        });
         findViewById(R.id.sendBtn).setOnClickListener(v -> {
             String content = contentEt.getText().toString();
             if (TextUtils.isEmpty(channelID)) {
@@ -71,18 +99,10 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, getString(R.string.input_content), Toast.LENGTH_SHORT).show();
                 return;
             }
-
-            WKIM.getInstance().getMsgManager().send(new WKTextContent(content), new WKChannel(channelID,channelType));
+            WKIM.getInstance().getMsgManager().send(new WKTextContent(content), new WKChannel(channelID, channelType));
             contentEt.setText("");
         });
 
-        adapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
-            @Override
-            public void onItemRangeInserted(int positionStart, int itemCount) {
-                super.onItemRangeInserted(positionStart, itemCount);
-                recyclerView.scrollToPosition(adapter.getData().size() - 1);
-            }
-        });
         // 连接状态监听
         WKIM.getInstance().getConnectionManager().addOnConnectionStatusListener("main_act", (code, reason) -> {
             if (code == WKConnectStatus.success) {
@@ -114,7 +134,10 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         // 监听发送消息入库返回
-        WKIM.getInstance().getMsgManager().addOnSendMsgCallback("insert_msg", msg -> adapter.addData(new UIMessageEntity(msg, 1)));
+        WKIM.getInstance().getMsgManager().addOnSendMsgCallback("insert_msg", msg ->{
+            adapter.addData(new UIMessageEntity(msg, 1));
+            recyclerView.scrollToPosition(adapter.getData().size() - 1);
+        } );
         // 发送消息回执
         WKIM.getInstance().getMsgManager().addOnSendMsgAckListener("ack_key", msg -> {
             for (int i = 0, size = adapter.getData().size(); i < size; i++) {
@@ -125,18 +148,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-        WKIM.getInstance().getConnectionManager().addOnGetIpAndPortListener(andPortListener -> new Thread(() -> HttpUtil.getInstance().get("/route", (code, data) -> {
-            if (code == 200) {
-                try {
-                    JSONObject jsonObject = new JSONObject(data);
-                    String tcp_addr = jsonObject.optString("tcp_addr");
-                    String[] strings = tcp_addr.split(":");
-                    andPortListener.onGetSocketIpAndPort(strings[0], Integer.parseInt(strings[1]));
-                } catch (JSONException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        })).start());
+
     }
 
     @Override
@@ -152,6 +164,47 @@ public class MainActivity extends AppCompatActivity {
         WKIM.getInstance().getConnectionManager().connection();
     }
 
+    private void getData(long oldOrderSeq, int pullMode, boolean contain,boolean isResetData) {
+        WKIM.getInstance().getMsgManager().getOrSyncHistoryMessages(channelID, channelType, oldOrderSeq, contain, pullMode, 20, 0, new IGetOrSyncHistoryMsgBack() {
+
+            @Override
+            public void onSyncing() {
+
+            }
+
+            @Override
+            public void onResult(List<WKMsg> msgList) {
+
+                if (msgList.isEmpty()) {
+                    if (pullMode == 0) {
+                        isCanRefresh = false;
+                    }
+                    return;
+                }
+                ArrayList<UIMessageEntity> list = new ArrayList<>();
+                for (int i = 0, size = msgList.size(); i < size; i++) {
+                    int itemType;
+                    if (msgList.get(i).fromUID.equals(Const.Companion.getUid())) {
+                        itemType = 1;
+                    } else {
+                        itemType = 0;
+                    }
+                    UIMessageEntity entity = new UIMessageEntity(msgList.get(i), itemType);
+                    list.add(entity);
+                }
+                if (pullMode == 1) {
+                    adapter.addData(list);
+                } else {
+                    adapter.addData(0, list);
+                }
+                isLoading = false;
+                if (isResetData) {
+                    recyclerView.scrollToPosition(adapter.getData().size() - 1);
+                }
+            }
+        });
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -162,30 +215,6 @@ public class MainActivity extends AppCompatActivity {
         WKIM.getInstance().getMsgManager().removeSendMsgCallBack("insert_msg");
         WKIM.getInstance().getMsgManager().removeSendMsgAckListener("ack_key");
         WKIM.getInstance().getConnectionManager().removeOnConnectionStatusListener("main_act");
-    }
-
-    public void showInputChannelIDDialog(Context context) {
-        new XPopup.Builder(context).moveUpToKeyboard(true).autoOpenSoftInput(true).asCustom(new UpdateChannelIDView(context, loginUID, channelType, (channelID, channelType) -> {
-            runOnUiThread(() -> {
-                MainActivity.this.channelType = channelType;
-                MainActivity.this.channelID = channelID;
-                String chat = getString(R.string.personal_chat);
-                if (channelType == WKChannelType.GROUP) {
-                    chat = getString(R.string.group_chat);
-                }
-                inputChannelIDTV.setText(chat + "【" + channelID + "】");
-            });
-            new Thread(() -> HttpUtil.getInstance().getHistoryMsg(loginUID, channelID, channelType, list -> {
-                if (list != null && list.size() > 0) {
-                    runOnUiThread(() -> {
-                        adapter.setList(list);
-                        recyclerView.scrollToPosition(adapter.getData().size() - 1);
-                    });
-                } else {
-                    adapter.setList(new ArrayList<>());
-                }
-            })).start();
-        })).show();
     }
 
 }

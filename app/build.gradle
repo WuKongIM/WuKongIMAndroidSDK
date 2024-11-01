@@ -1,5 +1,7 @@
 plugins {
     id 'com.android.application'
+    id 'kotlin-parcelize'
+    id 'kotlin-android'
 }
 
 android {
@@ -21,20 +23,25 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     namespace 'com.xinbida.wukongdemo'
+    kotlinOptions {
+        jvmTarget = '17'
+    }
 }
 
 dependencies {
     implementation project(':wkim')
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'com.google.android.material:material:1.12.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.constraintlayout:constraintlayout:2.2.0'
     implementation 'org.jetbrains:annotations:23.0.0'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
     implementation 'com.github.CymChad:BaseRecyclerViewAdapterHelper:3.0.7'
     implementation 'com.github.li-xiaojun:XPopup:2.9.19'
     implementation 'com.github.bigdongdong:ChatView:2.0' //添加依赖
+    implementation('com.github.bumptech.glide:glide:4.16.0') {
+        transitive = true
+    }
 }
