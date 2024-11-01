@@ -14,5 +14,6 @@
     <string name="other_device_login">Kicked</string>
     <string name="input_content">Input content</string>
     <string name="send">Send</string>
+    <string name="send_order">Customize</string>
     <string name="input">Input…</string>
 </resources>

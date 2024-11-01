@@ -40,6 +40,8 @@ class WKApplication : Application() {
     )
 
     private fun initListener() {
+        // 注册自定义消息
+        WKIM.getInstance().msgManager.registerContentMsg(OrderMessageContent::class.java)
         // 连接地址
         WKIM.getInstance().connectionManager.addOnGetIpAndPortListener { andPortListener: IGetSocketIpAndPortListener ->
             Thread {
@@ -70,7 +72,7 @@ class WKApplication : Application() {
             } else {
                 channel.channelName = "群聊${channelId.hashCode()}"
             }
-            val index = (channelId.hashCode()) % (avatars.size )
+            val index = (channelId.hashCode()) % (avatars.size)
             channel.avatar = avatars[abs(index)]
             //  channel.avatar ="https://api.multiavatar.com/${channel.channelID}.png"
             WKIM.getInstance().channelManager.saveOrUpdateChannel(channel)

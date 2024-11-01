@@ -54,7 +54,7 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setAdapter(adapter);
         onListener();
         long orderSeq = getIntent().getLongExtra("old_order_seq", 0);
-        getData(orderSeq, 0, true,true);
+        getData(orderSeq, 0, true, true);
     }
 
     private void refresh() {
@@ -62,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         long orderSeq = adapter.getData().get(0).msg.orderSeq;
-        getData(orderSeq, 0, false,false);
+        getData(orderSeq, 0, false, false);
     }
 
     private void more() {
@@ -70,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         long orderSeq = adapter.getData().get(adapter.getData().size() - 1).msg.orderSeq;
-        getData(orderSeq, 1, false,false);
+        getData(orderSeq, 1, false, false);
     }
 
     void onListener() {
@@ -87,6 +87,18 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                 }
+            }
+        });
+        findViewById(R.id.orderBtn).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                OrderMessageContent content = new OrderMessageContent();
+                content.setNum(100);
+                content.setOrderNo("13939223329");
+                content.setPrice(666666);
+                content.setTitle("华为三折叠手机");
+                content.setImgUrl("https://img1.baidu.com/it/u=4053553333,3320441183&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=645");
+                WKIM.getInstance().getMsgManager().send(content, new WKChannel(channelID, channelType));
             }
         });
         findViewById(R.id.sendBtn).setOnClickListener(v -> {
@@ -130,14 +142,23 @@ public class MainActivity extends AppCompatActivity {
         // 新消息监听
         WKIM.getInstance().getMsgManager().addOnNewMsgListener("new_msg", msgList -> {
             for (WKMsg msg : msgList) {
-                adapter.addData(new UIMessageEntity(msg, 0));
+                if (msg.type==56) {
+                    adapter.addData(new UIMessageEntity(msg, 3));
+                }else {
+                    adapter.addData(new UIMessageEntity(msg, 0));
+                }
             }
+            recyclerView.scrollToPosition(adapter.getData().size() - 1);
         });
         // 监听发送消息入库返回
-        WKIM.getInstance().getMsgManager().addOnSendMsgCallback("insert_msg", msg ->{
-            adapter.addData(new UIMessageEntity(msg, 1));
+        WKIM.getInstance().getMsgManager().addOnSendMsgCallback("insert_msg", msg -> {
+            if (msg.type==56){
+                adapter.addData(new UIMessageEntity(msg, 2));
+            }else {
+                adapter.addData(new UIMessageEntity(msg, 1));
+            }
             recyclerView.scrollToPosition(adapter.getData().size() - 1);
-        } );
+        });
         // 发送消息回执
         WKIM.getInstance().getMsgManager().addOnSendMsgAckListener("ack_key", msg -> {
             for (int i = 0, size = adapter.getData().size(); i < size; i++) {
@@ -164,7 +185,7 @@ public class MainActivity extends AppCompatActivity {
         WKIM.getInstance().getConnectionManager().connection();
     }
 
-    private void getData(long oldOrderSeq, int pullMode, boolean contain,boolean isResetData) {
+    private void getData(long oldOrderSeq, int pullMode, boolean contain, boolean isResetData) {
         WKIM.getInstance().getMsgManager().getOrSyncHistoryMessages(channelID, channelType, oldOrderSeq, contain, pullMode, 20, 0, new IGetOrSyncHistoryMsgBack() {
 
             @Override
@@ -185,9 +206,17 @@ public class MainActivity extends AppCompatActivity {
                 for (int i = 0, size = msgList.size(); i < size; i++) {
                     int itemType;
                     if (msgList.get(i).fromUID.equals(Const.Companion.getUid())) {
-                        itemType = 1;
+                        if (msgList.get(i).type == 56) {
+                            itemType = 2;
+                        } else {
+                            itemType = 1;
+                        }
                     } else {
-                        itemType = 0;
+                        if (msgList.get(i).type == 56) {
+                            itemType = 3;
+                        } else {
+                            itemType = 0;
+                        }
                     }
                     UIMessageEntity entity = new UIMessageEntity(msgList.get(i), itemType);
                     list.add(entity);

@@ -14,5 +14,6 @@
     <string name="other_device_login">被踢</string>
     <string name="input_content">请输入聊天内容</string>
     <string name="send">发送</string>
+    <string name="send_order">自定义</string>
     <string name="input">请输入内容</string>
 </resources>
