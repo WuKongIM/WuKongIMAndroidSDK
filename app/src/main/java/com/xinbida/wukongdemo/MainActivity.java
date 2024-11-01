@@ -61,7 +61,10 @@ public class MainActivity extends AppCompatActivity {
         if (isLoading) {
             return;
         }
-        long orderSeq = adapter.getData().get(0).msg.orderSeq;
+        long orderSeq = 0;
+        if (!adapter.getData().isEmpty()) {
+            orderSeq = adapter.getData().get(0).msg.orderSeq;
+        }
         getData(orderSeq, 0, false, false);
     }
 
@@ -69,7 +72,10 @@ public class MainActivity extends AppCompatActivity {
         if (isLoading) {
             return;
         }
-        long orderSeq = adapter.getData().get(adapter.getData().size() - 1).msg.orderSeq;
+        long orderSeq = 0;
+        if (!adapter.getData().isEmpty()) {
+            orderSeq = adapter.getData().get(adapter.getData().size() - 1).msg.orderSeq;
+        }
         getData(orderSeq, 1, false, false);
     }
 
@@ -142,9 +148,9 @@ public class MainActivity extends AppCompatActivity {
         // 新消息监听
         WKIM.getInstance().getMsgManager().addOnNewMsgListener("new_msg", msgList -> {
             for (WKMsg msg : msgList) {
-                if (msg.type==56) {
+                if (msg.type == 56) {
                     adapter.addData(new UIMessageEntity(msg, 3));
-                }else {
+                } else {
                     adapter.addData(new UIMessageEntity(msg, 0));
                 }
             }
@@ -152,9 +158,9 @@ public class MainActivity extends AppCompatActivity {
         });
         // 监听发送消息入库返回
         WKIM.getInstance().getMsgManager().addOnSendMsgCallback("insert_msg", msg -> {
-            if (msg.type==56){
+            if (msg.type == 56) {
                 adapter.addData(new UIMessageEntity(msg, 2));
-            }else {
+            } else {
                 adapter.addData(new UIMessageEntity(msg, 1));
             }
             recyclerView.scrollToPosition(adapter.getData().size() - 1);

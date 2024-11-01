@@ -25,8 +25,8 @@ class WKApplication : Application() {
 
     private val avatars = arrayOf(
         "https://lmg.jj20.com/up/allimg/tx29/06052048151752929.png",
-        "https://pic.imeitou.com/uploads/allimg/2021061715/aqg1wx3nsds.jpg",
-        "https://lmg.jj20.com/up/allimg/tx30/10121138219844229.jpg",
+        "https://img1.baidu.com/it/u=1653751609,236581088&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=500",
+        "https://img0.baidu.com/it/u=1008951549,1654888911&fm=253&fmt=auto&app=120&f=JPEG?w=800&h=800",
         "https://lmg.jj20.com/up/allimg/tx30/10121138219844229.jpg",
         "https://lmg.jj20.com/up/allimg/tx28/430423183653303.jpg",
         "https://lmg.jj20.com/up/allimg/tx23/520420024834916.jpg",

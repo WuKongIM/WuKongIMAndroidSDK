@@ -53,10 +53,6 @@ public class LoginActivity extends AppCompatActivity {
                             Const.Companion.setToken(token);
                             Const.Companion.setUid(uid);
                             Intent intent = new Intent(LoginActivity.this, ConversationActivity.class);
-
-//                        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-//                        intent.putExtra("uid", uid);
-//                        intent.putExtra("token", token);
                             startActivity(intent);
                             finish();
                         });

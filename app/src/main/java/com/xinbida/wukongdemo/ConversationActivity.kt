@@ -2,14 +2,12 @@ package com.xinbida.wukongdemo
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.lxj.xpopup.XPopup
-import com.xinbida.wukongdemo.Const.Companion.token
 import com.xinbida.wukongim.WKIM
 import com.xinbida.wukongim.entity.WKChannelType
 import com.xinbida.wukongim.message.type.WKConnectStatus
@@ -21,18 +19,16 @@ class ConversationActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.act_conv_layout)
-
-
-
         initView()
         initListener()
-        initData()
 
         WKIM.getInstance().isDebug = true
         // 初始化
-        WKIM.getInstance().init(this, Const.uid, token)
+        WKIM.getInstance().init(this, Const.uid, Const.token)
         // 连接
         WKIM.getInstance().connectionManager.connection()
+
+        initData()
     }
 
     private fun initView() {
@@ -48,7 +44,6 @@ class ConversationActivity : AppCompatActivity() {
         WKIM.getInstance().connectionManager.addOnConnectionStatusListener(
             "conv"
         ) { code, _ ->
-            Log.e("连接撞头", "$code")
             when (code) {
                 WKConnectStatus.connecting -> {
                     titleTv.setText(R.string.connecting)
@@ -65,9 +60,11 @@ class ConversationActivity : AppCompatActivity() {
                 WKConnectStatus.syncMsg -> {
                     titleTv.setText(R.string.connect_syncing)
                 }
+
                 WKConnectStatus.noNetwork -> {
                     titleTv.setText(R.string.no_net)
                 }
+
                 WKConnectStatus.syncCompleted -> {
                     titleTv.setText(R.string.connect_success)
                 }
@@ -89,11 +86,12 @@ class ConversationActivity : AppCompatActivity() {
                 }
             }
         }
-
+        var number = 0
         WKIM.getInstance().conversationManager.addOnRefreshMsgListener(
             "conv"
-        ) { uiConversationMsg, _ ->
+        ) { uiConversationMsg, isEnd ->
             var isAdd = true
+            number++
             for (index in adapter.data.indices) {
                 if (adapter.data[index].channelID == uiConversationMsg?.channelID) {
                     isAdd = false
@@ -107,14 +105,35 @@ class ConversationActivity : AppCompatActivity() {
                     adapter.data[index].lastMsgTimestamp =
                         uiConversationMsg.lastMsgTimestamp
                     if (recyclerView.scrollState == RecyclerView.SCROLL_STATE_IDLE || (!recyclerView.isComputingLayout)) {
-                        adapter.notifyItemChanged(index)
+                        recyclerView.post {
+                            if (index == 0) {
+                                adapter.notifyItemChanged(index)
+                            } else {
+                                adapter.removeAt(index)
+                                adapter.addData(0, uiConversationMsg)
+                                recyclerView.post {
+                                    recyclerView.scrollToPosition(0)
+                                }
+                            }
+
+                        }
                     }
                     break
                 }
             }
             if (isAdd) {
                 adapter.addData(0, uiConversationMsg!!)
-                recyclerView.scrollToPosition(0)
+            }
+            if (isEnd) {
+                if (number > 1) {
+                    val list = adapter.data
+                    list.sortByDescending { it.lastMsgTimestamp }
+                    adapter.setList(list)
+                    recyclerView.post {
+                        recyclerView.scrollToPosition(0)
+                    }
+                }
+                number = 0;
             }
         }
         findViewById<AppCompatImageView>(R.id.addIV).setOnClickListener {
