@@ -9,26 +9,23 @@
     android:paddingEnd="10dp"
     android:paddingBottom="5dp">
 
-    <TextView
-        android:id="@+id/nameIv"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:background="@drawable/send_rand"
-        android:gravity="center"
-        android:text="鞋"
-        android:textColor="@color/white"
-        android:textSize="16sp"
-        android:textStyle="bold" />
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/avatarIV"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:scaleType="centerCrop"
+        android:src="@color/purple_200" />
 
     <com.cxd.chatview.moudle.ChatView xmlns:chat="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/contentLayout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
+        android:layout_marginStart="10dp"
         android:layout_marginEnd="30dp"
         android:paddingStart="15dp"
         android:paddingTop="10dp"
         android:paddingEnd="10dp"
-        android:layout_marginStart="10dp"
         android:paddingBottom="10dp"
         chat:arrow_direction="left"
         chat:arrow_height="12dp"

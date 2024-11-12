@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 
 public class HttpUtil {
     public String apiURL = "http://62.234.8.38:7090/v1";
@@ -51,6 +52,76 @@ public class HttpUtil {
         try {
             HttpURLConnection conn = (HttpURLConnection) new URL(apiURL + url).openConnection();
             conn.setRequestMethod("POST");
+            conn.setReadTimeout(5000);
+            conn.setConnectTimeout(5000);
+            conn.setDoInput(true);
+            conn.setDoOutput(true);
+            conn.setUseCaches(false);
+            conn.setRequestProperty("Connection", "keep-Alive");
+            conn.setRequestProperty("Content-Type", "application/json");
+            OutputStream outputStream = conn.getOutputStream();
+            outputStream.write(data.toString().getBytes(StandardCharsets.UTF_8));
+            outputStream.flush();
+            if (conn.getResponseCode() == 200) {
+                InputStream inputStream = conn.getInputStream();
+                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                int length;
+                byte[] bytes = new byte[1024];
+                while ((length = inputStream.read(bytes)) != -1) {
+                    byteArrayOutputStream.write(bytes, 0, length);
+                }
+                byteArrayOutputStream.close();
+                inputStream.close();
+                String data1 = byteArrayOutputStream.toString();
+                iResult.onResult(200, data1);
+            } else {
+                iResult.onResult(conn.getResponseCode(), "");
+            }
+        } catch (Throwable e) {
+            e.printStackTrace();
+            iResult.onResult(500, "");
+        }
+    }
+
+    public void delete(String url, JSONObject data, final IResult iResult) {
+        try {
+            HttpURLConnection conn = (HttpURLConnection) new URL(apiURL + url).openConnection();
+            conn.setRequestMethod("DELETE");
+            conn.setReadTimeout(5000);
+            conn.setConnectTimeout(5000);
+            conn.setDoInput(true);
+            conn.setDoOutput(true);
+            conn.setUseCaches(false);
+            conn.setRequestProperty("Connection", "keep-Alive");
+            conn.setRequestProperty("Content-Type", "application/json");
+            OutputStream outputStream = conn.getOutputStream();
+            outputStream.write(data.toString().getBytes(StandardCharsets.UTF_8));
+            outputStream.flush();
+            if (conn.getResponseCode() == 200) {
+                InputStream inputStream = conn.getInputStream();
+                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                int length;
+                byte[] bytes = new byte[1024];
+                while ((length = inputStream.read(bytes)) != -1) {
+                    byteArrayOutputStream.write(bytes, 0, length);
+                }
+                byteArrayOutputStream.close();
+                inputStream.close();
+                String data1 = byteArrayOutputStream.toString();
+                iResult.onResult(200, data1);
+            } else {
+                iResult.onResult(conn.getResponseCode(), "");
+            }
+        } catch (Throwable e) {
+            e.printStackTrace();
+            iResult.onResult(500, "");
+        }
+    }
+
+    public void put(String url, JSONObject data, final IResult iResult) {
+        try {
+            HttpURLConnection conn = (HttpURLConnection) new URL(apiURL + url).openConnection();
+            conn.setRequestMethod("PUT");
             conn.setReadTimeout(5000);
             conn.setConnectTimeout(5000);
             conn.setDoInput(true);
@@ -247,4 +318,132 @@ public class HttpUtil {
         })).start();
     }
 
+    public void clearChannelMsg(String channelId, byte channelType) {
+        JSONObject json = new JSONObject();
+        try {
+            long msgSeq = WKIM.getInstance().getMsgManager().getMaxMessageSeqWithChannel(channelId, channelType);
+            json.put("login_uid", Const.Companion.getUid());
+            json.put("channel_id", channelId);
+            json.put("channel_type", channelType);
+            json.put("message_seq", msgSeq);
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+        new Thread(() -> post("/message/offset", json, (code, data) -> {
+            if (code == 200) {
+                WKIM.getInstance().getMsgManager().clearWithChannel(channelId, channelType);
+            }
+        })).start();
+    }
+
+    public void syncMsgExtra(String channelId, byte channelType) {
+        JSONObject json = new JSONObject();
+        try {
+            long version = WKIM.getInstance().getMsgManager().getMsgExtraMaxVersionWithChannel(channelId, channelType);
+            json.put("login_uid", Const.Companion.getUid());
+            json.put("channel_id", channelId);
+            json.put("channel_type", channelType);
+            json.put("source", Const.Companion.getUid());
+            json.put("extra_version", version);
+            json.put("limit", 100);
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+        new Thread(() -> post("/message/extra/sync", json, (code, data) -> {
+            if (code == 200 && !TextUtils.isEmpty(data)) {
+                try {
+                    JSONArray arr = new JSONArray(data);
+                    List<WKSyncExtraMsg> list = new ArrayList<>();
+                    for (int i = 0; i < arr.length(); i++) {
+                        JSONObject extraJson = arr.optJSONObject(i);
+                        WKSyncExtraMsg extraMsg = new WKSyncExtraMsg();
+                        extraMsg.message_id_str = extraJson.optString("message_id_str");
+                        extraMsg.message_id = extraJson.optString("message_id_str");
+                        extraMsg.revoker = extraJson.optString("revoker");
+                        extraMsg.readed = extraJson.optInt("readed");
+                        extraMsg.readed_count = extraJson.optInt("readed_count");
+                        extraMsg.is_mutual_deleted = extraJson.optInt("is_mutual_deleted");
+                        extraMsg.extra_version = extraJson.optLong("extra_version");
+                        extraMsg.revoke = extraJson.optInt("revoke");
+                        list.add(extraMsg);
+                    }
+                    WKIM.getInstance().getMsgManager().saveRemoteExtraMsg(new WKChannel(channelId, channelType), list);
+                } catch (JSONException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        })).start();
+    }
+
+    public void updateGroupName(String groupNo, String name) {
+        JSONObject json = new JSONObject();
+        try {
+            json.put("login_uid", Const.Companion.getUid());
+            json.put("name", name);
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+
+        new Thread(() -> put("/groups/" + groupNo, json, (code, data) -> {
+            if (code == 200) {
+                Log.e("修改成功", "-->");
+            }
+        })).start();
+    }
+
+    public void clearUnread(String channelId, byte channelType) {
+        JSONObject json = new JSONObject();
+        try {
+            json.put("login_uid", Const.Companion.getUid());
+            json.put("channel_id", channelId);
+            json.put("channel_type", channelType);
+            json.put("unread", 0);
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+
+        new Thread(() -> put("/conversation/clearUnread", json, (code, data) -> {
+            if (code == 200) {
+                Log.e("修改成功", "-->");
+            }
+        })).start();
+    }
+
+    public void revokeMsg(String channelId, byte channelType, String messageId, String clientMsgNo) {
+        JSONObject json = new JSONObject();
+        try {
+            json.put("login_uid", Const.Companion.getUid());
+            json.put("channel_id", channelId);
+            json.put("channel_type", channelType);
+            json.put("client_msg_no", clientMsgNo);
+            json.put("message_id", messageId);
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+
+        new Thread(() -> post("/message/revoke", json, (code, data) -> {
+            if (code == 200) {
+                Log.e("撤回成功","--->");
+            }
+        })).start();
+    }
+
+    public void deleteMsg(String channelId, byte channelType, int messageSeq, String messageId, String clientMsgNo) {
+        JSONObject json = new JSONObject();
+        try {
+            json.put("login_uid", Const.Companion.getUid());
+            json.put("channel_id", channelId);
+            json.put("channel_type", channelType);
+            json.put("message_seq", messageSeq);
+            json.put("message_id", messageId);
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+
+        new Thread(() -> delete("/message", json, (code, data) -> {
+            if (code == 200) {
+                WKIM.getInstance().getMsgManager().deleteWithClientMsgNO(clientMsgNo);
+            }
+        })).start();
+    }
 }

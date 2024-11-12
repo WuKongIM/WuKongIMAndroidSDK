@@ -16,4 +16,10 @@
     <string name="send">发送</string>
     <string name="send_order">自定义</string>
     <string name="input">请输入内容</string>
+    <string name="msg_revoked">消息被撤回</string>
+    <string name="clear_channel_message">清空聊天记录</string>
+    <string name="update_group_name">修改群名称</string>
+    <string name="input_group_name">请输入群名称…</string>
+    <string name="msg_delete">删除消息</string>
+    <string name="msg_revoke">撤回消息</string>
 </resources>

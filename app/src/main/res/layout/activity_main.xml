@@ -20,21 +20,13 @@
             android:layout_weight="1"
             android:gravity="center|start">
 
-            <View
-                android:id="@+id/connectionIv"
-                android:layout_width="15dp"
-                android:layout_height="15dp"
-                android:background="@drawable/success" />
-
-            <TextView
-                android:id="@+id/connectionTv"
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/nameTV"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/black"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="5dp"
-                android:text="连接成功"
-                android:textColor="@color/success"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:layout_height="wrap_content"/>
         </LinearLayout>
 
         <androidx.appcompat.widget.AppCompatImageView

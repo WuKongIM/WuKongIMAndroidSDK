@@ -17,7 +17,8 @@ class ConvAdapter :
         val msg = payloads[0] as WKUIConversationMsg
         if (msg.wkChannel != null) {
             holder.setText(R.id.nameTV, item.wkChannel.channelName)
-            GlideUtil.showAvatarImg(context,
+            GlideUtil.showAvatarImg(
+                context,
                 HttpUtil.getInstance()
                     .getAvatar(item.wkChannel.channelID, item.wkChannel.channelType),
                 holder.getView(R.id.avatarIV)
@@ -43,10 +44,12 @@ class ConvAdapter :
         holder.setText(R.id.timeTV, getShowTime(item.lastMsgTimestamp * 1000L))
         if (item.wkChannel != null) {
             holder.setText(R.id.nameTV, item.wkChannel.channelName)
-            GlideUtil.showAvatarImg(context,
+            GlideUtil.showAvatarImg(
+                context,
                 HttpUtil.getInstance()
                     .getAvatar(item.wkChannel.channelID, item.wkChannel.channelType),
-                holder.getView(R.id.avatarIV))
+                holder.getView(R.id.avatarIV)
+            )
         } else {
             WKIM.getInstance().channelManager.fetchChannelInfo(item.channelID, item.channelType)
         }
@@ -55,7 +58,9 @@ class ConvAdapter :
             val intent = Intent(context, MainActivity::class.java)
             intent.putExtra("channel_id", item.channelID)
             intent.putExtra("channel_type", item.channelType)
-            intent.putExtra("old_order_seq", item.wkMsg.orderSeq)
+            if (item.wkMsg != null) {
+                intent.putExtra("old_order_seq", item.wkMsg.orderSeq)
+            }
             context.startActivity(intent)
         }
     }

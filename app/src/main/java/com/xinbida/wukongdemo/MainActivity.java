@@ -11,16 +11,17 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.lxj.xpopup.XPopup;
 import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.entity.WKChannel;
 import com.xinbida.wukongim.entity.WKChannelType;
 import com.xinbida.wukongim.entity.WKMsg;
+import com.xinbida.wukongim.interfaces.IClearMsgListener;
 import com.xinbida.wukongim.interfaces.IGetOrSyncHistoryMsgBack;
-import com.xinbida.wukongim.message.type.WKConnectStatus;
+import com.xinbida.wukongim.interfaces.IRefreshMsg;
 import com.xinbida.wukongim.msgmodel.WKTextContent;
 
 import java.util.ArrayList;
@@ -30,8 +31,7 @@ public class MainActivity extends AppCompatActivity {
 
     RecyclerView recyclerView;
     MessageAdapter adapter;
-    private TextView statusTv;
-    private View statusIv;
+    private TextView nameTV;
     private String channelID;
     private byte channelType;
     private EditText contentEt;
@@ -46,8 +46,7 @@ public class MainActivity extends AppCompatActivity {
         channelID = getIntent().getStringExtra("channel_id");
         channelType = getIntent().getByteExtra("channel_type", WKChannelType.PERSONAL);
         recyclerView = findViewById(R.id.recycleView);
-        statusTv = findViewById(R.id.connectionTv);
-        statusIv = findViewById(R.id.connectionIv);
+        nameTV = findViewById(R.id.nameTV);
         contentEt = findViewById(R.id.contentEt);
         adapter = new MessageAdapter();
         recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
@@ -55,6 +54,12 @@ public class MainActivity extends AppCompatActivity {
         onListener();
         long orderSeq = getIntent().getLongExtra("old_order_seq", 0);
         getData(orderSeq, 0, true, true);
+
+        WKChannel channel = WKIM.getInstance().getChannelManager().getChannel(channelID, channelType);
+        if (channel != null) {
+            nameTV.setText(channel.channelName);
+        }
+        HttpUtil.getInstance().clearUnread(channelID, channelType);
     }
 
     private void refresh() {
@@ -80,6 +85,29 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void onListener() {
+        findViewById(R.id.addIV).setOnClickListener(view -> {
+            final XPopup.Builder builder = new XPopup.Builder(view.getContext())
+                    .atView(view).hasShadowBg(false);
+            ArrayList<String> list = new ArrayList<>();
+            list.add(getString(R.string.clear_channel_message));
+            if (channelType == WKChannelType.GROUP) {
+                list.add(getString(R.string.update_group_name));
+            }
+            String[] str = new String[list.size()];
+            list.toArray(str);
+            builder.asAttachList(str, null,
+                            (position, text) -> {
+                                if (position == 0) {
+                                    HttpUtil.getInstance().clearChannelMsg(channelID, channelType);
+                                } else {
+
+                                    new XPopup.Builder(view.getContext()).asInputConfirm(getString(R.string.update_group_name), getString(R.string.input_group_name),
+                                                    text1 -> HttpUtil.getInstance().updateGroupName(channelID, text1))
+                                            .show();
+                                }
+                            })
+                    .show();
+        });
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
@@ -121,32 +149,9 @@ public class MainActivity extends AppCompatActivity {
             contentEt.setText("");
         });
 
-        // 连接状态监听
-        WKIM.getInstance().getConnectionManager().addOnConnectionStatusListener("main_act", (code, reason) -> {
-            if (code == WKConnectStatus.success) {
-                statusTv.setText(R.string.connect_success);
-                statusTv.setTextColor(ContextCompat.getColor(this, R.color.success));
-                statusIv.setBackgroundResource(R.drawable.success);
-            } else if (code == WKConnectStatus.fail) {
-                statusTv.setText(R.string.connect_fail);
-                statusTv.setTextColor(ContextCompat.getColor(this, R.color.error));
-                statusIv.setBackgroundResource(R.drawable.error);
-            } else if (code == WKConnectStatus.connecting) {
-                statusTv.setText(R.string.connecting);
-                statusTv.setTextColor(ContextCompat.getColor(this, R.color.black));
-                statusIv.setBackgroundResource(R.drawable.conn);
-            } else if (code == WKConnectStatus.noNetwork) {
-                statusTv.setText(R.string.no_net);
-                statusTv.setTextColor(ContextCompat.getColor(this, R.color.nonet));
-                statusIv.setBackgroundResource(R.drawable.nonet);
-            } else if (code == WKConnectStatus.kicked) {
-                statusTv.setText(R.string.other_device_login);
-                statusTv.setTextColor(ContextCompat.getColor(this, R.color.black));
-                statusIv.setBackgroundResource(R.drawable.conn);
-            }
-        });
+
         // 新消息监听
-        WKIM.getInstance().getMsgManager().addOnNewMsgListener("new_msg", msgList -> {
+        WKIM.getInstance().getMsgManager().addOnNewMsgListener(channelID, msgList -> {
             for (WKMsg msg : msgList) {
                 if (msg.type == 56) {
                     adapter.addData(new UIMessageEntity(msg, 3));
@@ -157,7 +162,7 @@ public class MainActivity extends AppCompatActivity {
             recyclerView.scrollToPosition(adapter.getData().size() - 1);
         });
         // 监听发送消息入库返回
-        WKIM.getInstance().getMsgManager().addOnSendMsgCallback("insert_msg", msg -> {
+        WKIM.getInstance().getMsgManager().addOnSendMsgCallback(channelID, msg -> {
             if (msg.type == 56) {
                 adapter.addData(new UIMessageEntity(msg, 2));
             } else {
@@ -166,29 +171,68 @@ public class MainActivity extends AppCompatActivity {
             recyclerView.scrollToPosition(adapter.getData().size() - 1);
         });
         // 发送消息回执
-        WKIM.getInstance().getMsgManager().addOnSendMsgAckListener("ack_key", msg -> {
+        WKIM.getInstance().getMsgManager().addOnSendMsgAckListener(channelID, msg -> {
             for (int i = 0, size = adapter.getData().size(); i < size; i++) {
                 if (adapter.getData().get(i).msg.clientSeq == msg.clientSeq) {
                     adapter.getData().get(i).msg.status = msg.status;
+                    adapter.getData().get(i).msg.messageID = msg.messageID;
+                    adapter.getData().get(i).msg.messageSeq= msg.messageSeq;
                     adapter.notifyItemChanged(i);
                     break;
                 }
             }
         });
 
+        // 刷新消息
+        WKIM.getInstance().getMsgManager().addOnRefreshMsgListener(channelID, new IRefreshMsg() {
+            @Override
+            public void onRefresh(WKMsg msg, boolean left) {
+                if (msg == null) {
+                    return;
+                }
+                for (int i = 0; i < adapter.getData().size(); i++) {
+                    if (adapter.getData().get(i).msg.clientMsgNO.equals(msg.clientMsgNO)) {
+                        if (msg.remoteExtra != null && msg.remoteExtra.revoke == 1) {
+                            adapter.getData().get(i).itemType = 4;
+                            adapter.notifyItemChanged(i);
+                        }
+                        adapter.getData().get(i).msg.remoteExtra = msg.remoteExtra;
+                        break;
+                    }
+                }
+            }
+        });
+
+        // 频道刷新
+        WKIM.getInstance().getChannelManager().addOnRefreshChannelInfo(channelID, (channel, isEnd) -> {
+            if (channel == null)
+                return;
+            nameTV.setText(channel.channelName);
+        });
+
+
+        // 监听清空消息
+        WKIM.getInstance().getMsgManager().addOnClearMsgListener(channelID, new IClearMsgListener() {
+            @Override
+            public void clear(String channelID, byte channelType, String fromUID) {
+                if (channelID.equals(MainActivity.this.channelID) && channelType == MainActivity.this.channelType) {
+                    adapter.setList(new ArrayList<>());
+                }
+            }
+        });
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-     //   WKIM.getInstance().getConnectionManager().disconnect(false);
+        //   WKIM.getInstance().getConnectionManager().disconnect(false);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         // 连接
-      //  WKIM.getInstance().getConnectionManager().connection();
+        //  WKIM.getInstance().getConnectionManager().connection();
     }
 
     private void getData(long oldOrderSeq, int pullMode, boolean contain, boolean isResetData) {
@@ -224,6 +268,9 @@ public class MainActivity extends AppCompatActivity {
                             itemType = 0;
                         }
                     }
+                    if (msgList.get(i).remoteExtra != null && msgList.get(i).remoteExtra.revoke == 1) {
+                        itemType = 4;
+                    }
                     UIMessageEntity entity = new UIMessageEntity(msgList.get(i), itemType);
                     list.add(entity);
                 }
@@ -243,12 +290,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-       // WKIM.getInstance().getConnectionManager().disconnect(true);
         // 取消监听
-        WKIM.getInstance().getMsgManager().removeNewMsgListener("new_msg");
-        WKIM.getInstance().getMsgManager().removeSendMsgCallBack("insert_msg");
-        WKIM.getInstance().getMsgManager().removeSendMsgAckListener("ack_key");
-        WKIM.getInstance().getConnectionManager().removeOnConnectionStatusListener("main_act");
+        WKIM.getInstance().getMsgManager().removeNewMsgListener(channelID);
+        WKIM.getInstance().getMsgManager().removeSendMsgCallBack(channelID);
+        WKIM.getInstance().getMsgManager().removeSendMsgAckListener(channelID);
+        WKIM.getInstance().getMsgManager().removeRefreshMsgListener(channelID);
+        WKIM.getInstance().getMsgManager().removeClearMsg(channelID);
     }
 
 }

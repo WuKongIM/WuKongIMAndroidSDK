@@ -3,7 +3,6 @@ package com.xinbida.wukongdemo
 import android.app.Application
 import android.text.TextUtils
 import com.xinbida.wukongim.WKIM
-import com.xinbida.wukongim.entity.WKChannel
 import com.xinbida.wukongim.entity.WKChannelType
 import com.xinbida.wukongim.entity.WKSyncChat
 import com.xinbida.wukongim.entity.WKSyncConvMsg
@@ -13,7 +12,6 @@ import com.xinbida.wukongim.interfaces.ISyncConversationChatBack
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
-import kotlin.math.abs
 
 class WKApplication : Application() {
 
@@ -81,6 +79,36 @@ class WKApplication : Application() {
                     pullMode
                 ) { msg -> iSyncChannelMsgBack?.onBack(msg) }
             }.start()
+        }
+
+        // cmd监听
+        WKIM.getInstance().cmdManager.addCmdListener("application"
+        ) { cmd ->
+            if (cmd?.cmdKey == "channelUpdate") {
+                val channelId = cmd.paramJsonObject?.optString("channel_id")
+                val channelType = cmd.paramJsonObject?.optInt("channel_type")
+                if (!TextUtils.isEmpty(channelId)) {
+                    if (channelType?.toByte() == WKChannelType.GROUP) {
+                        HttpUtil.getInstance().getGroupInfo(channelId)
+                    } else {
+                        HttpUtil.getInstance().getUserInfo(channelId)
+                    }
+                }
+            } else if (cmd?.cmdKey == "unreadClear") {
+                // sdk内部处理了该cmd
+//                val channelId = cmd.paramJsonObject?.optString("channel_id")
+//                val channelType = cmd.paramJsonObject?.optInt("channel_type")
+//                val unread = cmd.paramJsonObject?.optInt("unread")
+//                WKIM.getInstance().conversationManager.updateRedDot(
+//                    channelId,
+//                    channelType!!.toByte(),
+//                    unread!!
+//                )
+            } else if (cmd?.cmdKey == "messageRevoke") {
+                val channelId = cmd.paramJsonObject?.optString("channel_id")
+                val channelType = cmd.paramJsonObject?.optInt("channel_type")
+                HttpUtil.getInstance().syncMsgExtra(channelId, channelType!!.toByte())
+            }
         }
     }
 

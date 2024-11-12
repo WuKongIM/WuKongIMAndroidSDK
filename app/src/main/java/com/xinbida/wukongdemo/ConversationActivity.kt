@@ -2,6 +2,7 @@ package com.xinbida.wukongdemo
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatImageView
@@ -90,14 +91,16 @@ class ConversationActivity : AppCompatActivity() {
         WKIM.getInstance().conversationManager.addOnRefreshMsgListener(
             "conv"
         ) { uiConversationMsg, isEnd ->
+            Log.e("修改的值",uiConversationMsg.channelID)
             var isAdd = true
             number++
             for (index in adapter.data.indices) {
-                if (adapter.data[index].channelID == uiConversationMsg?.channelID) {
+                if (adapter.data[index].channelID == uiConversationMsg?.channelID && adapter.data[index].channelType == uiConversationMsg?.channelType) {
+                    Log.e("要修改","-->")
                     isAdd = false
-                    adapter.data[index].wkMsg = uiConversationMsg?.wkMsg
+                    adapter.data[index].wkMsg = uiConversationMsg.wkMsg
                     adapter.data[index].lastMsgSeq =
-                        uiConversationMsg?.lastMsgSeq!!
+                        uiConversationMsg.lastMsgSeq
                     adapter.data[index].clientMsgNo =
                         uiConversationMsg.clientMsgNo
                     adapter.data[index].unreadCount =

@@ -16,4 +16,10 @@
     <string name="send">Send</string>
     <string name="send_order">Customize</string>
     <string name="input">Input…</string>
+    <string name="msg_revoked">Message has been withdrawn</string>
+    <string name="clear_channel_message">Clear channel message</string>
+    <string name="update_group_name">Update group name</string>
+    <string name="input_group_name">Input group name…</string>
+    <string name="msg_delete">Delete</string>
+    <string name="msg_revoke">Revoke</string>
 </resources>

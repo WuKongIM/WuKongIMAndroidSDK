@@ -11,6 +11,7 @@
     android:paddingBottom="5dp">
 
     <com.cxd.chatview.moudle.ChatView xmlns:chat="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/contentLayout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="end"
@@ -112,14 +113,11 @@
 
     </com.cxd.chatview.moudle.ChatView>
 
-    <TextView
-        android:id="@+id/nameIv"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:background="@drawable/send_rand"
-        android:gravity="center"
-        android:text="鞋"
-        android:textColor="@color/white"
-        android:textSize="16sp"
-        android:textStyle="bold" />
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/avatarIV"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:scaleType="centerCrop"
+        android:src="@color/purple_200" />
+
 </LinearLayout>
