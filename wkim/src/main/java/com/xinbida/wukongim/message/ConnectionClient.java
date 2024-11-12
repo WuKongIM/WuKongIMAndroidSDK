@@ -172,7 +172,7 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
             if (iNonBlockingConnection != null)
                 iNonBlockingConnection.close();
         } catch (IOException e) {
-           WKLoggerUtils.getInstance().e(TAG,"close connection error");
+            WKLoggerUtils.getInstance().e(TAG,"close connection error");
         }
     }
 }

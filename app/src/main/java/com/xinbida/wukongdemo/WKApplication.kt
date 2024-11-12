@@ -45,7 +45,7 @@ class WKApplication : Application() {
         // 连接地址
         WKIM.getInstance().connectionManager.addOnGetIpAndPortListener { andPortListener: IGetSocketIpAndPortListener ->
             Thread {
-                HttpUtil.getInstance()["/route", { code: Int, data: String? ->
+                HttpUtil.getInstance()["/route", { code: Int, data: String ->
                     if (code == 200 && !TextUtils.isEmpty(data)) {
                         try {
                             val jsonObject = JSONObject(data)

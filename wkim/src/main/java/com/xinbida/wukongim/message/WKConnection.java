@@ -34,6 +34,7 @@ import com.xinbida.wukongim.protocol.WKPongMsg;
 import com.xinbida.wukongim.protocol.WKSendAckMsg;
 import com.xinbida.wukongim.protocol.WKSendMsg;
 import com.xinbida.wukongim.utils.DateUtils;
+import com.xinbida.wukongim.utils.DispatchQueuePool;
 import com.xinbida.wukongim.utils.FileUtils;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
 
@@ -74,9 +75,10 @@ public class WKConnection {
         return ConnectHandleBinder.CONNECT;
     }
 
-    final ExecutorService executors = new ThreadPoolExecutor(1, 4, 1, TimeUnit.SECONDS,
-            new LinkedBlockingQueue(100),
-            new ThreadPoolExecutor.DiscardOldestPolicy());
+    private final DispatchQueuePool dispatchQueuePool = new DispatchQueuePool(3);
+//    final ExecutorService executors = new ThreadPoolExecutor(1, 4, 1, TimeUnit.SECONDS,
+//            new LinkedBlockingQueue(100),
+//            new ThreadPoolExecutor.DiscardOldestPolicy());
 
     // 正在发送的消息
     private final ConcurrentHashMap<Integer, WKSendingMsg> sendingMsgHashMap = new ConcurrentHashMap<>();
@@ -98,7 +100,7 @@ public class WKConnection {
     private final long reconnectDelay = 1500;
     private int unReceivePongCount = 0;
     public volatile Handler reconnectionHandler = new Handler(Objects.requireNonNull(Looper.myLooper()));
-
+    private Handler mainHandler = new Handler(Looper.getMainLooper());
     Runnable reconnectionRunnable = this::reconnection;
 
     public synchronized void forcedReconnection() {
@@ -156,7 +158,13 @@ public class WKConnection {
                 WKConnection.this.ip = ip;
                 WKConnection.this.port = port;
                 if (connectionIsNull()) {
-                    executors.execute(WKConnection.this::connSocket);
+                    dispatchQueuePool.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            connSocket();
+                        }
+                    });
+                    //executors.execute(WKConnection.this::connSocket);
                 }
                 return;
             }
@@ -504,17 +512,23 @@ public class WKConnection {
     }
 
     private synchronized void closeConnect() {
-        if (connection != null && connection.isOpen()) {
-            try {
-                WKLoggerUtils.getInstance().e("stop connection:" + connection.getId());
+        mainHandler.post(() -> {
+            if (connection != null && connection.isOpen()) {
+                try {
+                    WKLoggerUtils.getInstance().e("stop connection:" + connection.getId());
 //                connection.flush();
-                connection.setAttachment("close" + connection.getId());
-                connection.close();
-            } catch (IOException e) {
-                WKLoggerUtils.getInstance().e("stop connection IOException" + e.getMessage());
+                    connection.setAttachment("close" + connection.getId());
+                    connection.close();
+                } catch (IOException e) {
+                    WKLoggerUtils.getInstance().e("stop connection IOException" + e.getMessage());
+                } finally {
+                    connection = null;
+                }
+
             }
-        }
-        connection = null;
+        });
+
+
     }
 
     private Timer checkNetWorkTimer;

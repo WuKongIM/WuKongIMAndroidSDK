@@ -26,7 +26,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 
 public class HttpUtil {
-    //    public String apiURL = "https://api.githubim.com";
+    //    public String apiURL = "http://62.234.8.38:7090/v1";
     public String apiURL = "http://175.27.245.108:15001";
 
     private static class HttpUtilTypeClass {
