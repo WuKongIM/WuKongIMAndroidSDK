@@ -20,6 +20,7 @@ import com.xinbida.wukongim.entity.WKChannel;
 import com.xinbida.wukongim.entity.WKChannelType;
 import com.xinbida.wukongim.entity.WKMsg;
 import com.xinbida.wukongim.interfaces.IClearMsgListener;
+import com.xinbida.wukongim.interfaces.IDeleteMsgListener;
 import com.xinbida.wukongim.interfaces.IGetOrSyncHistoryMsgBack;
 import com.xinbida.wukongim.interfaces.IRefreshMsg;
 import com.xinbida.wukongim.msgmodel.WKTextContent;
@@ -176,7 +177,7 @@ public class MainActivity extends AppCompatActivity {
                 if (adapter.getData().get(i).msg.clientSeq == msg.clientSeq) {
                     adapter.getData().get(i).msg.status = msg.status;
                     adapter.getData().get(i).msg.messageID = msg.messageID;
-                    adapter.getData().get(i).msg.messageSeq= msg.messageSeq;
+                    adapter.getData().get(i).msg.messageSeq = msg.messageSeq;
                     adapter.notifyItemChanged(i);
                     break;
                 }
@@ -217,6 +218,19 @@ public class MainActivity extends AppCompatActivity {
             public void clear(String channelID, byte channelType, String fromUID) {
                 if (channelID.equals(MainActivity.this.channelID) && channelType == MainActivity.this.channelType) {
                     adapter.setList(new ArrayList<>());
+                }
+            }
+        });
+
+        // 监听删除消息
+        WKIM.getInstance().getMsgManager().addOnDeleteMsgListener(channelID, msg -> {
+            if (msg == null) {
+                return;
+            }
+            for (int i = 0; i < adapter.getData().size(); i++) {
+                if (msg.clientMsgNO.equals(adapter.getData().get(i).msg.clientMsgNO)) {
+                    adapter.removeAt(i);
+                    break;
                 }
             }
         });
@@ -296,6 +310,7 @@ public class MainActivity extends AppCompatActivity {
         WKIM.getInstance().getMsgManager().removeSendMsgAckListener(channelID);
         WKIM.getInstance().getMsgManager().removeRefreshMsgListener(channelID);
         WKIM.getInstance().getMsgManager().removeClearMsg(channelID);
+        WKIM.getInstance().getMsgManager().removeDeleteMsgListener(channelID);
     }
 
 }

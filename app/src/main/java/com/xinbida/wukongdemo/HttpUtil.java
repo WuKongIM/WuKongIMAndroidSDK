@@ -222,6 +222,7 @@ public class HttpUtil {
     }
 
     public WKSyncRecent getWKSyncRecent(JSONObject msgJson) {
+        Log.e("消息数据:", msgJson.toString());
         String from_uid = msgJson.optString("from_uid");
         String client_msg_no = msgJson.optString("client_msg_no");
         String channel_id = msgJson.optString("channel_id");
@@ -235,6 +236,7 @@ public class HttpUtil {
         recent.from_uid = from_uid;
         recent.message_id = msgJson.optString("message_id");
         recent.message_seq = msgJson.optInt("message_seq");
+        recent.is_deleted = msgJson.optInt("is_deleted");
         recent.client_msg_no = client_msg_no;
         recent.channel_id = channel_id;
         recent.channel_type = channel_type;
@@ -258,11 +260,17 @@ public class HttpUtil {
             }
             WKSyncExtraMsg extraMsg = new WKSyncExtraMsg();
             extraMsg.message_id_str = extraJson.optString("message_id_str");
-            extraMsg.revoke = extraJson.optInt("revoke");
-            extraMsg.revoker = extraJson.optString("revoker");
-            extraMsg.readed = extraJson.optInt("readed");
-            extraMsg.readed_count = extraJson.optInt("readed_count");
-            extraMsg.is_mutual_deleted = extraJson.optInt("is_mutual_deleted");
+            extraMsg.message_id = extraJson.optString("message_id_str");
+            if (extraJson.has("revoke"))
+                extraMsg.revoke = extraJson.optInt("revoke");
+            if (extraJson.has("revoker"))
+                extraMsg.revoker = extraJson.optString("revoker");
+            if (extraJson.has("readed"))
+                extraMsg.readed = extraJson.optInt("readed");
+            if (extraJson.has("readed_count"))
+                extraMsg.readed_count = extraJson.optInt("readed_count");
+            if (extraJson.has("is_mutual_deleted"))
+                extraMsg.is_mutual_deleted = extraJson.optInt("is_mutual_deleted");
             recent.message_extra = extraMsg;
         }
         return recent;
@@ -423,7 +431,7 @@ public class HttpUtil {
 
         new Thread(() -> post("/message/revoke", json, (code, data) -> {
             if (code == 200) {
-                Log.e("撤回成功","--->");
+                Log.e("撤回成功", "--->");
             }
         })).start();
     }
@@ -442,6 +450,7 @@ public class HttpUtil {
 
         new Thread(() -> delete("/message", json, (code, data) -> {
             if (code == 200) {
+                Log.e("删除消息成功", "-->");
                 WKIM.getInstance().getMsgManager().deleteWithClientMsgNO(clientMsgNo);
             }
         })).start();

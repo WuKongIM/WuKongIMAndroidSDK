@@ -81,13 +81,13 @@ class MessageAdapter extends BaseMultiItemQuickAdapter<UIMessageEntity, BaseView
                                         (position, text) -> {
                                             if (position == 0) {
                                                 if (uiMessageEntity.msg.messageSeq > 0) {
-                                                    HttpUtil.getInstance().deleteMsg(uiMessageEntity.msg.channelID, uiMessageEntity.msg.channelType, uiMessageEntity.msg.messageSeq, uiMessageEntity.msg.messageID, uiMessageEntity.msg.messageID);
+                                                    HttpUtil.getInstance().deleteMsg(uiMessageEntity.msg.channelID, uiMessageEntity.msg.channelType, uiMessageEntity.msg.messageSeq, uiMessageEntity.msg.messageID, uiMessageEntity.msg.clientMsgNO);
                                                 } else {
                                                     WKIM.getInstance().getMsgManager().deleteWithClientMsgNO(uiMessageEntity.msg.clientMsgNO);
                                                 }
                                             } else {
                                                 if (uiMessageEntity.msg.messageSeq > 0) {
-                                                    HttpUtil.getInstance().revokeMsg(uiMessageEntity.msg.channelID, uiMessageEntity.msg.channelType, uiMessageEntity.msg.messageID, uiMessageEntity.msg.messageID);
+                                                    HttpUtil.getInstance().revokeMsg(uiMessageEntity.msg.channelID, uiMessageEntity.msg.channelType, uiMessageEntity.msg.messageID, uiMessageEntity.msg.clientMsgNO);
                                                 }
                                             }
                                         })
