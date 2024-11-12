@@ -181,14 +181,14 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
-        WKIM.getInstance().getConnectionManager().disconnect(false);
+     //   WKIM.getInstance().getConnectionManager().disconnect(false);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         // 连接
-        WKIM.getInstance().getConnectionManager().connection();
+      //  WKIM.getInstance().getConnectionManager().connection();
     }
 
     private void getData(long oldOrderSeq, int pullMode, boolean contain, boolean isResetData) {
@@ -243,8 +243,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // 断开连接
-        WKIM.getInstance().getConnectionManager().disconnect(true);
+       // WKIM.getInstance().getConnectionManager().disconnect(true);
         // 取消监听
         WKIM.getInstance().getMsgManager().removeNewMsgListener("new_msg");
         WKIM.getInstance().getMsgManager().removeSendMsgCallBack("insert_msg");

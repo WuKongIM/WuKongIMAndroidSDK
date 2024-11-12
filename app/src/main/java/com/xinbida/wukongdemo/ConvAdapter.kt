@@ -1,7 +1,6 @@
 package com.xinbida.wukongdemo
 
 import android.content.Intent
-import android.util.Log
 import android.view.View
 import com.chad.library.adapter.base.BaseQuickAdapter
 import com.chad.library.adapter.base.viewholder.BaseViewHolder
@@ -17,8 +16,12 @@ class ConvAdapter :
         super.convert(holder, item, payloads)
         val msg = payloads[0] as WKUIConversationMsg
         if (msg.wkChannel != null) {
-            holder.setText(R.id.nameTV,item.wkChannel.channelName)
-            GlideUtil.showAvatarImg(context, msg.wkChannel.avatar, holder.getView(R.id.avatarIV))
+            holder.setText(R.id.nameTV, item.wkChannel.channelName)
+            GlideUtil.showAvatarImg(context,
+                HttpUtil.getInstance()
+                    .getAvatar(item.wkChannel.channelID, item.wkChannel.channelType),
+                holder.getView(R.id.avatarIV)
+            )
         }
         if (msg.wkMsg != null && msg.wkMsg.baseContentMsgModel != null) {
             val content = msg.wkMsg.baseContentMsgModel.displayContent
@@ -39,17 +42,20 @@ class ConvAdapter :
         }
         holder.setText(R.id.timeTV, getShowTime(item.lastMsgTimestamp * 1000L))
         if (item.wkChannel != null) {
-            holder.setText(R.id.nameTV,item.wkChannel.channelName)
-            GlideUtil.showAvatarImg(context, item.wkChannel.avatar, holder.getView(R.id.avatarIV))
+            holder.setText(R.id.nameTV, item.wkChannel.channelName)
+            GlideUtil.showAvatarImg(context,
+                HttpUtil.getInstance()
+                    .getAvatar(item.wkChannel.channelID, item.wkChannel.channelType),
+                holder.getView(R.id.avatarIV))
         } else {
             WKIM.getInstance().channelManager.fetchChannelInfo(item.channelID, item.channelType)
         }
 
         holder.getView<View>(R.id.contentLayout).setOnClickListener {
-            val intent = Intent(context,MainActivity::class.java)
-            intent.putExtra("channel_id",item.channelID)
-            intent.putExtra("channel_type",item.channelType)
-            intent.putExtra("old_order_seq",item.wkMsg.orderSeq)
+            val intent = Intent(context, MainActivity::class.java)
+            intent.putExtra("channel_id", item.channelID)
+            intent.putExtra("channel_type", item.channelType)
+            intent.putExtra("old_order_seq", item.wkMsg.orderSeq)
             context.startActivity(intent)
         }
     }

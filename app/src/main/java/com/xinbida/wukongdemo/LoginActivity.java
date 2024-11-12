@@ -47,7 +47,7 @@ public class LoginActivity extends AppCompatActivity {
                 } catch (JSONException e) {
                     throw new RuntimeException(e);
                 }
-                new Thread(() -> HttpUtil.getInstance().post("/user/token", jsonObject, (code, data) -> {
+                new Thread(() -> HttpUtil.getInstance().post("/user/login", jsonObject, (code, data) -> {
                     if (code == 200) {
                         runOnUiThread(()->{
                             Const.Companion.setToken(token);

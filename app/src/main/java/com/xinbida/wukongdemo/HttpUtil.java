@@ -4,7 +4,11 @@ import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
 
+import com.xinbida.wukongim.WKIM;
+import com.xinbida.wukongim.entity.WKChannel;
+import com.xinbida.wukongim.entity.WKChannelType;
 import com.xinbida.wukongim.entity.WKSyncChannelMsg;
+import com.xinbida.wukongim.entity.WKSyncExtraMsg;
 import com.xinbida.wukongim.entity.WKSyncRecent;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
 
@@ -26,8 +30,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 
 public class HttpUtil {
-    //    public String apiURL = "http://62.234.8.38:7090/v1";
-    public String apiURL = "http://175.27.245.108:15001";
+    public String apiURL = "http://62.234.8.38:7090/v1";
 
     private static class HttpUtilTypeClass {
         private static final HttpUtil instance = new HttpUtil();
@@ -35,6 +38,13 @@ public class HttpUtil {
 
     public static HttpUtil getInstance() {
         return HttpUtilTypeClass.instance;
+    }
+
+    public String getAvatar(String channelId, byte channelType) {
+        if (channelType == WKChannelType.PERSONAL) {
+            return apiURL + "/users/" + channelId + "/avatar";
+        }
+        return apiURL + "/groups/" + channelId + "/avatar";
     }
 
     public void post(String url, JSONObject data, final IResult iResult) {
@@ -118,7 +128,7 @@ public class HttpUtil {
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }
-        post("/channel/messagesync", jsonObject, (code, data) -> {
+        post("/message/channel/sync", jsonObject, (code, data) -> {
             if (code == 200) {
                 try {
                     WKSyncChannelMsg msg = new WKSyncChannelMsg();
@@ -146,9 +156,10 @@ public class HttpUtil {
         String channel_id = msgJson.optString("channel_id");
         byte channel_type = (byte) msgJson.optInt("channel_type");
         long timestamp = msgJson.optLong("timestamp");
-        String payload = msgJson.optString("payload");
-        byte[] b = Base64.decode(payload, Base64.DEFAULT);
-        String content = new String(b);
+
+        String content = msgJson.optString("payload");
+//        byte[] b = Base64.decode(payload, Base64.DEFAULT);
+//        String content = new String(b);
         WKSyncRecent recent = new WKSyncRecent();
         recent.from_uid = from_uid;
         recent.message_id = msgJson.optString("message_id");
@@ -169,6 +180,20 @@ public class HttpUtil {
                 recent.payload = hashMap;
             }
         }
+        if (msgJson.has("message_extra")) {
+            JSONObject extraJson = msgJson.optJSONObject("message_extra");
+            if (extraJson == null) {
+                return recent;
+            }
+            WKSyncExtraMsg extraMsg = new WKSyncExtraMsg();
+            extraMsg.message_id_str = extraJson.optString("message_id_str");
+            extraMsg.revoke = extraJson.optInt("revoke");
+            extraMsg.revoker = extraJson.optString("revoker");
+            extraMsg.readed = extraJson.optInt("readed");
+            extraMsg.readed_count = extraJson.optInt("readed_count");
+            extraMsg.is_mutual_deleted = extraJson.optInt("is_mutual_deleted");
+            recent.message_extra = extraMsg;
+        }
         return recent;
     }
 
@@ -187,4 +212,39 @@ public class HttpUtil {
     public interface IMsgResult {
         void onResult(WKSyncChannelMsg msg);
     }
+
+    public void getUserInfo(String uid) {
+        new Thread(() -> get("/users/" + uid, (code, data) -> {
+            if (code == 200 && !TextUtils.isEmpty(data)) {
+                try {
+                    JSONObject json = new JSONObject(data);
+                    WKChannel channel = new WKChannel(uid, WKChannelType.PERSONAL);
+                    channel.channelName = json.optString("name");
+                    channel.avatar = json.optString("avatar");
+                    WKIM.getInstance().getChannelManager().saveOrUpdateChannel(channel);
+                } catch (JSONException e) {
+                    throw new RuntimeException(e);
+                }
+
+            }
+        })).start();
+    }
+
+    public void getGroupInfo(String groupNO) {
+        new Thread(() -> get("/groups/" + groupNO, (code, data) -> {
+            if (code == 200 && !TextUtils.isEmpty(data)) {
+                try {
+                    JSONObject json = new JSONObject(data);
+                    WKChannel channel = new WKChannel(groupNO, WKChannelType.GROUP);
+                    channel.channelName = json.optString("name");
+                    channel.avatar = json.optString("avatar");
+                    WKIM.getInstance().getChannelManager().saveOrUpdateChannel(channel);
+                } catch (JSONException e) {
+                    throw new RuntimeException(e);
+                }
+
+            }
+        })).start();
+    }
+
 }
