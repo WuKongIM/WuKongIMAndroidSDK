@@ -448,7 +448,7 @@ public class HttpUtil {
             throw new RuntimeException(e);
         }
 
-        new Thread(() -> delete("/message", json, (code, data) -> {
+        new Thread(() -> post("/message/delete", json, (code, data) -> {
             if (code == 200) {
                 Log.e("删除消息成功", "-->");
                 WKIM.getInstance().getMsgManager().deleteWithClientMsgNO(clientMsgNo);
