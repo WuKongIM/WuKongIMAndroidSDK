@@ -52,10 +52,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 5/21/21 10:51 AM
@@ -76,10 +72,6 @@ public class WKConnection {
     }
 
     private final DispatchQueuePool dispatchQueuePool = new DispatchQueuePool(3);
-//    final ExecutorService executors = new ThreadPoolExecutor(1, 4, 1, TimeUnit.SECONDS,
-//            new LinkedBlockingQueue(100),
-//            new ThreadPoolExecutor.DiscardOldestPolicy());
-
     // 正在发送的消息
     private final ConcurrentHashMap<Integer, WKSendingMsg> sendingMsgHashMap = new ConcurrentHashMap<>();
     // 正在重连中
@@ -97,16 +89,18 @@ public class WKConnection {
     private final long connAckTimeoutTime = 2;
     public String socketSingleID;
     private String lastRequestId;
-    private final long reconnectDelay = 1500;
     private int unReceivePongCount = 0;
     public volatile Handler reconnectionHandler = new Handler(Objects.requireNonNull(Looper.myLooper()));
-    private Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
     Runnable reconnectionRunnable = this::reconnection;
+    private int connCount = 0;
 
     public synchronized void forcedReconnection() {
+        connCount++;
         isReConnecting = false;
         requestIPTime = 0;
-        reconnection();
+        long connIntervalMillisecond = 150;
+        reconnectionHandler.postDelayed(reconnectionRunnable, connIntervalMillisecond * connCount);
     }
 
     public synchronized void reconnection() {
@@ -126,17 +120,16 @@ public class WKConnection {
             closeConnect();
             isReConnecting = true;
             requestIPTime = DateUtils.getInstance().getCurrentSeconds();
-            getIPAndPort();
+            getConnAddress();
         } else {
             if (!WKTimers.getInstance().checkNetWorkTimerIsRunning) {
                 WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.noNetwork, WKConnectReason.NoNetwork);
-                isReConnecting = false;
-                reconnectionHandler.postDelayed(reconnectionRunnable, reconnectDelay);
+                forcedReconnection();
             }
         }
     }
 
-    private synchronized void getIPAndPort() {
+    private synchronized void getConnAddress() {
         if (!WKIMApplication.getInstance().isCanConnect) {
             WKLoggerUtils.getInstance().e(TAG, "SDK determines that reconnection is not possible");
             stopAll();
@@ -144,56 +137,63 @@ public class WKConnection {
         }
         WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.connecting, WKConnectReason.Connecting);
         // 计算获取IP时长 todo
-        startRequestIPTimer();
+        startGetConnAddressTimer();
         lastRequestId = UUID.randomUUID().toString().replace("-", "");
         ConnectionManager.getInstance().getIpAndPort(lastRequestId, (requestId, ip, port) -> {
             WKLoggerUtils.getInstance().e(TAG, "connection address " + ip + ":" + port);
             if (TextUtils.isEmpty(ip) || port == 0) {
                 WKLoggerUtils.getInstance().e(TAG, "Return connection IP or port error，" + String.format("ip:%s & port:%s", ip, port));
                 isReConnecting = false;
-                reconnectionHandler.postDelayed(reconnectionRunnable, reconnectDelay);
+                forcedReconnection();
                 return;
             }
             if (lastRequestId.equals(requestId)) {
                 WKConnection.this.ip = ip;
                 WKConnection.this.port = port;
                 if (connectionIsNull()) {
-                    dispatchQueuePool.execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            connSocket();
-                        }
-                    });
-                    //executors.execute(WKConnection.this::connSocket);
+                    connSocket();
                 }
                 return;
             }
             if (connectionIsNull()) {
                 WKLoggerUtils.getInstance().e(TAG, "The IP number requested is inconsistent, reconnecting");
-                reconnectionHandler.postDelayed(reconnectionRunnable, reconnectDelay);
+                forcedReconnection();
             }
         });
     }
 
     private synchronized void connSocket() {
         closeConnect();
-        try {
-            socketSingleID = UUID.randomUUID().toString().replace("-", "");
-            connectionClient = new ConnectionClient();
-//            InetAddress inetAddress = InetAddress.getByName(ip);
-            connection = new NonBlockingConnection(ip, port, connectionClient);
-            connection.setAttachment(socketSingleID);
+        socketSingleID = UUID.randomUUID().toString().replace("-", "");
+        connectionClient = new ConnectionClient(iNonBlockingConnection -> {
+            if (iNonBlockingConnection == null || connection == null || !connection.getId().equals(iNonBlockingConnection.getId())) {
+                forcedReconnection();
+                return;
+            }
+            Object att = iNonBlockingConnection.getAttachment();
+            if (att == null || !att.equals(socketSingleID)) {
+                forcedReconnection();
+                return;
+            }
             connection.setIdleTimeoutMillis(1000 * 3);
             connection.setConnectionTimeoutMillis(1000 * 3);
             connection.setFlushmode(IConnection.FlushMode.ASYNC);
             isReConnecting = false;
             if (connection != null)
                 connection.setAutoflush(true);
-        } catch (Exception e) {
-            isReConnecting = false;
-            WKLoggerUtils.getInstance().e(TAG, "connection exception:" + e.getMessage());
-            reconnection();
-        }
+            WKConnection.getInstance().sendConnectMsg();
+        });
+//            InetAddress inetAddress = InetAddress.getByName(ip);
+        dispatchQueuePool.execute(() -> {
+            try {
+                connection = new NonBlockingConnection(ip, port, connectionClient);
+                connection.setAttachment(socketSingleID);
+            } catch (IOException e) {
+                isReConnecting = false;
+                WKLoggerUtils.getInstance().e(TAG, "connection exception:" + e.getMessage());
+                forcedReconnection();
+            }
+        });
     }
 
     //发送连接消息
@@ -336,7 +336,7 @@ public class WKConnection {
     // 查看心跳是否超时
     void checkHeartIsTimeOut() {
         if (unReceivePongCount >= 5) {
-            reconnectionHandler.postDelayed(reconnectionRunnable, reconnectDelay);
+            forcedReconnection();
             return;
         }
         long nowTime = DateUtils.getInstance().getCurrentSeconds();
@@ -438,10 +438,6 @@ public class WKConnection {
         }
         saveSendMsg(msg);
         WKSendMsg sendMsg = WKProto.getInstance().getSendBaseMsg(msg);
-//        if (base != null && msg.clientSeq == 0) {
-//            msg.clientSeq = base.clientSeq;
-//        }
-
         if (WKMediaMessageContent.class.isAssignableFrom(msg.baseContentMsgModel.getClass())) {
             //如果是多媒体消息类型说明存在附件
             String url = ((WKMediaMessageContent) msg.baseContentMsgModel).url;
@@ -563,7 +559,7 @@ public class WKConnection {
         }, 100, 1000);
     }
 
-    private synchronized void startRequestIPTimer() {
+    private synchronized void startGetConnAddressTimer() {
         if (checkNetWorkTimer != null) {
             checkNetWorkTimer.cancel();
             checkNetWorkTimer = null;
@@ -596,7 +592,7 @@ public class WKConnection {
         }, 500, 1000L);
     }
 
-    private WKMsg saveSendMsg(WKMsg msg) {
+    private void saveSendMsg(WKMsg msg) {
         if (msg.setting == null) msg.setting = new WKMsgSetting();
         JSONObject jsonObject = WKProto.getInstance().getSendPayload(msg);
         msg.content = jsonObject.toString();
@@ -617,6 +613,5 @@ public class WKConnection {
                 }
             }
         }
-        return msg;
     }
 }
