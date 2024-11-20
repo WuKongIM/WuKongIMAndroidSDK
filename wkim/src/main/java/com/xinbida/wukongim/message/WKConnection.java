@@ -91,7 +91,7 @@ public class WKConnection {
     private String lastRequestId;
     private int unReceivePongCount = 0;
     public volatile Handler reconnectionHandler = new Handler(Objects.requireNonNull(Looper.myLooper()));
-    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+//    private final Handler mainHandler = new Handler(Looper.getMainLooper());
     Runnable reconnectionRunnable = this::reconnection;
     private int connCount = 0;
 
@@ -166,6 +166,7 @@ public class WKConnection {
         closeConnect();
         socketSingleID = UUID.randomUUID().toString().replace("-", "");
         connectionClient = new ConnectionClient(iNonBlockingConnection -> {
+            connCount = 0;
             if (iNonBlockingConnection == null || connection == null || !connection.getId().equals(iNonBlockingConnection.getId())) {
                 forcedReconnection();
                 return;
@@ -508,23 +509,18 @@ public class WKConnection {
     }
 
     private synchronized void closeConnect() {
-        mainHandler.post(() -> {
-            if (connection != null && connection.isOpen()) {
-                try {
-                    WKLoggerUtils.getInstance().e("stop connection:" + connection.getId());
+        if (connection != null && connection.isOpen()) {
+            try {
+                WKLoggerUtils.getInstance().e("stop connection:" + connection.getId());
 //                connection.flush();
-                    connection.setAttachment("close" + connection.getId());
-                    connection.close();
-                } catch (IOException e) {
-                    WKLoggerUtils.getInstance().e("stop connection IOException" + e.getMessage());
-                } finally {
-                    connection = null;
-                }
-
+                connection.setAttachment("close" + connection.getId());
+                connection.close();
+            } catch (IOException e) {
+                WKLoggerUtils.getInstance().e("stop connection IOException" + e.getMessage());
+            } finally {
+                connection = null;
             }
-        });
-
-
+        }
     }
 
     private Timer checkNetWorkTimer;
