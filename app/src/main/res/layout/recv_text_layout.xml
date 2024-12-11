@@ -16,7 +16,7 @@
         android:scaleType="centerCrop"
         android:src="@color/purple_200" />
 
-    <com.cxd.chatview.moudle.ChatView xmlns:chat="http://schemas.android.com/apk/res-auto"
+    <com.xinbida.wukongdemo.view.ChatView xmlns:chat="http://schemas.android.com/apk/res-auto"
         android:id="@+id/contentLayout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -50,6 +50,6 @@
             android:text="111"
             android:textColor="@color/white"
             android:textSize="16sp" />
-    </com.cxd.chatview.moudle.ChatView>
+    </com.xinbida.wukongdemo.view.ChatView>
 
 </LinearLayout>

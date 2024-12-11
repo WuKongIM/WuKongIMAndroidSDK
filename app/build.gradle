@@ -40,7 +40,6 @@ dependencies {
     implementation 'org.jetbrains:annotations:23.0.0'
     implementation 'com.github.CymChad:BaseRecyclerViewAdapterHelper:3.0.7'
     implementation 'com.github.li-xiaojun:XPopup:2.9.19'
-    implementation 'com.github.bigdongdong:ChatView:2.0' //添加依赖
     implementation('com.github.bumptech.glide:glide:4.16.0') {
         transitive = true
     }

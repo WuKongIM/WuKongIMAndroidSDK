@@ -10,7 +10,7 @@
     android:paddingTop="5dp"
     android:paddingBottom="5dp">
 
-    <com.cxd.chatview.moudle.ChatView xmlns:chat="http://schemas.android.com/apk/res-auto"
+    <com.xinbida.wukongdemo.view.ChatView xmlns:chat="http://schemas.android.com/apk/res-auto"
         android:id="@+id/contentLayout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -58,7 +58,7 @@
                 android:src="@mipmap/loading" />
         </LinearLayout>
 
-    </com.cxd.chatview.moudle.ChatView>
+    </com.xinbida.wukongdemo.view.ChatView>
 
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/avatarIV"
