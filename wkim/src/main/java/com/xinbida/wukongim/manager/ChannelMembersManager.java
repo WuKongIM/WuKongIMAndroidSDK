@@ -68,6 +68,37 @@ public class ChannelMembersManager extends BaseManager {
         return ChannelMembersDbManager.getInstance().queryWithRole(channelID, channelType, role);
     }
 
+    public synchronized void save(WKChannelMember member) {
+        if (member == null) {
+            return;
+        }
+
+        List<WKChannelMember> list = new ArrayList<>();
+        list.add(member);
+        int handelType = 0; // 修改
+        WKChannelMember tempMember = ChannelMembersDbManager.getInstance().query(member.channelID, member.channelType, member.memberUID);
+        if (tempMember == null) {
+            handelType = 1;// 新增
+        } else {
+            if (member.isDeleted == 1 && tempMember.isDeleted == 0) {
+                handelType = 2;// 删除
+            }
+            if (member.isDeleted == 0 && tempMember.isDeleted == 1) {
+                handelType = 1;// 新增
+            }
+        }
+        ChannelMembersDbManager.getInstance().insert(member);
+        if (handelType == 0) {
+            setRefreshChannelMember(member, true);
+        }
+        if (handelType == 1) {
+            setOnAddChannelMember(list);
+        }
+        if (handelType == 2) {
+            setOnRemoveChannelMember(list);
+        }
+    }
+
     /**
      * 批量保存成员
      *
