@@ -18,7 +18,7 @@ import com.xinbida.wukongim.utils.CryptoUtils;
  * 5/20/21 5:25 PM
  */
 public class WKIM {
-    private final String Version = "V1.2.3";
+    private final String Version = "V1.3.3";
 
     private WKIM() {
 
@@ -34,6 +34,7 @@ public class WKIM {
 
     private boolean isDebug = false;
     private boolean isWriteLog = false;
+    private String deviceId = "";
 
     public boolean isDebug() {
         return isDebug;
@@ -41,6 +42,10 @@ public class WKIM {
 
     public boolean isWriteLog() {
         return isWriteLog;
+    }
+
+    public String getDeviceID(){
+        return deviceId;
     }
 
     public void setWriteLog(boolean isWriteLog) {
@@ -60,7 +65,9 @@ public class WKIM {
     public String getVersion() {
         return Version;
     }
-
+    public void setDeviceId(String deviceID){
+        this.deviceId = deviceID;
+    }
     /**
      * 初始化IM
      *
