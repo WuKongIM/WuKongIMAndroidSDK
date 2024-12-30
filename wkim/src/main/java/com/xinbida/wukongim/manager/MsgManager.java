@@ -180,8 +180,8 @@ public class MsgManager extends BaseManager {
     public WKMessageContent getMsgContentModel(int contentType, JSONObject jsonObject) {
         if (jsonObject == null) jsonObject = new JSONObject();
         WKMessageContent baseContentMsgModel = getContentMsgModel(contentType, jsonObject);
-        if (baseContentMsgModel == null){
-            baseContentMsgModel  = new WKMessageContent();
+        if (baseContentMsgModel == null) {
+            baseContentMsgModel = new WKMessageContent();
         }
         //解析@成员列表
         if (jsonObject.has("mention")) {
@@ -278,7 +278,7 @@ public class MsgManager extends BaseManager {
             }
         } catch (IllegalAccessException | InstantiationException e) {
             WKLoggerUtils.getInstance().e(TAG, "getContentMsgModel decodeMsg error");
-            return  null;
+            return null;
         }
         return null;
     }
@@ -953,7 +953,7 @@ public class MsgManager extends BaseManager {
         List<String> msgIds = new ArrayList<>();
         for (int j = 0, len = list.size(); j < len; j++) {
             WKMsg wkMsg = WKSyncRecent2WKMsg(list.get(j));
-            if (wkMsg.type == WKMsgContentType.WK_INSIDE_MSG){
+            if (wkMsg.type == WKMsgContentType.WK_INSIDE_MSG) {
                 continue;
             }
             msgList.add(wkMsg);
@@ -1330,6 +1330,11 @@ public class MsgManager extends BaseManager {
     }
 
     public String createClientMsgNO() {
-        return UUID.randomUUID().toString().replaceAll("-", "") + "1";
+        String deviceId = WKIM.getInstance().getDeviceID();
+        if (TextUtils.isEmpty(deviceId)) {
+            deviceId = "unknown";
+        }
+        String uuid = UUID.randomUUID().toString().replaceAll("-", "");
+        return uuid + "_" + deviceId + "_1";
     }
 }
