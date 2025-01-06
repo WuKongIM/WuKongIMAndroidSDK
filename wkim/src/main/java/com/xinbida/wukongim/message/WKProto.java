@@ -220,6 +220,7 @@ class WKProto {
                 receivedMsg.topicID = wkRead.readString();
             }
             String content = wkRead.readPayload();
+            WKLoggerUtils.getInstance().e(TAG, "消息payload:" + content);
             receivedMsg.payload = CryptoUtils.getInstance().aesDecrypt(CryptoUtils.getInstance().base64Decode(content));
             String msgKey = receivedMsg.messageID
                     + receivedMsg.messageSeq
