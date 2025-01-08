@@ -91,7 +91,7 @@ public class WKConnection {
     private String lastRequestId;
     private int unReceivePongCount = 0;
     public volatile Handler reconnectionHandler = new Handler(Objects.requireNonNull(Looper.myLooper()));
-//    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    //    private final Handler mainHandler = new Handler(Looper.getMainLooper());
     Runnable reconnectionRunnable = this::reconnection;
     private int connCount = 0;
 
@@ -184,7 +184,6 @@ public class WKConnection {
                 connection.setAutoflush(true);
             WKConnection.getInstance().sendConnectMsg();
         });
-//            InetAddress inetAddress = InetAddress.getByName(ip);
         dispatchQueuePool.execute(() -> {
             try {
                 connection = new NonBlockingConnection(ip, port, connectionClient);
@@ -515,10 +514,12 @@ public class WKConnection {
 //                connection.flush();
                 connection.setAttachment("close" + connection.getId());
                 connection.close();
+
             } catch (IOException e) {
                 WKLoggerUtils.getInstance().e("stop connection IOException" + e.getMessage());
             } finally {
                 connection = null;
+                connectionClient = null;
             }
         }
     }

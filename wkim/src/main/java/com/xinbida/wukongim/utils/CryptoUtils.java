@@ -89,7 +89,7 @@ public class CryptoUtils {
 
     public byte[] aesEncrypt(String sSrc) {
 
-        Cipher cipher = null;
+        Cipher cipher;
         byte[] encrypted = null;
         try {
             cipher = Cipher.getInstance(CIPHER_ALGORITHM);
@@ -103,6 +103,7 @@ public class CryptoUtils {
                  InvalidAlgorithmParameterException | IllegalBlockSizeException |
                  BadPaddingException e) {
            WKLoggerUtils.getInstance().e(TAG,"aesEncrypt encrypt error");
+           return null;
         }
         if (encrypted == null) {
             WKLoggerUtils.getInstance().e(TAG,"aesEncrypt The encrypted data is empty");

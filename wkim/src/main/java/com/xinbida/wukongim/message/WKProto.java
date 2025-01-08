@@ -220,7 +220,6 @@ class WKProto {
                 receivedMsg.topicID = wkRead.readString();
             }
             String content = wkRead.readPayload();
-            receivedMsg.payload = CryptoUtils.getInstance().aesDecrypt(CryptoUtils.getInstance().base64Decode(content));
             String msgKey = receivedMsg.messageID
                     + receivedMsg.messageSeq
                     + receivedMsg.clientMsgNo
@@ -230,6 +229,9 @@ class WKProto {
                     + receivedMsg.channelType
                     + content;
             byte[] result = CryptoUtils.getInstance().aesEncrypt(msgKey);
+            if (result == null) {
+                return null;
+            }
             String base64Result = CryptoUtils.getInstance().base64Encode(result);
             String localMsgKey = CryptoUtils.getInstance().digestMD5(base64Result);
             WKLoggerUtils.getInstance().e("Receive message:");
@@ -238,6 +240,7 @@ class WKProto {
                 WKLoggerUtils.getInstance().e("Illegal messages,localMsgKey:" + localMsgKey + ",msgKey:" + msgKey);
                 return null;
             }
+            receivedMsg.payload = CryptoUtils.getInstance().aesDecrypt(CryptoUtils.getInstance().base64Decode(content));
         } catch (IOException e) {
             WKLoggerUtils.getInstance().e(TAG, "deReceivedMsg Decoding received message error");
         }
