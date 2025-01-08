@@ -102,11 +102,15 @@ public class CryptoUtils {
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
                  InvalidAlgorithmParameterException | IllegalBlockSizeException |
                  BadPaddingException e) {
+<<<<<<< HEAD
            WKLoggerUtils.getInstance().e(TAG,"aesEncrypt encrypt error");
            return null;
+=======
+            WKLoggerUtils.getInstance().e(TAG, "aesEncrypt encrypt error");
+>>>>>>> 9978523a9a818731b66c2409ff4c0cba70fab46f
         }
         if (encrypted == null) {
-            WKLoggerUtils.getInstance().e(TAG,"aesEncrypt The encrypted data is empty");
+            WKLoggerUtils.getInstance().e(TAG, "aesEncrypt The encrypted data is empty");
             encrypted = sSrc.getBytes();
         }
         return encrypted;
@@ -137,8 +141,9 @@ public class CryptoUtils {
         return content;
     }
 
+
     public byte[] base64Decode(String data) {
-        return Base64.decode(data, Base64.NO_WRAP);
+         return Base64.decode(data, Base64.NO_WRAP);
     }
 
     /**

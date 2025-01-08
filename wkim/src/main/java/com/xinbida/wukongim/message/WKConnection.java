@@ -168,11 +168,13 @@ public class WKConnection {
         connectionClient = new ConnectionClient(iNonBlockingConnection -> {
             connCount = 0;
             if (iNonBlockingConnection == null || connection == null || !connection.getId().equals(iNonBlockingConnection.getId())) {
+                WKLoggerUtils.getInstance().e(TAG,"重复连接");
                 forcedReconnection();
                 return;
             }
             Object att = iNonBlockingConnection.getAttachment();
             if (att == null || !att.equals(socketSingleID)) {
+                WKLoggerUtils.getInstance().e(TAG,"不属于当前连接");
                 forcedReconnection();
                 return;
             }
