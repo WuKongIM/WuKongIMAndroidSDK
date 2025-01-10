@@ -220,11 +220,6 @@ class WKProto {
                 receivedMsg.topicID = wkRead.readString();
             }
             String content = wkRead.readPayload();
-<<<<<<< HEAD
-=======
-            WKLoggerUtils.getInstance().e(TAG, "消息payload:" + content);
-            receivedMsg.payload = CryptoUtils.getInstance().aesDecrypt(CryptoUtils.getInstance().base64Decode(content));
->>>>>>> 9978523a9a818731b66c2409ff4c0cba70fab46f
             String msgKey = receivedMsg.messageID
                     + receivedMsg.messageSeq
                     + receivedMsg.clientMsgNo
@@ -239,13 +234,13 @@ class WKProto {
             }
             String base64Result = CryptoUtils.getInstance().base64Encode(result);
             String localMsgKey = CryptoUtils.getInstance().digestMD5(base64Result);
-            WKLoggerUtils.getInstance().e("Receive message:");
-            WKLoggerUtils.getInstance().e(receivedMsg.toString());
             if (!localMsgKey.equals(receivedMsg.msgKey)) {
                 WKLoggerUtils.getInstance().e("Illegal messages,localMsgKey:" + localMsgKey + ",msgKey:" + msgKey);
                 return null;
             }
             receivedMsg.payload = CryptoUtils.getInstance().aesDecrypt(CryptoUtils.getInstance().base64Decode(content));
+            WKLoggerUtils.getInstance().e("Receive message:");
+            WKLoggerUtils.getInstance().e(receivedMsg.toString());
         } catch (IOException e) {
             WKLoggerUtils.getInstance().e(TAG, "deReceivedMsg Decoding received message error");
         }

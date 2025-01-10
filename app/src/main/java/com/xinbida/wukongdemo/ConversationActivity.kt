@@ -3,6 +3,7 @@ package com.xinbida.wukongdemo
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatImageView
@@ -41,6 +42,12 @@ class ConversationActivity : AppCompatActivity() {
     }
 
     private fun initListener() {
+        findViewById<Button>(R.id.disConn).setOnClickListener{
+            WKIM.getInstance().connectionManager.disconnect(false)
+        }
+        findViewById<Button>(R.id.conn).setOnClickListener{
+            WKIM.getInstance().connectionManager.connection()
+        }
         // 监听连接状态
         WKIM.getInstance().connectionManager.addOnConnectionStatusListener(
             "conv"
