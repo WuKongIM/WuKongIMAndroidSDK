@@ -24,6 +24,7 @@ import com.xinbida.wukongim.interfaces.ISyncConversationChat;
 import com.xinbida.wukongim.interfaces.ISyncConversationChatBack;
 import com.xinbida.wukongim.message.type.WKConnectStatus;
 import com.xinbida.wukongim.message.type.WKMsgContentType;
+import com.xinbida.wukongim.utils.DispatchQueuePool;
 import com.xinbida.wukongim.utils.WKCommonUtils;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
 
@@ -41,6 +42,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * 最近会话管理
  */
 public class ConversationManager extends BaseManager {
+    private final DispatchQueuePool dispatchQueuePool = new DispatchQueuePool(3);
+
     private final String TAG = "ConversationManager";
 
     private ConversationManager() {
@@ -238,7 +241,7 @@ public class ConversationManager extends BaseManager {
             long version = ConversationDbManager.getInstance().queryMaxVersion();
             String lastMsgSeqStr = ConversationDbManager.getInstance().queryLastMsgSeqs();
             runOnMainThread(() -> iSyncConversationChat.syncConversationChat(lastMsgSeqStr, 20, version, syncChat -> {
-                new Thread(() -> saveSyncChat(syncChat, () -> iSyncConversationChatBack.onBack(syncChat))).start();
+                dispatchQueuePool.execute(() -> saveSyncChat(syncChat, () -> iSyncConversationChatBack.onBack(syncChat)));
             }));
         }
     }

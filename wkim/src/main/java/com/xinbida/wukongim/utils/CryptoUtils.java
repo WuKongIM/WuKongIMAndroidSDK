@@ -139,7 +139,7 @@ public class CryptoUtils {
 
 
     public byte[] base64Decode(String data) {
-         return Base64.decode(data, Base64.NO_WRAP);
+        return Base64.decode(data, Base64.NO_WRAP);
     }
 
     /**
