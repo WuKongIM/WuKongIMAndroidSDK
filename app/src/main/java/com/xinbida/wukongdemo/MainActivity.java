@@ -20,13 +20,14 @@ import com.xinbida.wukongim.entity.WKChannel;
 import com.xinbida.wukongim.entity.WKChannelType;
 import com.xinbida.wukongim.entity.WKMsg;
 import com.xinbida.wukongim.interfaces.IClearMsgListener;
-import com.xinbida.wukongim.interfaces.IDeleteMsgListener;
 import com.xinbida.wukongim.interfaces.IGetOrSyncHistoryMsgBack;
 import com.xinbida.wukongim.interfaces.IRefreshMsg;
 import com.xinbida.wukongim.msgmodel.WKTextContent;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -146,7 +147,14 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, getString(R.string.input_content), Toast.LENGTH_SHORT).show();
                 return;
             }
-            WKIM.getInstance().getMsgManager().send(new WKTextContent(content), new WKChannel(channelID, channelType));
+            Timer timer = new Timer();
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    long time = System.currentTimeMillis();
+                    WKIM.getInstance().getMsgManager().send(new WKTextContent(content + time), new WKChannel(channelID, channelType));
+                }
+            }, 100, 100);
             contentEt.setText("");
         });
 

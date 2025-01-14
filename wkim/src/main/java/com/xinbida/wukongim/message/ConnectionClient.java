@@ -146,12 +146,15 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
                 if (attachmentObject instanceof String) {
                     String att = (String) attachmentObject;
                     String attStr = "close" + id;
+                    WKLoggerUtils.getInstance().e("手动关闭");
                     if (att.equals(attStr)) {
+                        WKLoggerUtils.getInstance().e("手动关闭直接返回");
                         return true;
                     }
                 }
             }
             if (WKIMApplication.getInstance().isCanConnect) {
+                WKLoggerUtils.getInstance().e("手动关闭需要重连");
                 WKConnection.getInstance().forcedReconnection();
             } else {
                 WKLoggerUtils.getInstance().e(TAG, "No reconnection allowed");
