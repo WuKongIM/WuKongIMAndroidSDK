@@ -102,8 +102,8 @@ public class CryptoUtils {
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
                  InvalidAlgorithmParameterException | IllegalBlockSizeException |
                  BadPaddingException e) {
-            WKLoggerUtils.getInstance().e(TAG,"aesEncrypt encrypt error");
-            return null;
+           WKLoggerUtils.getInstance().e(TAG,"aesEncrypt encrypt error");
+           return null;
         }
         if (encrypted == null) {
             WKLoggerUtils.getInstance().e(TAG, "aesEncrypt The encrypted data is empty");
