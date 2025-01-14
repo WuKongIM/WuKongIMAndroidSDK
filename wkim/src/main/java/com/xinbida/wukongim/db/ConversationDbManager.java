@@ -522,9 +522,10 @@ public class ConversationDbManager {
             WKIMApplication.getInstance().getDbHelper().getDb().endTransaction();
         }
         List<WKUIConversationMsg> uiMsgList = ConversationDbManager.getInstance().queryWithChannelIds(channelIds);
-        for (int i = 0, size = uiMsgList.size(); i < size; i++) {
-            WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsgList.get(i), i == uiMsgList.size() - 1, "saveMsgExtras");
-        }
+//        for (int i = 0, size = uiMsgList.size(); i < size; i++) {
+//            WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsgList.get(i), i == uiMsgList.size() - 1, "saveMsgExtras");
+//        }
+        WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsgList,"saveMsgExtras");
     }
 
     public long queryMsgExtraMaxVersion() {

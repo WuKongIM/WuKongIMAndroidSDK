@@ -398,16 +398,19 @@ public class MsgManager extends BaseManager {
             }
             if (isAdd) deleteMsgList.add(list.get(i));
         }
+        List<WKUIConversationMsg> uiMsgList = new ArrayList<>();
         for (int i = 0, size = deleteMsgList.size(); i < size; i++) {
             WKMsg msg = MsgDbManager.getInstance().queryMaxOrderSeqMsgWithChannel(deleteMsgList.get(i).channelID, deleteMsgList.get(i).channelType);
             if (msg != null) {
                 WKUIConversationMsg uiMsg = WKIM.getInstance().getConversationManager().updateWithWKMsg(msg);
                 if (uiMsg != null) {
-                    WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsg, i == deleteMsgList.size()
-                            - 1, "deleteWithClientMsgNOList");
+                    uiMsgList.add(uiMsg);
+//                    WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsg, i == deleteMsgList.size()
+//                            - 1, "deleteWithClientMsgNOList");
                 }
             }
         }
+        WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsgList,"deleteWithClientMsgNOList");
     }
 
     public List<WKMsg> getExpireMessages(int limit) {
@@ -451,7 +454,7 @@ public class MsgManager extends BaseManager {
                 WKMsg tempMsg = MsgDbManager.getInstance().queryMaxOrderSeqMsgWithChannel(msg.channelID, msg.channelType);
                 if (tempMsg != null) {
                     WKUIConversationMsg uiMsg = ConversationDbManager.getInstance().insertOrUpdateWithMsg(tempMsg, 0);
-                    WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsg, true, "deleteWithClientMsgNO");
+                    WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsg, "deleteWithClientMsgNO");
                 }
             }
         }
@@ -672,7 +675,7 @@ public class MsgManager extends BaseManager {
             pushNewMsg(wkMsg);
         else setRefreshMsg(wkMsg, true);
         WKUIConversationMsg msg = ConversationDbManager.getInstance().insertOrUpdateWithMsg(wkMsg, addRedDots ? 1 : 0);
-        WKIM.getInstance().getConversationManager().setOnRefreshMsg(msg, true, "insertAndUpdateConversationMsg");
+        WKIM.getInstance().getConversationManager().setOnRefreshMsg(msg, "insertAndUpdateConversationMsg");
     }
 
     /**
@@ -843,7 +846,7 @@ public class MsgManager extends BaseManager {
                 }
                 WKIM.getInstance().getConversationManager().updateWithMsg(conversationMsg);
                 WKUIConversationMsg wkuiConversationMsg = WKIM.getInstance().getConversationManager().getUIConversationMsg(channel.channelID, channel.channelType);
-                WKIM.getInstance().getConversationManager().setOnRefreshMsg(wkuiConversationMsg, true, TAG + " saveRemoteExtraMsg");
+                WKIM.getInstance().getConversationManager().setOnRefreshMsg(wkuiConversationMsg, TAG + " saveRemoteExtraMsg");
             }
         }
         getMsgReactionsAndRefreshMsg(messageIds, updatedMsgList);

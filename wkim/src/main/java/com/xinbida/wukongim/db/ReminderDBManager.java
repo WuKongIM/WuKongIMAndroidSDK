@@ -199,8 +199,9 @@ public class ReminderDBManager {
             if (maps.containsKey(key)) {
                 uiMsgList.get(i).setReminderList(maps.get(key));
             }
-            WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsgList.get(i), i == list.size() - 1, "saveReminders");
+           // WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsgList.get(i), i == list.size() - 1, "saveReminders");
         }
+        WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsgList,"saveReminders");
         return reminderList;
     }
 

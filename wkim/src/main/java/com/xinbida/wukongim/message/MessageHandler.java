@@ -351,7 +351,7 @@ public class MessageHandler {
             if (isSave) {
                 //如果存在艾特情况直接将消息存储
                 WKUIConversationMsg conversationMsg = ConversationDbManager.getInstance().insertOrUpdateWithMsg(lastMsg, 1);
-                WKIM.getInstance().getConversationManager().setOnRefreshMsg(conversationMsg, true, "cutData");
+                WKIM.getInstance().getConversationManager().setOnRefreshMsg(conversationMsg, "cutData");
                 continue;
             }
 
@@ -376,9 +376,10 @@ public class MessageHandler {
                 refreshList.add(conversationMsg);
             }
         }
-        for (int i = 0, size = refreshList.size(); i < size; i++) {
-            ConversationManager.getInstance().setOnRefreshMsg(refreshList.get(i), i == refreshList.size() - 1, "groupMsg");
-        }
+//        for (int i = 0, size = refreshList.size(); i < size; i++) {
+//            ConversationManager.getInstance().setOnRefreshMsg(refreshList.get(i), i == refreshList.size() - 1, "groupMsg");
+//        }
+        WKIM.getInstance().getConversationManager().setOnRefreshMsg(refreshList,"groupMsg");
     }
 
     public WKMsg parsingMsg(WKMsg message) {

@@ -607,7 +607,7 @@ public class WKConnection {
                         uiMsg.setRemoteMsgExtra(new WKConversationMsgExtra());
                     }
                     uiMsg.getRemoteMsgExtra().browseTo = browseTo;
-                    WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsg, true, "getSendBaseMsg");
+                    WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsg, "getSendBaseMsg");
                 }
             }
         }

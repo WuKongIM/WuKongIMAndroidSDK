@@ -18,8 +18,10 @@ import com.xinbida.wukongim.entity.WKSyncChat;
 import com.xinbida.wukongim.entity.WKSyncConvMsgExtra;
 import com.xinbida.wukongim.entity.WKSyncRecent;
 import com.xinbida.wukongim.entity.WKUIConversationMsg;
+import com.xinbida.wukongim.interfaces.IAllConversations;
 import com.xinbida.wukongim.interfaces.IDeleteConversationMsg;
 import com.xinbida.wukongim.interfaces.IRefreshConversationMsg;
+import com.xinbida.wukongim.interfaces.IRefreshConversationMsgList;
 import com.xinbida.wukongim.interfaces.ISyncConversationChat;
 import com.xinbida.wukongim.interfaces.ISyncConversationChatBack;
 import com.xinbida.wukongim.message.type.WKConnectStatus;
@@ -58,7 +60,8 @@ public class ConversationManager extends BaseManager {
     }
 
     //监听刷新最近会话
-    private ConcurrentHashMap<String, IRefreshConversationMsg> refreshMsgList;
+    private ConcurrentHashMap<String, IRefreshConversationMsg> refreshMsgMap;
+    private ConcurrentHashMap<String, IRefreshConversationMsgList> refreshMsgListMap;
 
     //移除某个会话
     private ConcurrentHashMap<String, IDeleteConversationMsg> iDeleteMsgList;
@@ -72,6 +75,16 @@ public class ConversationManager extends BaseManager {
      */
     public List<WKUIConversationMsg> getAll() {
         return ConversationDbManager.getInstance().queryAll();
+    }
+
+    public void getAll(IAllConversations iAllConversations) {
+        if (iAllConversations == null) {
+            return;
+        }
+        dispatchQueuePool.execute(() -> {
+            List<WKUIConversationMsg> list = ConversationDbManager.getInstance().queryAll();
+            iAllConversations.onResult(list);
+        });
     }
 
     public List<WKConversationMsg> getWithChannelType(byte channelType) {
@@ -119,6 +132,18 @@ public class ConversationManager extends BaseManager {
         return ConversationDbManager.getInstance().clearEmpty();
     }
 
+    public void addOnRefreshMsgListListener(String key, IRefreshConversationMsgList listener) {
+        if (TextUtils.isEmpty(key) || listener == null) return;
+        if (refreshMsgListMap == null) {
+            refreshMsgListMap = new ConcurrentHashMap<>();
+        }
+        refreshMsgListMap.put(key, listener);
+    }
+
+    public void removeOnRefreshMsgListListener(String key) {
+        if (TextUtils.isEmpty(key) || refreshMsgListMap == null) return;
+        refreshMsgListMap.remove(key);
+    }
 
     /**
      * 监听刷新最近会话
@@ -127,24 +152,49 @@ public class ConversationManager extends BaseManager {
      */
     public void addOnRefreshMsgListener(String key, IRefreshConversationMsg listener) {
         if (TextUtils.isEmpty(key) || listener == null) return;
-        if (refreshMsgList == null)
-            refreshMsgList = new ConcurrentHashMap<>();
-        refreshMsgList.put(key, listener);
+        if (refreshMsgMap == null)
+            refreshMsgMap = new ConcurrentHashMap<>();
+        refreshMsgMap.put(key, listener);
     }
 
     public void removeOnRefreshMsgListener(String key) {
-        if (TextUtils.isEmpty(key) || refreshMsgList == null) return;
-        refreshMsgList.remove(key);
+        if (TextUtils.isEmpty(key) || refreshMsgMap == null) return;
+        refreshMsgMap.remove(key);
     }
 
     /**
      * 设置刷新最近会话
      */
-    public void setOnRefreshMsg(WKUIConversationMsg conversationMsg, boolean isEnd, String from) {
-        if (refreshMsgList != null && !refreshMsgList.isEmpty() && conversationMsg != null) {
+//    public void setOnRefreshMsg(WKUIConversationMsg conversationMsg, boolean isEnd, String from) {
+//        if (refreshMsgMap != null && !refreshMsgMap.isEmpty() && conversationMsg != null) {
+//            runOnMainThread(() -> {
+//                for (Map.Entry<String, IRefreshConversationMsg> entry : refreshMsgMap.entrySet()) {
+//                    entry.getValue().onRefreshConversationMsg(conversationMsg, isEnd);
+//                }
+//            });
+//        }
+//    }
+    public void setOnRefreshMsg(WKUIConversationMsg msg, String from) {
+        List<WKUIConversationMsg> list = new ArrayList<>();
+        list.add(msg);
+        this.setOnRefreshMsg(list, from);
+    }
+
+    public void setOnRefreshMsg(List<WKUIConversationMsg> list, String from) {
+        if (WKCommonUtils.isEmpty(list)) return;
+        if (refreshMsgMap != null && !refreshMsgMap.isEmpty()) {
             runOnMainThread(() -> {
-                for (Map.Entry<String, IRefreshConversationMsg> entry : refreshMsgList.entrySet()) {
-                    entry.getValue().onRefreshConversationMsg(conversationMsg, isEnd);
+                for (int i = 0, size = list.size(); i < size; i++) {
+                    for (Map.Entry<String, IRefreshConversationMsg> entry : refreshMsgMap.entrySet()) {
+                        entry.getValue().onRefreshConversationMsg(list.get(i), i == list.size() - 1);
+                    }
+                }
+            });
+        }
+        if (refreshMsgListMap != null && !refreshMsgListMap.isEmpty()) {
+            runOnMainThread(() -> {
+                for (Map.Entry<String, IRefreshConversationMsgList> entry : refreshMsgListMap.entrySet()) {
+                    entry.getValue().onRefresh(list);
                 }
             });
         }
@@ -177,7 +227,7 @@ public class ConversationManager extends BaseManager {
         boolean result = ConversationDbManager.getInstance().updateRedDot(channelID, channelType, redDot);
         if (result) {
             WKUIConversationMsg msg = getUIConversationMsg(channelID, channelType);
-            setOnRefreshMsg(msg, true, "updateRedDot");
+            setOnRefreshMsg(msg, "updateRedDot");
         }
     }
 
@@ -189,7 +239,9 @@ public class ConversationManager extends BaseManager {
         boolean result = ConversationDbManager.getInstance().insertOrUpdateMsgExtra(extra);
         if (result) {
             WKUIConversationMsg msg = getUIConversationMsg(extra.channelID, extra.channelType);
-            setOnRefreshMsg(msg, true, "updateMsgExtra");
+            List<WKUIConversationMsg> list = new ArrayList<>();
+            list.add(msg);
+            setOnRefreshMsg(list, "updateMsgExtra");
         }
     }
 
@@ -240,9 +292,11 @@ public class ConversationManager extends BaseManager {
         if (iSyncConversationChat != null) {
             long version = ConversationDbManager.getInstance().queryMaxVersion();
             String lastMsgSeqStr = ConversationDbManager.getInstance().queryLastMsgSeqs();
-            runOnMainThread(() -> iSyncConversationChat.syncConversationChat(lastMsgSeqStr, 20, version, syncChat -> {
+            runOnMainThread(() -> iSyncConversationChat.syncConversationChat(lastMsgSeqStr, 10, version, syncChat -> {
                 dispatchQueuePool.execute(() -> saveSyncChat(syncChat, () -> iSyncConversationChatBack.onBack(syncChat)));
             }));
+        } else {
+            WKLoggerUtils.getInstance().e("未设置同步最近会话事件");
         }
     }
 
@@ -376,9 +430,10 @@ public class ConversationManager extends BaseManager {
 
             }
             if (WKCommonUtils.isNotEmpty(uiMsgList)) {
-                for (int i = 0, size = uiMsgList.size(); i < size; i++) {
-                    WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsgList.get(i), i == uiMsgList.size() - 1, "saveSyncChat");
-                }
+                setOnRefreshMsg(uiMsgList, "saveSyncChat");
+//                for (int i = 0, size = uiMsgList.size(); i < size; i++) {
+//                    WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsgList.get(i), i == uiMsgList.size() - 1, "saveSyncChat");
+//                }
             }
         }
 
