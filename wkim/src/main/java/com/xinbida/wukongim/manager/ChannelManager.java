@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * 5/20/21 5:49 PM
@@ -43,7 +44,7 @@ public class ChannelManager extends BaseManager {
 
     private IRefreshChannelAvatar iRefreshChannelAvatar;
     private IGetChannelInfo iGetChannelInfo;
-    private final List<WKChannel> wkChannelList = Collections.synchronizedList(new ArrayList<>());
+    private final CopyOnWriteArrayList<WKChannel> wkChannelList = new CopyOnWriteArrayList<>();
     //监听刷新频道
     private ConcurrentHashMap<String, IRefreshChannel> refreshChannelMap;
 
