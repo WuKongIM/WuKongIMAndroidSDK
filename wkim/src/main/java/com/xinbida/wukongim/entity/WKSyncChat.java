@@ -11,4 +11,5 @@ public class WKSyncChat {
     public List<WKSyncCmd> cmds;
     public String uid;
     public List<WKSyncConvMsg> conversations;
+    public List<WKChannelState> channel_status;
 }
