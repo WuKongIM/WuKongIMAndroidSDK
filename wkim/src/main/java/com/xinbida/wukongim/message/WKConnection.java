@@ -168,13 +168,13 @@ public class WKConnection {
         connectionClient = new ConnectionClient(iNonBlockingConnection -> {
             connCount = 0;
             if (iNonBlockingConnection == null || connection == null || !connection.getId().equals(iNonBlockingConnection.getId())) {
-                WKLoggerUtils.getInstance().e(TAG,"重复连接");
+                WKLoggerUtils.getInstance().e(TAG, "重复连接");
                 forcedReconnection();
                 return;
             }
             Object att = iNonBlockingConnection.getAttachment();
             if (att == null || !att.equals(socketSingleID)) {
-                WKLoggerUtils.getInstance().e(TAG,"不属于当前连接");
+                WKLoggerUtils.getInstance().e(TAG, "不属于当前连接");
                 forcedReconnection();
                 return;
             }
@@ -458,8 +458,13 @@ public class WKConnection {
                 }
             }
             if (hasAttached) {
-                msg.content = msg.baseContentMsgModel.encodeMsg().toString();
-                WKIM.getInstance().getMsgManager().updateContentAndRefresh(msg.clientMsgNO, msg.baseContentMsgModel, false);
+                JSONObject jsonObject = WKProto.getInstance().getSendPayload(msg);
+                if (jsonObject != null) {
+                    msg.content = jsonObject.toString();
+                } else {
+                    msg.content = msg.baseContentMsgModel.encodeMsg().toString();
+                }
+                WKIM.getInstance().getMsgManager().updateContentAndRefresh(msg.clientMsgNO, msg.content, false);
             }
         }
         //获取发送者信息
@@ -476,7 +481,13 @@ public class WKConnection {
             WKIM.getInstance().getMsgManager().setUploadAttachment(msg, (isSuccess, messageContent) -> {
                 if (isSuccess) {
                     msg.baseContentMsgModel = messageContent;
-                    WKIM.getInstance().getMsgManager().updateContentAndRefresh(msg.clientMsgNO, msg.baseContentMsgModel, false);
+                    JSONObject jsonObject = WKProto.getInstance().getSendPayload(msg);
+                    if (jsonObject != null) {
+                        msg.content = jsonObject.toString();
+                    } else {
+                        msg.content = msg.baseContentMsgModel.encodeMsg().toString();
+                    }
+                    WKIM.getInstance().getMsgManager().updateContentAndRefresh(msg.clientMsgNO, msg.content, false);
                     if (!sendingMsgHashMap.containsKey((int) msg.clientSeq)) {
                         WKSendMsg base1 = WKProto.getInstance().getSendBaseMsg(msg);
                         addSendingMsg(base1);

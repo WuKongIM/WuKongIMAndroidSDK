@@ -202,6 +202,7 @@ public class CMDManager extends BaseManager {
                 }
             }
             WKCMD wkcmd = new WKCMD(cmd, jsonObject);
+            WKLoggerUtils.getInstance().e("处理cmd："+cmd);
             pushCMDs(wkcmd);
         }
 

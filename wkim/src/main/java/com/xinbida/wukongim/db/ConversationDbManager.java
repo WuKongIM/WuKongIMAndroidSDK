@@ -343,7 +343,7 @@ public class ConversationDbManager {
         }
         wkConversationMsg.channelID = msg.channelID;
         wkConversationMsg.channelType = msg.channelType;
-        wkConversationMsg.localExtraMap = msg.localExtraMap;
+//        wkConversationMsg.localExtraMap = msg.localExtraMap;
         wkConversationMsg.lastMsgTimestamp = msg.timestamp;
         wkConversationMsg.lastClientMsgNO = msg.clientMsgNO;
         wkConversationMsg.lastMsgSeq = msg.messageSeq;

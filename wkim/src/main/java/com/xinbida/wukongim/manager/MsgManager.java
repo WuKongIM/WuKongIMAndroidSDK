@@ -410,7 +410,7 @@ public class MsgManager extends BaseManager {
                 }
             }
         }
-        WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsgList,"deleteWithClientMsgNOList");
+        WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsgList, "deleteWithClientMsgNOList");
     }
 
     public List<WKMsg> getExpireMessages(int limit) {
@@ -755,9 +755,24 @@ public class MsgManager extends BaseManager {
     }
 
 
-    public boolean updateContentAndRefresh(String clientMsgNo, WKMessageContent messageContent, boolean isRefreshUI) {
-        return MsgDbManager.getInstance().updateFieldWithClientMsgNo(clientMsgNo, WKDBColumns.WKMessageColumns.content, messageContent.encodeMsg().toString(), isRefreshUI);
+    public boolean updateContentAndRefresh(String clientMsgNo, String content, boolean isRefreshUI) {
+        return MsgDbManager.getInstance().updateFieldWithClientMsgNo(clientMsgNo, WKDBColumns.WKMessageColumns.content, content, isRefreshUI);
     }
+
+
+    public boolean updateContentAndRefresh(String clientMsgNo, WKMessageContent model, boolean isRefreshUI) {
+        JSONObject jsonObject = model.encodeMsg();
+        try {
+            if (jsonObject == null) {
+                jsonObject = new JSONObject();
+            }
+            jsonObject.put("type", model.type);
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+        return updateContentAndRefresh(clientMsgNo, jsonObject.toString(), isRefreshUI);
+    }
+
 
     public void updateViewedAt(int viewed, long viewedAt, String clientMsgNo) {
         MsgDbManager.getInstance().updateViewedAt(viewed, viewedAt, clientMsgNo);
