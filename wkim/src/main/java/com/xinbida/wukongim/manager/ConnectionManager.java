@@ -43,14 +43,13 @@ public class ConnectionManager extends BaseManager {
         }
         WKIMApplication.getInstance().isCanConnect = true;
         if (WKConnection.getInstance().connectionIsNull()) {
-            WKConnection.getInstance().reconnection();
+            WKConnection.getInstance().reconnection("手动");
         }
     }
 
 
     public void disconnect(boolean isLogout) {
         if (TextUtils.isEmpty(WKIMApplication.getInstance().getToken())) return;
-        WKLoggerUtils.getInstance().e(TAG,"disconnect Disconnect is exit :" + isLogout);
         if (isLogout) {
             logoutChat();
         } else {

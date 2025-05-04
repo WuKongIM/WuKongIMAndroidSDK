@@ -1,5 +1,7 @@
 package com.xinbida.wukongim.message;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 
 import com.xinbida.wukongim.WKIM;
@@ -12,7 +14,6 @@ import com.xinbida.wukongim.entity.WKSyncMsg;
 import com.xinbida.wukongim.entity.WKUIConversationMsg;
 import com.xinbida.wukongim.interfaces.IReceivedMsgListener;
 import com.xinbida.wukongim.manager.CMDManager;
-import com.xinbida.wukongim.manager.ConversationManager;
 import com.xinbida.wukongim.message.type.WKMsgContentType;
 import com.xinbida.wukongim.message.type.WKMsgType;
 import com.xinbida.wukongim.protocol.WKBaseMsg;
@@ -35,11 +36,10 @@ import java.nio.BufferOverflowException;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 
 /**
  * 5/21/21 11:25 AM
@@ -59,13 +59,15 @@ public class MessageHandler {
         return MessageHandlerBinder.handler;
     }
 
+    private final List<WKReceivedAckMsg> receivedAckMsgList = Collections.synchronizedList(new ArrayList<>());
+
     int sendMessage(INonBlockingConnection connection, WKBaseMsg msg) {
         if (msg == null) {
             return 1;
         }
         byte[] bytes = WKProto.getInstance().encodeMsg(msg);
         if (bytes == null || bytes.length == 0) {
-            WKLoggerUtils.getInstance().e(TAG, "Send unknown message packet:" + msg.packetType);
+            WKLoggerUtils.getInstance().e(TAG, "发送了非法包:" + msg.packetType);
             return 1;
         }
 
@@ -75,107 +77,195 @@ public class MessageHandler {
                 connection.flush();
                 return 1;
             } catch (BufferOverflowException e) {
-                WKLoggerUtils.getInstance().e(TAG, "sendMessages Exception BufferOverflowException"
+                WKLoggerUtils.getInstance().e(TAG, "发消息异常 BufferOverflowException"
                         + e.getMessage());
                 return 0;
             } catch (ClosedChannelException e) {
-                WKLoggerUtils.getInstance().e(TAG, "sendMessages Exception ClosedChannelException"
+                WKLoggerUtils.getInstance().e(TAG, "发消息异常 ClosedChannelException"
                         + e.getMessage());
                 return 0;
             } catch (SocketTimeoutException e) {
-                WKLoggerUtils.getInstance().e(TAG, "sendMessages Exception SocketTimeoutException"
+                WKLoggerUtils.getInstance().e(TAG, "发消息异常 SocketTimeoutException"
                         + e.getMessage());
                 return 0;
             } catch (IOException e) {
-                WKLoggerUtils.getInstance().e(TAG, "sendMessages Exception IOException" + e.getMessage());
+                WKLoggerUtils.getInstance().e(TAG, "发消息异常 IOException" + e.getMessage());
                 return 0;
             }
         } else {
-            WKLoggerUtils.getInstance().e("sendMessages Exception sendMessage conn null:"
+            WKLoggerUtils.getInstance().e("发消息异常:"
                     + connection);
             return 0;
         }
     }
 
 
-    private List<WKSyncMsg> receivedMsgList;
+    private volatile List<WKSyncMsg> receivedMsgList;
+    private final Object receivedMsgListLock = new Object();
+    private final Object cacheLock = new Object();
     private byte[] cacheData = null;
+    private int available_len;
+
+    public void clearCacheData() {
+        synchronized (cacheLock) {
+            cacheData = null;
+            available_len = 0;
+        }
+    }
+
+
+    synchronized void handlerOnlineBytes(INonBlockingConnection iNonBlockingConnection) {
+        synchronized (cacheLock) {
+            try {
+                // 获取可用数据长度
+                available_len = iNonBlockingConnection.available();
+
+                // 安全检查
+                if (available_len <= 0) {
+                    return;
+                }
+
+                // 限制单次最大读取大小为150kb
+                int bufLen = 1024 / 2;
+
+                // 分批读取数据
+                while (available_len > 0) {
+                    // 计算本次应该读取的长度
+                    int readLen = Math.min(bufLen, available_len);
+                    if (readLen <= 0) break;
+                    // 读取数据前确保连接仍然有效
+                    if (!iNonBlockingConnection.isOpen()) {
+                        WKLoggerUtils.getInstance().e(TAG, "读取数据时连接关闭");
+                        break;
+                    }
+                    // 读取数据
+                    byte[] buffBytes = iNonBlockingConnection.readBytesByLength(readLen);
+                    if (buffBytes != null && buffBytes.length > 0) {
+                        WKConnection.getInstance().receivedData(buffBytes);
+                        available_len -= buffBytes.length;
+                    } else {
+                        WKLoggerUtils.getInstance().e(TAG, "读取数据失败或收到空数据");
+                        break;
+                    }
+                    // 给一个很小的延迟，避免过快读取
+                    try {
+                        Thread.sleep(1);
+                    } catch (InterruptedException ignored) {
+                    }
+                }
+            } catch (IOException e) {
+                WKLoggerUtils.getInstance().e(TAG, "处理接收到的数据异常:" + e.getMessage());
+                clearCacheData();
+            } catch (Exception e) {
+                WKLoggerUtils.getInstance().e(TAG, "onData 中发生意外错误: " + e.getMessage());
+                clearCacheData();
+            }
+        }
+    }
 
     synchronized void cutBytes(byte[] available_bytes,
                                IReceivedMsgListener mIReceivedMsgListener) {
-
-        if (cacheData == null || cacheData.length == 0) cacheData = available_bytes;
-        else {
-            //如果上次还存在未解析完的消息将新数据追加到缓存数据中
-            byte[] temp = new byte[available_bytes.length + cacheData.length];
-            try {
-                System.arraycopy(cacheData, 0, temp, 0, cacheData.length);
-                System.arraycopy(available_bytes, 0, temp, cacheData.length, available_bytes.length);
-                cacheData = temp;
-            } catch (Exception e) {
-                WKLoggerUtils.getInstance().e(TAG, "cutBytes Merge message error" + e.getMessage());
-            }
-
-        }
-        byte[] lastMsgBytes = cacheData;
-        int readLength = 0;
-
-        while (lastMsgBytes.length > 0 && readLength != lastMsgBytes.length) {
-
-            readLength = lastMsgBytes.length;
-            int packetType = WKTypeUtils.getInstance().getHeight4(lastMsgBytes[0]);
-            // 是否不持久化：0。 是否显示红点：1。是否只同步一次：0
-            //是否持久化[是否保存在数据库]
-            int no_persist = WKTypeUtils.getInstance().getBit(lastMsgBytes[0], 0);
-            //是否显示红点
-            int red_dot = WKTypeUtils.getInstance().getBit(lastMsgBytes[0], 1);
-            //是否只同步一次
-            int sync_once = WKTypeUtils.getInstance().getBit(lastMsgBytes[0], 2);
-            WKLoggerUtils.getInstance().e(TAG, "no_persist：" + no_persist + "red_dot：" + red_dot + "sync_once：" + sync_once);
-            WKLoggerUtils.getInstance().e(TAG, "packet type" + packetType);
-            if (packetType == WKMsgType.PONG) {
-                //心跳ack
-                mIReceivedMsgListener.pongMsg(new WKPongMsg());
-                WKLoggerUtils.getInstance().e(TAG, "pong...");
-                byte[] bytes = Arrays.copyOfRange(lastMsgBytes, 1, lastMsgBytes.length);
-                cacheData = lastMsgBytes = bytes;
-            } else {
-                if (packetType < 10) {
-                    // 2019-12-21 计算剩余长度
-                    if (lastMsgBytes.length < 5) {
-                        cacheData = lastMsgBytes;
-                        break;
-                    }
-                    //其他消息类型
-                    int remainingLength = WKTypeUtils.getInstance().getRemainingLength(Arrays.copyOfRange(lastMsgBytes, 1, lastMsgBytes.length));
-                    if (remainingLength == -1) {
-                        //剩余长度被分包
-                        cacheData = lastMsgBytes;
-                        break;
-                    }
-                    if (remainingLength > 1 << 21) {
-                        cacheData = null;
-                        break;
-                    }
-                    byte[] bytes = WKTypeUtils.getInstance().getRemainingLengthByte(remainingLength);
-                    if (remainingLength + 1 + bytes.length > lastMsgBytes.length) {
-                        //半包情况
-                        cacheData = lastMsgBytes;
-                    } else {
-                        byte[] msg = Arrays.copyOfRange(lastMsgBytes, 0, remainingLength + 1 + bytes.length);
-                        acceptMsg(msg, no_persist, sync_once, red_dot, mIReceivedMsgListener);
-                        byte[] temps = Arrays.copyOfRange(lastMsgBytes, msg.length, lastMsgBytes.length);
-                        cacheData = lastMsgBytes = temps;
-                    }
-
-                } else {
-                    cacheData = null;
-                    mIReceivedMsgListener.reconnect();
-                    break;
+        synchronized (cacheLock) {
+            if (cacheData == null || cacheData.length == 0) cacheData = available_bytes;
+            else {
+                //如果上次还存在未解析完的消息将新数据追加到缓存数据中
+                byte[] temp = new byte[available_bytes.length + cacheData.length];
+                try {
+                    System.arraycopy(cacheData, 0, temp, 0, cacheData.length);
+                    System.arraycopy(available_bytes, 0, temp, cacheData.length, available_bytes.length);
+                    cacheData = temp;
+                } catch (Exception e) {
+                    WKLoggerUtils.getInstance().e(TAG, "处理粘包消息异常" + e.getMessage());
+                    clearCacheData();
+                    return;
                 }
             }
+            byte[] lastMsgBytes = cacheData;
+            int readLength = 0;
+
+            while (lastMsgBytes.length > 0 && readLength != lastMsgBytes.length) {
+                readLength = lastMsgBytes.length;
+                int packetType = WKTypeUtils.getInstance().getHeight4(lastMsgBytes[0]);
+                // 是否不持久化：0。 是否显示红点：1。是否只同步一次：0
+                //是否持久化[是否保存在数据库]
+                int no_persist = WKTypeUtils.getInstance().getBit(lastMsgBytes[0], 0);
+                //是否显示红点
+                int red_dot = WKTypeUtils.getInstance().getBit(lastMsgBytes[0], 1);
+                //是否只同步一次
+                int sync_once = WKTypeUtils.getInstance().getBit(lastMsgBytes[0], 2);
+                if (WKIM.getInstance().isDebug()) {
+                    String packetTypeStr = "[其他]";
+                    switch (packetType) {
+                        case WKMsgType.CONNACK:
+                            packetTypeStr = "[连接状态包]";
+                            break;
+                        case WKMsgType.SEND:
+                            packetTypeStr = "[发送包]";
+                            break;
+                        case WKMsgType.RECEIVED:
+                            packetTypeStr = "[收到消息包]";
+                            break;
+                        case WKMsgType.DISCONNECT:
+                            packetTypeStr = "[断开连接包]";
+                            break;
+                        case WKMsgType.SENDACK:
+                            packetTypeStr = "[发送回执包]";
+                            break;
+                        case WKMsgType.PONG:
+                            packetTypeStr = "[心跳包]";
+                            break;
+                    }
+                    String info = "是否不持续化：" + no_persist + "，是否显示红点：" + red_dot + "，是否只同步一次：" + sync_once;
+                    WKLoggerUtils.getInstance().e(TAG, "收到包类型" + packetType + " " + packetTypeStr + "|" + info);
+                }
+                if (packetType == WKMsgType.REVACK || packetType == WKMsgType.SEND || packetType == WKMsgType.Reserved) {
+                    WKConnection.getInstance().forcedReconnection();
+                    return;
+                }
+                if (packetType == WKMsgType.PONG) {
+                    //心跳ack
+                    mIReceivedMsgListener.pongMsg(new WKPongMsg());
+                    WKLoggerUtils.getInstance().e(TAG, "pong...");
+                    byte[] bytes = Arrays.copyOfRange(lastMsgBytes, 1, lastMsgBytes.length);
+                    cacheData = lastMsgBytes = bytes;
+                } else {
+                    if (packetType < 10) {
+                        // 2019-12-21 计算剩余长度
+                        if (lastMsgBytes.length < 5) {
+                            cacheData = lastMsgBytes;
+                            break;
+                        }
+                        //其他消息类型
+                        int remainingLength = WKTypeUtils.getInstance().getRemainingLength(Arrays.copyOfRange(lastMsgBytes, 1, lastMsgBytes.length));
+                        if (remainingLength == -1) {
+                            //剩余长度被分包
+                            cacheData = lastMsgBytes;
+                            break;
+                        }
+                        if (remainingLength > 1 << 21) {
+                            cacheData = null;
+                            break;
+                        }
+                        byte[] bytes = WKTypeUtils.getInstance().getRemainingLengthByte(remainingLength);
+                        if (remainingLength + 1 + bytes.length > lastMsgBytes.length) {
+                            //半包情况
+                            cacheData = lastMsgBytes;
+                        } else {
+                            byte[] msg = Arrays.copyOfRange(lastMsgBytes, 0, remainingLength + 1 + bytes.length);
+                            acceptMsg(msg, no_persist, sync_once, red_dot, mIReceivedMsgListener);
+                            byte[] temps = Arrays.copyOfRange(lastMsgBytes, msg.length, lastMsgBytes.length);
+                            cacheData = lastMsgBytes = temps;
+                        }
+
+                    } else {
+                        cacheData = null;
+                        mIReceivedMsgListener.reconnect();
+                        break;
+                    }
+                }
+            }
+            saveReceiveMsg();
         }
-        saveReceiveMsg();
     }
 
     private void acceptMsg(byte[] bytes, int no_persist, int sync_once, int red_dot,
@@ -222,6 +312,8 @@ public class MessageHandler {
                 } else if (g_msg.packetType == WKMsgType.PONG) {
                     mIReceivedMsgListener.pongMsg((WKPongMsg) g_msg);
                 }
+            } else {
+                mIReceivedMsgListener.reconnect();
             }
         }
     }
@@ -232,7 +324,7 @@ public class MessageHandler {
             addReceivedMsg(message);
         } else {
             WKReceivedAckMsg receivedAckMsg = getReceivedAckMsg(message);
-            WKConnection.getInstance().sendMessage(receivedAckMsg);
+            receivedAckMsgList.add(receivedAckMsg);
         }
     }
 
@@ -246,49 +338,92 @@ public class MessageHandler {
         return receivedAckMsg;
     }
 
-    private synchronized void addReceivedMsg(WKMsg msg) {
-        if (receivedMsgList == null) receivedMsgList = new ArrayList<>();
-        WKSyncMsg syncMsg = new WKSyncMsg();
-        syncMsg.no_persist = msg.header.noPersist ? 1 : 0;
-        syncMsg.sync_once = msg.header.syncOnce ? 1 : 0;
-        syncMsg.red_dot = msg.header.redDot ? 1 : 0;
-        syncMsg.wkMsg = msg;
-        receivedMsgList.add(syncMsg);
-    }
-
-    public synchronized void saveReceiveMsg() {
-        if (WKCommonUtils.isNotEmpty(receivedMsgList)) {
-            saveSyncMsg(receivedMsgList);
-            List<WKReceivedAckMsg> list = new ArrayList<>();
-            for (int i = 0, size = receivedMsgList.size(); i < size; i++) {
-                WKReceivedAckMsg receivedAckMsg = getReceivedAckMsg(receivedMsgList.get(i).wkMsg);
-                list.add(receivedAckMsg);
+    private void addReceivedMsg(WKMsg msg) {
+        synchronized (receivedMsgListLock) {
+            if (receivedMsgList == null) {
+                receivedMsgList = new ArrayList<>();
             }
-            sendAck(list);
-            receivedMsgList.clear();
+            WKSyncMsg syncMsg = new WKSyncMsg();
+            syncMsg.no_persist = msg.header.noPersist ? 1 : 0;
+            syncMsg.sync_once = msg.header.syncOnce ? 1 : 0;
+            syncMsg.red_dot = msg.header.redDot ? 1 : 0;
+            syncMsg.wkMsg = msg;
+            receivedMsgList.add(syncMsg);
         }
     }
 
-    //回复消息ack
-    private void sendAck(List<WKReceivedAckMsg> list) {
-        if (list.size() == 1) {
-            WKConnection.getInstance().sendMessage(list.get(0));
-            return;
+    public void saveReceiveMsg() {
+        List<WKSyncMsg> tempList = null;
+        synchronized (receivedMsgListLock) {
+            if (WKCommonUtils.isNotEmpty(receivedMsgList)) {
+                tempList = new ArrayList<>(receivedMsgList);
+                receivedMsgList.clear();
+            }
         }
-        final Timer sendAckTimer = new Timer();
-        sendAckTimer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                if (WKCommonUtils.isNotEmpty(list)) {
-                    WKConnection.getInstance().sendMessage(list.get(0));
-                    list.remove(0);
-                } else {
-                    sendAckTimer.cancel();
+
+        if (tempList != null) {
+            saveSyncMsg(tempList);
+            synchronized (receivedAckMsgList) {
+                for (WKSyncMsg syncMsg : tempList) {
+                    WKReceivedAckMsg receivedAckMsg = getReceivedAckMsg(syncMsg.wkMsg);
+                    receivedAckMsgList.add(receivedAckMsg);
                 }
             }
-        }, 0, 100);
+            sendAck();
+        }
     }
 
+    private final Handler sendAckHandler = new Handler(Looper.getMainLooper());
+    private final Runnable sendAckRunnable = new Runnable() {
+        @Override
+        public void run() {
+            // 检查连接状态
+            if (WKConnection.getInstance().connectionIsNull() || WKConnection.getInstance().isReConnecting) {
+                // 连接断开，取消所有待发送的消息
+                sendAckHandler.removeCallbacks(this);
+                return;
+            }
+
+            synchronized (receivedAckMsgList) {
+                if (!receivedAckMsgList.isEmpty()) {
+                    WKConnection.getInstance().sendMessage(receivedAckMsgList.get(0));
+                    receivedAckMsgList.remove(0);
+                    // 如果列表不为空，继续发送下一条
+                    if (!receivedAckMsgList.isEmpty()) {
+                        sendAckHandler.postDelayed(this, 100);
+                    }
+                }
+            }
+        }
+    };
+
+    //回复消息ack
+    public void sendAck() {
+        if (WKConnection.getInstance().connectionIsNull() || WKConnection.getInstance().isReConnecting) {
+            return;
+        }
+        synchronized (receivedAckMsgList) {
+            if (receivedAckMsgList.isEmpty()) {
+                return;
+            }
+            if (receivedAckMsgList.size() == 1) {
+                WKConnection.getInstance().sendMessage(receivedAckMsgList.get(0));
+                receivedAckMsgList.clear();
+                return;
+            }
+            // 移除所有待发送的消息，避免重复发送
+            sendAckHandler.removeCallbacks(sendAckRunnable);
+            // 开始发送消息
+            sendAckHandler.post(sendAckRunnable);
+        }
+    }
+
+    // 在需要清理资源的地方（比如onDestroy）调用此方法
+    public void destroy() {
+        if (sendAckHandler != null) {
+            sendAckHandler.removeCallbacks(sendAckRunnable);
+        }
+    }
 
     /**
      * 保存同步消息
@@ -379,7 +514,7 @@ public class MessageHandler {
 //        for (int i = 0, size = refreshList.size(); i < size; i++) {
 //            ConversationManager.getInstance().setOnRefreshMsg(refreshList.get(i), i == refreshList.size() - 1, "groupMsg");
 //        }
-        WKIM.getInstance().getConversationManager().setOnRefreshMsg(refreshList,"groupMsg");
+        WKIM.getInstance().getConversationManager().setOnRefreshMsg(refreshList, "groupMsg");
     }
 
     public WKMsg parsingMsg(WKMsg message) {
@@ -412,7 +547,7 @@ public class MessageHandler {
             }
         } catch (JSONException e) {
             message.type = WKMsgContentType.WK_CONTENT_FORMAT_ERROR;
-            WKLoggerUtils.getInstance().e(TAG, "Parsing message error, message is not a JSON structure");
+            WKLoggerUtils.getInstance().e(TAG, "消息体非json");
         }
 
         if (json == null) {

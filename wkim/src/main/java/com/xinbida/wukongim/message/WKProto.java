@@ -89,7 +89,7 @@ class WKProto {
             wkWrite.writeLong(connectMsg.clientTimestamp);
             wkWrite.writeString(CryptoUtils.getInstance().getPublicKey());
         } catch (UnsupportedEncodingException e) {
-            WKLoggerUtils.getInstance().e(TAG, "enConnectMsg error");
+            WKLoggerUtils.getInstance().e(TAG, "编码连接包错误");
         }
         return wkWrite.getWriteBytes();
     }
@@ -138,7 +138,7 @@ class WKProto {
             wkWrite.writePayload(sendContent);
 
         } catch (UnsupportedEncodingException e) {
-            WKLoggerUtils.getInstance().e(TAG, "enSendMsg error");
+            WKLoggerUtils.getInstance().e(TAG, "编码发送包错误");
         }
         return wkWrite.getWriteBytes();
     }
@@ -163,7 +163,7 @@ class WKProto {
             connectAckMsg.timeDiff = time;
             connectAckMsg.reasonCode = reasonCode;
         } catch (IOException e) {
-            WKLoggerUtils.getInstance().e(TAG, "Decoding connection ack error");
+            WKLoggerUtils.getInstance().e(TAG, "解码连接ack包错误");
         }
 
         return connectAckMsg;
@@ -177,7 +177,7 @@ class WKProto {
             sendAckMsg.messageSeq = wkRead.readInt();
             sendAckMsg.reasonCode = wkRead.readByte();
         } catch (IOException e) {
-            WKLoggerUtils.getInstance().e(TAG, "deSendAckMsg Decoding and sending message ack error");
+            WKLoggerUtils.getInstance().e(TAG, "解码发送ack错误");
         }
         return sendAckMsg;
     }
@@ -187,10 +187,10 @@ class WKProto {
         try {
             disconnectMsg.reasonCode = wkRead.readByte();
             disconnectMsg.reason = wkRead.readString();
-            WKLoggerUtils.getInstance().e(TAG, "received kicked reasonCode:" + disconnectMsg.reasonCode + ",reason:" + disconnectMsg.reason);
+            WKLoggerUtils.getInstance().e(TAG, "断开消息code:" + disconnectMsg.reasonCode + ",reason:" + disconnectMsg.reason);
             return disconnectMsg;
         } catch (IOException e) {
-            WKLoggerUtils.getInstance().e(TAG, "Decoding disconnection error");
+            WKLoggerUtils.getInstance().e(TAG, "解码断开包错误");
         }
         return disconnectMsg;
     }
@@ -235,16 +235,16 @@ class WKProto {
             String base64Result = CryptoUtils.getInstance().base64Encode(result);
             String localMsgKey = CryptoUtils.getInstance().digestMD5(base64Result);
             if (!localMsgKey.equals(receivedMsg.msgKey)) {
-                WKLoggerUtils.getInstance().e("Illegal messages,localMsgKey:" + localMsgKey + ",msgKey:" + msgKey);
+                WKLoggerUtils.getInstance().e("非法消息,本地消息key:" + localMsgKey + ",期望key:" + msgKey);
                 return null;
             }
             receivedMsg.payload = CryptoUtils.getInstance().aesDecrypt(CryptoUtils.getInstance().base64Decode(content));
-            WKLoggerUtils.getInstance().e("Receive message:");
             WKLoggerUtils.getInstance().e(receivedMsg.toString());
+            return receivedMsg;
         } catch (IOException e) {
-            WKLoggerUtils.getInstance().e(TAG, "deReceivedMsg Decoding received message error");
+            WKLoggerUtils.getInstance().e(TAG, "解码收到的消息错误");
+            return null;
         }
-        return receivedMsg;
     }
 
     WKBaseMsg decodeMessage(byte[] bytes) {
@@ -264,11 +264,11 @@ class WKProto {
             } else if (packetType == WKMsgType.PONG) {
                 return new WKPongMsg();
             } else {
-                WKLoggerUtils.getInstance().e("Failed to parse protocol type：" + packetType);
+                WKLoggerUtils.getInstance().e("解码未知消息包类型：" + packetType);
                 return null;
             }
         } catch (IOException e) {
-            WKLoggerUtils.getInstance().e("Parsing data exception：" + e.getMessage());
+            WKLoggerUtils.getInstance().e("解码消息错误：" + e.getMessage());
             return null;
         }
     }
@@ -337,7 +337,7 @@ class WKProto {
 //                jsonObject.put("flame", msg.baseContentMsgModel.flame);
 //            }
         } catch (JSONException e) {
-            WKLoggerUtils.getInstance().e(TAG, "getSendPayload error");
+            WKLoggerUtils.getInstance().e(TAG, "获取消息体错误");
         }
         return jsonObject;
     }
@@ -407,7 +407,7 @@ class WKProto {
                 JSONObject jsonObject = new JSONObject(contentJson);
                 isDelete = WKIM.getInstance().getMsgManager().isDeletedMsg(jsonObject);
             } catch (JSONException e) {
-                WKLoggerUtils.getInstance().e(TAG, "isDelete error");
+                WKLoggerUtils.getInstance().e(TAG, "获取消息是否删除时发现消息体非json");
             }
         }
         return isDelete;

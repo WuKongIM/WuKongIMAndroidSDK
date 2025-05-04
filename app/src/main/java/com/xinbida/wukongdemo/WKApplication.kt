@@ -2,6 +2,7 @@ package com.xinbida.wukongdemo
 
 import android.app.Application
 import android.text.TextUtils
+import android.util.Log
 import com.xinbida.wukongim.WKIM
 import com.xinbida.wukongim.entity.WKChannelType
 import com.xinbida.wukongim.entity.WKSyncChat
@@ -45,6 +46,10 @@ class WKApplication : Application() {
                     }
                 }]
             }.start()
+//            andPortListener.onGetSocketIpAndPort(
+//              "192.168.3.13",
+//                5100
+//            )
         }
         // 对接频道资料(群信息/用户信息)
         WKIM.getInstance().channelManager.addOnGetChannelInfoListener { channelId, channelType, _ ->
@@ -129,6 +134,7 @@ class WKApplication : Application() {
                 "/conversation/sync", json
             ) { code, data ->
                 if (code != 200 || TextUtils.isEmpty(data)) {
+                    Log.e("同步失败","-->")
                     iSyncConvChatBack?.onBack(null)
                     return@post
                 }

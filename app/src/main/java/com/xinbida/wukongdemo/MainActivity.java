@@ -162,6 +162,9 @@ public class MainActivity extends AppCompatActivity {
         // 新消息监听
         WKIM.getInstance().getMsgManager().addOnNewMsgListener(channelID, msgList -> {
             for (WKMsg msg : msgList) {
+                if (!msg.channelID.equals(channelID)){
+                    continue;
+                }
                 if (msg.type == 56) {
                     adapter.addData(new UIMessageEntity(msg, 3));
                 } else {
