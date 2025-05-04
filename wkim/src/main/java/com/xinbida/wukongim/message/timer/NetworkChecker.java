@@ -37,7 +37,7 @@ public class NetworkChecker {
         } else {
             //有网络
             if (WKConnection.getInstance().connectionIsNull() || isForcedReconnect) {
-                WKConnection.getInstance().reconnection("网络1");
+                WKConnection.getInstance().reconnection();
                 isForcedReconnect = false;
             }
         }

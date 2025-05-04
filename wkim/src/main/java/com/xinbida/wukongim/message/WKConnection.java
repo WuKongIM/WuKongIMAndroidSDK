@@ -91,14 +91,8 @@ public class WKConnection {
     private final long connAckTimeoutTime = 10;
     public String socketSingleID;
     private String lastRequestId;
-    private int unReceivePongCount = 0;
     public volatile Handler reconnectionHandler = new Handler(Objects.requireNonNull(Looper.myLooper()));
-    Runnable reconnectionRunnable = new Runnable() {
-        @Override
-        public void run() {
-            reconnection("handler");
-        }
-    };
+    Runnable reconnectionRunnable = this::reconnection;
     private int connCount = 0;
     private HeartbeatManager heartbeatManager;
     private NetworkChecker networkChecker;
@@ -112,7 +106,7 @@ public class WKConnection {
                 if (TextUtils.isEmpty(ip) || port == 0) {
                     WKLoggerUtils.getInstance().e(TAG, "获取连接地址超时");
                     isReConnecting = false;
-                    reconnection("获取地址超时");
+                    reconnection();
                 }
             } else {
                 if (TextUtils.isEmpty(ip) || port == 0) {
@@ -132,8 +126,8 @@ public class WKConnection {
             if (nowTime - connAckTime > connAckTimeoutTime && connectStatus != WKConnectStatus.success && connectStatus != WKConnectStatus.syncMsg) {
                 WKLoggerUtils.getInstance().e(TAG, "连接确认超时");
                 isReConnecting = false;
-                closeConnect("检查连接ack超时");
-                reconnection("检查连接超时");
+                closeConnect();
+                reconnection();
             } else {
                 if (connectStatus == WKConnectStatus.success || connectStatus == WKConnectStatus.syncMsg) {
                     WKLoggerUtils.getInstance().e(TAG, "连接确认成功");
@@ -164,8 +158,7 @@ public class WKConnection {
         reconnectionHandler.postDelayed(reconnectionRunnable, connIntervalMillisecond * connCount);
     }
 
-    public synchronized void reconnection(String from) {
-        Log.e("重连来源",from);
+    public synchronized void reconnection() {
         if (!WKIMApplication.getInstance().isCanConnect) {
             WKLoggerUtils.getInstance().e(TAG, "断开");
             stopAll();
@@ -185,7 +178,7 @@ public class WKConnection {
         reconnectionHandler.removeCallbacks(reconnectionRunnable);
         boolean isHaveNetwork = WKIMApplication.getInstance().isNetworkConnected();
         if (isHaveNetwork) {
-            closeConnect("重连");
+            closeConnect();
             isReConnecting = true;
             requestIPTime = DateUtils.getInstance().getCurrentSeconds();
             getConnAddress();
@@ -232,7 +225,7 @@ public class WKConnection {
 
     private synchronized void connSocket() {
         synchronized (connectionLock) {  // 使用专门的锁
-            closeConnect("连接socket");
+            closeConnect();
             socketSingleID = UUID.randomUUID().toString().replace("-", "");
             connectionClient = new ConnectionClient(iNonBlockingConnection -> {
                 synchronized (connectionLock) {  // 回调中也需要使用相同的锁
@@ -299,7 +292,7 @@ public class WKConnection {
                     @Override
                     public void reconnect() {
                         WKIMApplication.getInstance().isCanConnect = true;
-                        reconnection("消息处理");
+                        reconnection();
                     }
 
                     @Override
@@ -311,7 +304,6 @@ public class WKConnection {
                     public void pongMsg(WKPongMsg msgHeartbeat) {
                         // 心跳消息
                         lastMsgTime = DateUtils.getInstance().getCurrentSeconds();
-                        unReceivePongCount = 0;
                     }
 
                     @Override
@@ -389,7 +381,7 @@ public class WKConnection {
             WKIMApplication.getInstance().isCanConnect = false;
             stopAll();
         } else {
-            reconnection("解码未知类型：" + status);
+            reconnection();
             WKLoggerUtils.getInstance().e(TAG, "登录状态:" + status);
             stopAll();
 
@@ -405,36 +397,21 @@ public class WKConnection {
                 return;
             }
             if (connectStatus != WKConnectStatus.success) {
-                reconnection("发消息发现连接不成功" + mBaseMsg.packetType);
+                reconnection();
                 return;
             }
         }
-        if (mBaseMsg.packetType == WKMsgType.PING) {
-            unReceivePongCount++;
-        }
+
         if (connection == null || !connection.isOpen()) {
-            reconnection("发消息发现连接为空");
+            reconnection();
             return;
         }
         int status = MessageHandler.getInstance().sendMessage(connection, mBaseMsg);
         if (status == 0) {
             WKLoggerUtils.getInstance().e(TAG, "发消息失败");
-            reconnection("发消息失败");
+            reconnection();
         }
     }
-
-    // 查看心跳是否超时
-    void checkHeartIsTimeOut() {
-        if (unReceivePongCount >= 5) {
-            forcedReconnection();
-            return;
-        }
-        long nowTime = DateUtils.getInstance().getCurrentSeconds();
-        if (nowTime - lastMsgTime >= 60) {
-            sendMessage(new WKPingMsg());
-        }
-    }
-
     private void removeSendingMsg() {
         if (!sendingMsgHashMap.isEmpty()) {
             Iterator<Map.Entry<Integer, WKSendingMsg>> it = sendingMsgHashMap.entrySet().iterator();
@@ -648,7 +625,7 @@ public class WKConnection {
         // 先设置连接状态为失败
         WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.fail, "");
         // 清理连接相关资源
-        closeConnect("stopall");
+        closeConnect();
         // 关闭定时器管理器
         TimerManager.getInstance().shutdown();
         MessageHandler.getInstance().clearCacheData();
@@ -668,7 +645,6 @@ public class WKConnection {
         isReConnecting = false;
         ip = "";
         port = 0;
-        unReceivePongCount = 0;
         requestIPTime = 0;
         connAckTime = 0;
         lastMsgTime = 0;
@@ -682,9 +658,8 @@ public class WKConnection {
         System.gc();
     }
 
-    private synchronized void closeConnect(String from) {
+    private synchronized void closeConnect() {
         synchronized (connectionLock) {
-            WKLoggerUtils.getInstance().e("关闭连接来源",from);
             if (connection != null) {
                 try {
                     if (connection.isOpen()) {

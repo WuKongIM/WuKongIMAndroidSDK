@@ -103,7 +103,7 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
                     WKLoggerUtils.getInstance().e(TAG, "关闭连接异常");
                 }
                 if (WKIMApplication.getInstance().isCanConnect) {
-                    WKConnection.getInstance().reconnection("错误消息");
+                    WKConnection.getInstance().reconnection();
                 }
                 return true;
             }
@@ -115,7 +115,6 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
     @Override
     public boolean onDisconnect(INonBlockingConnection iNonBlockingConnection) {
         try {
-            WKLoggerUtils.getInstance().e("收到了断开连接"+iNonBlockingConnection.getId());
             if (iNonBlockingConnection != null && !TextUtils.isEmpty(iNonBlockingConnection.getId()) && iNonBlockingConnection.getAttachment() != null) {
                 String id = iNonBlockingConnection.getId();
                 Object attachmentObject = iNonBlockingConnection.getAttachment();

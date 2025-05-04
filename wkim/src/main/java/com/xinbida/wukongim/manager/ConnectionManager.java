@@ -43,7 +43,7 @@ public class ConnectionManager extends BaseManager {
         }
         WKIMApplication.getInstance().isCanConnect = true;
         if (WKConnection.getInstance().connectionIsNull()) {
-            WKConnection.getInstance().reconnection("手动");
+            WKConnection.getInstance().reconnection();
         }
     }
 
