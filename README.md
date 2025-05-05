@@ -28,14 +28,6 @@ allprojects {
 }
 ```
 
-由于sdk内使用了sqlcipher加密数据库和curve25519加密算法，需将库添加到项目中
-```groovy
-implementation "net.zetetic:android-database-sqlcipher:4.5.3"
-implementation "androidx.sqlite:sqlite-ktx:2.3.1"
-implementation 'org.whispersystems:curve25519-android:0.5.0'
-implementation 'org.whispersystems:signal-protocol-android:2.8.1'
-```
-
 **混淆**
 ```
 -dontwarn com.xinbida.wukongim.**
