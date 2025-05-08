@@ -390,25 +390,35 @@ public class WKConnection {
 
     public void sendMessage(WKBaseMsg mBaseMsg) {
         if (mBaseMsg == null) {
+            WKLoggerUtils.getInstance().w(TAG + ": sendMessage called with null mBaseMsg.");
             return;
         }
         if (mBaseMsg.packetType != WKMsgType.CONNECT) {
             if (connectStatus == WKConnectStatus.syncMsg) {
+                WKLoggerUtils.getInstance().i(TAG + ": sendMessage: In syncMsg status, message not sent: " + mBaseMsg.packetType);
                 return;
             }
             if (connectStatus != WKConnectStatus.success) {
+                WKLoggerUtils.getInstance().w(TAG + ": sendMessage: Not in success status (is " + connectStatus + "), attempting reconnection for: " + mBaseMsg.packetType);
                 reconnection();
                 return;
             }
         }
 
-        if (connection == null || !connection.isOpen()) {
+        INonBlockingConnection currentConnection;
+        synchronized (connectionLock) {
+            currentConnection = this.connection;
+        }
+
+        if (currentConnection == null || !currentConnection.isOpen()) {
+            WKLoggerUtils.getInstance().w(TAG + ": sendMessage: Connection is null or not open, attempting reconnection for: " + mBaseMsg.packetType);
             reconnection();
             return;
         }
-        int status = MessageHandler.getInstance().sendMessage(connection, mBaseMsg);
+        // Pass the local reference to MessageHandler
+        int status = MessageHandler.getInstance().sendMessage(currentConnection, mBaseMsg);
         if (status == 0) {
-            WKLoggerUtils.getInstance().e(TAG, "发消息失败");
+            WKLoggerUtils.getInstance().e(TAG, "发消息失败 (status 0 from MessageHandler), attempting reconnection for: " + mBaseMsg.packetType);
             reconnection();
         }
     }
@@ -571,7 +581,9 @@ public class WKConnection {
     }
 
     public boolean connectionIsNull() {
-        return connection == null || !connection.isOpen();
+        synchronized (connectionLock) {
+            return connection == null || !connection.isOpen();
+        }
     }
 
     private synchronized void startConnAckTimer() {
@@ -658,21 +670,33 @@ public class WKConnection {
         System.gc();
     }
 
-    private synchronized void closeConnect() {
+    private void closeConnect() {
+        final INonBlockingConnection connectionToCloseActual;
         synchronized (connectionLock) {
-            if (connection != null) {
-                try {
-                    if (connection.isOpen()) {
-                        connection.setAttachment("close" + connection.getId());
-                        connection.close();
-                    }
-                } catch (IOException e) {
-                    WKLoggerUtils.getInstance().e("关闭连接异常:" + e.getMessage());
-                } finally {
-                    connection = null;
-                }
+            if (connection == null) {
+                WKLoggerUtils.getInstance().i(TAG + ": closeConnect called but connection is already null.");
+                return;
             }
+            connectionToCloseActual = connection;
+            connection = null;
             connectionClient = null;
+            WKLoggerUtils.getInstance().i(TAG + ": Connection object nulled, preparing for async close of: " + connectionToCloseActual.getId());
         }
+        dispatchQueuePool.execute(() -> {
+            try {
+                if (connectionToCloseActual.isOpen()) {
+                    WKLoggerUtils.getInstance().i(TAG + ": Attempting to close connection: " + connectionToCloseActual.getId());
+                    connectionToCloseActual.setAttachment("closing_" + System.currentTimeMillis() + "_" + connectionToCloseActual.getId());
+                    connectionToCloseActual.close();
+                    WKLoggerUtils.getInstance().i(TAG + ": Successfully closed connection: " + connectionToCloseActual.getId());
+                } else {
+                    WKLoggerUtils.getInstance().i(TAG + ": Connection was already closed or not open when async close executed: " + connectionToCloseActual.getId());
+                }
+            } catch (IOException e) {
+                WKLoggerUtils.getInstance().e(TAG, "IOException during async connection close for " + connectionToCloseActual.getId() + ": " + e.getMessage());
+            } catch (Exception e) {
+                WKLoggerUtils.getInstance().e(TAG, "Exception during async connection close for " + connectionToCloseActual.getId() + ": " + e.getMessage());
+            }
+        });
     }
 }
