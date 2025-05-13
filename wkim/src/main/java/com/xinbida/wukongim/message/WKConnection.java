@@ -5,7 +5,6 @@ import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.WKIMApplication;
@@ -33,7 +32,6 @@ import com.xinbida.wukongim.msgmodel.WKVideoContent;
 import com.xinbida.wukongim.protocol.WKBaseMsg;
 import com.xinbida.wukongim.protocol.WKConnectMsg;
 import com.xinbida.wukongim.protocol.WKDisconnectMsg;
-import com.xinbida.wukongim.protocol.WKPingMsg;
 import com.xinbida.wukongim.protocol.WKPongMsg;
 import com.xinbida.wukongim.protocol.WKSendAckMsg;
 import com.xinbida.wukongim.protocol.WKSendMsg;
