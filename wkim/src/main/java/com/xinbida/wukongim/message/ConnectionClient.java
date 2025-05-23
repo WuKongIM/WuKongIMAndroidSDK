@@ -25,6 +25,8 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
         IConnectionTimeoutHandler, IIdleTimeoutHandler {
     private final String TAG = "ConnectionClient";
     private boolean isConnectSuccess;
+    private static final int MAX_TIMEOUT_RETRIES = 3;
+    private int timeoutRetryCount = 0;
 
     interface IConnResult {
         void onResult(INonBlockingConnection iNonBlockingConnection);
@@ -75,9 +77,39 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
 
     @Override
     public boolean onConnectionTimeout(INonBlockingConnection iNonBlockingConnection) {
-        if (!isConnectSuccess) {
-            WKLoggerUtils.getInstance().e(TAG, "连接超时");
-            WKConnection.getInstance().forcedReconnection();
+        synchronized (WKConnection.getInstance().connectionLock) {
+            if (!isConnectSuccess) {
+                timeoutRetryCount++;
+                WKLoggerUtils.getInstance().e(TAG, String.format("Connection timeout (attempt %d/%d)", timeoutRetryCount, MAX_TIMEOUT_RETRIES));
+                
+                // Check if this is the current connection
+                if (WKConnection.getInstance().connection != null && 
+                    WKConnection.getInstance().connection.getId().equals(iNonBlockingConnection.getId())) {
+                    
+                    if (timeoutRetryCount >= MAX_TIMEOUT_RETRIES) {
+                        WKLoggerUtils.getInstance().e(TAG, "Maximum timeout retries reached, initiating reconnection");
+                        timeoutRetryCount = 0;
+                        WKConnection.getInstance().forcedReconnection();
+                    } else {
+                        // Log retry attempt
+                        WKLoggerUtils.getInstance().i(TAG, "Retrying connection after timeout");
+                        
+                        // Attempt to reset connection state
+                        try {
+                            iNonBlockingConnection.setConnectionTimeoutMillis(
+                                Math.min(3000 * (timeoutRetryCount + 1), 10000) // Increase timeout with each retry
+                            );
+                        } catch (Exception e) {
+                            WKLoggerUtils.getInstance().e(TAG, "Failed to adjust connection timeout: " + e.getMessage());
+                        }
+                    }
+                } else {
+                    WKLoggerUtils.getInstance().w(TAG, "Timeout for old connection, ignoring");
+                    timeoutRetryCount = 0;
+                }
+            } else {
+                WKLoggerUtils.getInstance().i(TAG, "Connection timeout ignored - connection already successful");
+            }
         }
         return true;
     }
@@ -120,22 +152,25 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
                 Object attachmentObject = iNonBlockingConnection.getAttachment();
                 if (attachmentObject instanceof String) {
                     String att = (String) attachmentObject;
-                    String attStr = "close" + id;
-                    if (att.equals(attStr)) {
+                    // Check if this is a planned closure
+                    if (att.startsWith("closing_") || att.equals("close" + id)) {
                         WKLoggerUtils.getInstance().e("主动断开不重连");
                         return true;
                     }
                 }
             }
-            if (WKIMApplication.getInstance().isCanConnect) {
-                WKLoggerUtils.getInstance().e("手动关闭需要重连");
+            
+            // Reset timeout counter on disconnect
+            timeoutRetryCount = 0;
+            
+            // Only attempt reconnection if we're allowed to connect and it's not a planned closure
+            if (WKIMApplication.getInstance().isCanConnect && !WKConnection.getInstance().isClosing.get()) {
+                WKLoggerUtils.getInstance().e("连接断开需要重连");
                 WKConnection.getInstance().forcedReconnection();
             }
             close(iNonBlockingConnection);
         } catch (Exception ignored) {
-
         }
-
         return true;
     }
 

@@ -79,22 +79,22 @@ public class WKLoggerUtils {
     /**
      * log.i
      */
-    private void info(String msg) {
+    private void info(String tag, String msg) {
         String message = createMessage(msg);
         if (WKIM.getInstance().isDebug()) {
-            Log.i(TAG, message);
+            Log.i(TAG + " " + tag, message);
         }
         if (WKIM.getInstance().isDebug()) {
             writeLog(message);
         }
     }
 
-    public void i(String msg) {
-        info(msg);
+    public void i(String tag, String msg) {
+        info(tag, msg);
     }
 
-    public void i(Exception e) {
-        info(e != null ? e.toString() : "null");
+    public void i(String tag, Exception e) {
+        info(tag, e != null ? e.toString() : "null");
     }
 
     /**
@@ -185,12 +185,12 @@ public class WKLoggerUtils {
     /**
      * log.warn
      */
-    private void warn(String msg) {
+    private void warn(String tag, String msg) {
         String message = createMessage(msg);
         if (WKIM.getInstance().isDebug()) {
             System.out.println(message);
         } else {
-            Log.w(TAG, message);
+            Log.w(TAG + " " + tag, message);
         }
         if (WKIM.getInstance().isDebug()) {
             writeLog(message);
@@ -222,12 +222,12 @@ public class WKLoggerUtils {
     /**
      * log.w
      */
-    public void w(String msg) {
-        warn(msg);
+    public void w(String tag, String msg) {
+        warn(tag, msg);
     }
 
-    public void w(Exception e) {
-        warn(e != null ? e.toString() : "null");
+    public void w(String tag,Exception e) {
+        warn(tag,e != null ? e.toString() : "null");
     }
 //
 //    public  void resetLogFile() {

@@ -86,10 +86,9 @@ public class ConnectionManager extends BaseManager {
 
     public void getIpAndPort(String requestId, IRequestIP iRequestIP) {
         if (iGetIpAndPort != null) {
-            WKLoggerUtils.getInstance().e(TAG,"getIpAndPort get ip...");
             runOnMainThread(() -> iGetIpAndPort.getIP((ip, port) -> iRequestIP.onResult(requestId, ip, port)));
         } else {
-            WKLoggerUtils.getInstance().e(TAG,"Unregistered IP acquisition event");
+            WKLoggerUtils.getInstance().e(TAG,"未注册获取连接地址的事件");
         }
     }
 
