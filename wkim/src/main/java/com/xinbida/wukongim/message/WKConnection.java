@@ -52,6 +52,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 5/21/21 10:51 AM
@@ -141,6 +142,11 @@ public class WKConnection {
     // 添加一个专门用于同步connection访问的锁对象
     private final Object connectionLock = new Object();
 
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private static final long CONNECTION_CLOSE_TIMEOUT = 5000; // 5 seconds timeout
+
+    private final AtomicBoolean isClosing = new AtomicBoolean(false);
+
     private void startAll() {
         heartbeatManager = new HeartbeatManager();
         networkChecker = new NetworkChecker();
@@ -157,11 +163,19 @@ public class WKConnection {
     }
 
     public synchronized void reconnection() {
+        // 如果正在关闭连接，等待关闭完成
+        if (isClosing.get()) {
+            WKLoggerUtils.getInstance().e(TAG, "等待连接关闭完成后再重连");
+            mainHandler.postDelayed(this::reconnection, 100);
+            return;
+        }
+
         if (!WKIMApplication.getInstance().isCanConnect) {
             WKLoggerUtils.getInstance().e(TAG, "断开");
             stopAll();
             return;
         }
+        
         ip = "";
         port = 0;
         if (isReConnecting) {
@@ -172,6 +186,7 @@ public class WKConnection {
             }
             return;
         }
+        
         connectStatus = WKConnectStatus.fail;
         reconnectionHandler.removeCallbacks(reconnectionRunnable);
         boolean isHaveNetwork = WKIMApplication.getInstance().isNetworkConnected();
@@ -181,11 +196,6 @@ public class WKConnection {
             requestIPTime = DateUtils.getInstance().getCurrentSeconds();
             getConnAddress();
         } else {
-//            if (!WKTimers.getInstance().checkNetWorkTimerIsRunning) {
-//                WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.noNetwork, WKConnectReason.NoNetwork);
-//                forcedReconnection();
-//            }
-
             if (networkChecker != null && networkChecker.checkNetWorkTimerIsRunning) {
                 WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.noNetwork, WKConnectReason.NoNetwork);
                 forcedReconnection();
@@ -670,23 +680,55 @@ public class WKConnection {
 
     private void closeConnect() {
         final INonBlockingConnection connectionToCloseActual;
+        
+        // 如果已经在关闭过程中，直接返回
+        if (!isClosing.compareAndSet(false, true)) {
+            WKLoggerUtils.getInstance().i(TAG + ": Close operation already in progress");
+            return;
+        }
+
         synchronized (connectionLock) {
             if (connection == null) {
+                isClosing.set(false);
                 WKLoggerUtils.getInstance().i(TAG + ": closeConnect called but connection is already null.");
                 return;
             }
             connectionToCloseActual = connection;
+            String connId = connectionToCloseActual.getId();
             connection = null;
             connectionClient = null;
-            WKLoggerUtils.getInstance().i(TAG + ": Connection object nulled, preparing for async close of: " + connectionToCloseActual.getId());
+            WKLoggerUtils.getInstance().i(TAG + ": Connection object nulled, preparing for async close of: " + connId);
         }
-        dispatchQueuePool.execute(() -> {
+
+        // Create a timeout handler to force close after timeout
+        final Runnable timeoutRunnable = () -> {
             try {
                 if (connectionToCloseActual.isOpen()) {
-                    WKLoggerUtils.getInstance().i(TAG + ": Attempting to close connection: " + connectionToCloseActual.getId());
-                    connectionToCloseActual.setAttachment("closing_" + System.currentTimeMillis() + "_" + connectionToCloseActual.getId());
+                    String connId = connectionToCloseActual.getId();
+                    WKLoggerUtils.getInstance().w(TAG + ": Connection close timeout reached for: " + connId);
                     connectionToCloseActual.close();
-                    WKLoggerUtils.getInstance().i(TAG + ": Successfully closed connection: " + connectionToCloseActual.getId());
+                }
+            } catch (Exception e) {
+                WKLoggerUtils.getInstance().e(TAG, "Force close connection exception: " + e.getMessage());
+            } finally {
+                isClosing.set(false);
+            }
+        };
+
+        // Schedule the timeout
+        mainHandler.postDelayed(timeoutRunnable, CONNECTION_CLOSE_TIMEOUT);
+
+        // Execute the close operation on a background thread
+        Thread closeThread = new Thread(() -> {
+            try {
+                if (connectionToCloseActual.isOpen()) {
+                    String connId = connectionToCloseActual.getId();
+                    WKLoggerUtils.getInstance().i(TAG + ": Attempting to close connection: " + connId);
+                    connectionToCloseActual.setAttachment("closing_" + System.currentTimeMillis() + "_" + connId);
+                    connectionToCloseActual.close();
+                    // Remove the timeout handler since we closed successfully
+                    mainHandler.removeCallbacks(timeoutRunnable);
+                    WKLoggerUtils.getInstance().i(TAG + ": Successfully closed connection: " + connId);
                 } else {
                     WKLoggerUtils.getInstance().i(TAG + ": Connection was already closed or not open when async close executed: " + connectionToCloseActual.getId());
                 }
@@ -694,7 +736,11 @@ public class WKConnection {
                 WKLoggerUtils.getInstance().e(TAG, "IOException during async connection close for " + connectionToCloseActual.getId() + ": " + e.getMessage());
             } catch (Exception e) {
                 WKLoggerUtils.getInstance().e(TAG, "Exception during async connection close for " + connectionToCloseActual.getId() + ": " + e.getMessage());
+            } finally {
+                isClosing.set(false);
             }
-        });
+        }, "ConnectionCloser");
+        closeThread.setDaemon(true);
+        closeThread.start();
     }
 }
