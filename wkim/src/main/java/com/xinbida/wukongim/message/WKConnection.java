@@ -60,6 +60,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 5/21/21 10:51 AM
@@ -146,9 +147,9 @@ public class WKConnection {
         }
     };
 
-    // 添加一个专门用于同步connection访问的锁对象
-    public final Object connectionLock = new Object();
-
+    // 替换原有的 Object 锁
+    public final ReentrantLock connectionLock = new ReentrantLock(true); // 使用公平锁
+    private static final long LOCK_TIMEOUT = 3000; // 3秒超时
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private static final long CONNECTION_CLOSE_TIMEOUT = 5000; // 5 seconds timeout
 
@@ -548,15 +549,20 @@ public class WKConnection {
 
     //处理登录消息状态
     private void handleLoginStatus(short status) {
-        WKLoggerUtils.getInstance().e(TAG, "Connection state transition: " + connectStatus + " -> " + status);
-        
-        synchronized (connectionLock) {
+        boolean locked = false;
+        try {
+            locked = tryLockWithTimeout();
+            if (!locked) {
+                WKLoggerUtils.getInstance().e(TAG, "获取锁超时，handleLoginStatus失败");
+                return;
+            }
+
+            WKLoggerUtils.getInstance().e(TAG, "Connection state transition: " + connectStatus + " -> " + status);
             String reason = WKConnectReason.ConnectSuccess;
             if (status == WKConnectStatus.kicked) {
                 reason = WKConnectReason.ReasonAuthFail;
             }
             
-            // Validate state transition
             if (!isValidStateTransition(connectStatus, status)) {
                 WKLoggerUtils.getInstance().e(TAG, "Invalid state transition attempted: " + connectStatus + " -> " + status);
                 return;
@@ -566,22 +572,22 @@ public class WKConnection {
             WKIM.getInstance().getConnectionManager().setConnectionStatus(status, reason);
             
             if (status == WKConnectStatus.success) {
-                // Reset reconnection counters since we have a successful connection
                 connCount = 0;
                 isReConnecting = false;
-                
-                // Set to syncing state
                 connectStatus = WKConnectStatus.syncMsg;
                 WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.syncMsg, WKConnectReason.SyncMsg);
-                
-                // Start timers and heartbeat before syncing
                 startAll();
                 
-                // Handle message syncing based on mode
                 if (WKIMApplication.getInstance().getSyncMsgMode() == WKSyncMsgMode.WRITE) {
                     WKIM.getInstance().getMsgManager().setSyncOfflineMsg((isEnd, list) -> {
                         if (isEnd) {
-                            synchronized (connectionLock) {
+                            boolean innerLocked = false;
+                            try {
+                                innerLocked = tryLockWithTimeout();
+                                if (!innerLocked) {
+                                    WKLoggerUtils.getInstance().e(TAG, "获取锁超时，setSyncOfflineMsg回调处理失败");
+                                    return;
+                                }
                                 if (connection != null && !isClosing.get()) {
                                     connectStatus = WKConnectStatus.success;
                                     MessageHandler.getInstance().saveReceiveMsg();
@@ -590,18 +596,32 @@ public class WKConnection {
                                     resendMsg();
                                     WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.success, WKConnectReason.ConnectSuccess);
                                 }
+                            } finally {
+                                if (innerLocked) {
+                                    connectionLock.unlock();
+                                }
                             }
                         }
                     });
                 } else {
                     WKIM.getInstance().getConversationManager().setSyncConversationListener(syncChat -> {
-                        synchronized (connectionLock) {
+                        boolean innerLocked = false;
+                        try {
+                            innerLocked = tryLockWithTimeout();
+                            if (!innerLocked) {
+                                WKLoggerUtils.getInstance().e(TAG, "获取锁超时，setSyncConversationListener回调处理失败");
+                                return;
+                            }
                             if (connection != null && !isClosing.get()) {
                                 connectStatus = WKConnectStatus.success;
                                 WKIMApplication.getInstance().isCanConnect = true;
                                 MessageHandler.getInstance().sendAck();
                                 resendMsg();
                                 WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.success, WKConnectReason.ConnectSuccess);
+                            }
+                        } finally {
+                            if (innerLocked) {
+                                connectionLock.unlock();
                             }
                         }
                     });
@@ -612,12 +632,15 @@ public class WKConnection {
                 WKIMApplication.getInstance().isCanConnect = false;
                 stopAll();
             } else {
-                // Only attempt reconnection if we're allowed to connect
                 if (WKIMApplication.getInstance().isCanConnect) {
                     reconnection();
                 }
                 WKLoggerUtils.getInstance().e(TAG, "Login status: " + status);
                 stopAll();
+            }
+        } finally {
+            if (locked) {
+                connectionLock.unlock();
             }
         }
     }
@@ -655,36 +678,46 @@ public class WKConnection {
 
     public void sendMessage(WKBaseMsg mBaseMsg) {
         if (mBaseMsg == null) {
-            WKLoggerUtils.getInstance().w(TAG ,"sendMessage called with null mBaseMsg.");
+            WKLoggerUtils.getInstance().w(TAG, "sendMessage called with null mBaseMsg.");
             return;
         }
-        if (mBaseMsg.packetType != WKMsgType.CONNECT) {
-            if (connectStatus == WKConnectStatus.syncMsg) {
-                WKLoggerUtils.getInstance().i(TAG ," sendMessage: In syncMsg status, message not sent: " + mBaseMsg.packetType);
+
+        boolean locked = false;
+        try {
+            locked = tryLockWithTimeout();
+            if (!locked) {
+                WKLoggerUtils.getInstance().e(TAG, "获取锁超时，sendMessage失败");
                 return;
             }
-            if (connectStatus != WKConnectStatus.success) {
-                WKLoggerUtils.getInstance().w(TAG , " sendMessage: Not in success status (is " + connectStatus + "), attempting reconnection for: " + mBaseMsg.packetType);
+
+            if (mBaseMsg.packetType != WKMsgType.CONNECT) {
+                if (connectStatus == WKConnectStatus.syncMsg) {
+                    WKLoggerUtils.getInstance().i(TAG, " sendMessage: In syncMsg status, message not sent: " + mBaseMsg.packetType);
+                    return;
+                }
+                if (connectStatus != WKConnectStatus.success) {
+                    WKLoggerUtils.getInstance().w(TAG, " sendMessage: Not in success status (is " + connectStatus + "), attempting reconnection for: " + mBaseMsg.packetType);
+                    reconnection();
+                    return;
+                }
+            }
+
+            INonBlockingConnection currentConnection = this.connection;
+            if (currentConnection == null || !currentConnection.isOpen()) {
+                WKLoggerUtils.getInstance().w(TAG, " sendMessage: Connection is null or not open, attempting reconnection for: " + mBaseMsg.packetType);
                 reconnection();
                 return;
             }
-        }
 
-        INonBlockingConnection currentConnection;
-        synchronized (connectionLock) {
-            currentConnection = this.connection;
-        }
-
-        if (currentConnection == null || !currentConnection.isOpen()) {
-            WKLoggerUtils.getInstance().w(TAG ," sendMessage: Connection is null or not open, attempting reconnection for: " + mBaseMsg.packetType);
-            reconnection();
-            return;
-        }
-        // Pass the local reference to MessageHandler
-        int status = MessageHandler.getInstance().sendMessage(currentConnection, mBaseMsg);
-        if (status == 0) {
-            WKLoggerUtils.getInstance().e(TAG, "发消息失败 (status 0 from MessageHandler), attempting reconnection for: " + mBaseMsg.packetType);
-            reconnection();
+            int status = MessageHandler.getInstance().sendMessage(currentConnection, mBaseMsg);
+            if (status == 0) {
+                WKLoggerUtils.getInstance().e(TAG, "发消息失败 (status 0 from MessageHandler), attempting reconnection for: " + mBaseMsg.packetType);
+                reconnection();
+            }
+        } finally {
+            if (locked) {
+                connectionLock.unlock();
+            }
         }
     }
     private void removeSendingMsg() {
@@ -846,8 +879,18 @@ public class WKConnection {
     }
 
     public boolean connectionIsNull() {
-        synchronized (connectionLock) {
+        boolean locked = false;
+        try {
+            locked = tryLockWithTimeout();
+            if (!locked) {
+                WKLoggerUtils.getInstance().e(TAG, "获取锁超时，connectionIsNull检查失败");
+                return true; // 保守起见，如果获取锁失败就认为连接为空
+            }
             return connection == null || !connection.isOpen();
+        } finally {
+            if (locked) {
+                connectionLock.unlock();
+            }
         }
     }
 
@@ -883,7 +926,14 @@ public class WKConnection {
     }
 
     public void stopAll() {
-        synchronized (connectionLock) {
+        boolean locked = false;
+        try {
+            locked = tryLockWithTimeout();
+            if (!locked) {
+                WKLoggerUtils.getInstance().e(TAG, "获取锁超时，stopAll失败");
+                return;
+            }
+
             // 先设置连接状态为失败
             WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.fail, "");
             // 清理连接相关资源
@@ -912,6 +962,7 @@ public class WKConnection {
             connAckTime = 0;
             lastMsgTime = 0;
             connCount = 0;
+            
             // 清空发送消息队列
             if (sendingMsgHashMap != null) {
                 sendingMsgHashMap.clear();
@@ -923,28 +974,38 @@ public class WKConnection {
             shutdownExecutor();
             
             System.gc();
+        } finally {
+            if (locked) {
+                connectionLock.unlock();
+            }
         }
     }
 
     private void closeConnect() {
         final INonBlockingConnection connectionToCloseActual;
         
-        // 如果已经在关闭过程中，直接返回
         if (!isClosing.compareAndSet(false, true)) {
-            WKLoggerUtils.getInstance().i(TAG , " Close operation already in progress");
+            WKLoggerUtils.getInstance().i(TAG, " Close operation already in progress");
             return;
         }
 
-        synchronized (connectionLock) {
+        boolean locked = false;
+        try {
+            locked = tryLockWithTimeout();
+            if (!locked) {
+                WKLoggerUtils.getInstance().e(TAG, "获取锁超时，closeConnect失败");
+                isClosing.set(false);
+                return;
+            }
+
             if (connection == null) {
                 isClosing.set(false);
-                WKLoggerUtils.getInstance().i(TAG , " closeConnect called but connection is already null.");
+                WKLoggerUtils.getInstance().i(TAG, " closeConnect called but connection is already null.");
                 return;
             }
             connectionToCloseActual = connection;
             String connId = connectionToCloseActual.getId();
             
-            // Mark connection for closure to prevent reconnection attempts
             try {
                 connectionToCloseActual.setAttachment("closing_" + System.currentTimeMillis() + "_" + connId);
             } catch (Exception e) {
@@ -953,7 +1014,11 @@ public class WKConnection {
             
             connection = null;
             connectionClient = null;
-            WKLoggerUtils.getInstance().i(TAG , " Connection object nulled, preparing for async close of: " + connId);
+            WKLoggerUtils.getInstance().i(TAG, " Connection object nulled, preparing for async close of: " + connId);
+        } finally {
+            if (locked) {
+                connectionLock.unlock();
+            }
         }
 
         // Create a timeout handler to force close after timeout
@@ -961,7 +1026,7 @@ public class WKConnection {
             try {
                 if (connectionToCloseActual.isOpen()) {
                     String connId = connectionToCloseActual.getId();
-                    WKLoggerUtils.getInstance().w(TAG , " Connection close timeout reached for: " + connId);
+                    WKLoggerUtils.getInstance().w(TAG, " Connection close timeout reached for: " + connId);
                     connectionToCloseActual.close();
                 }
             } catch (Exception e) {
@@ -979,13 +1044,13 @@ public class WKConnection {
             try {
                 if (connectionToCloseActual.isOpen()) {
                     String connId = connectionToCloseActual.getId();
-                    WKLoggerUtils.getInstance().i(TAG , " Attempting to close connection: " + connId);
+                    WKLoggerUtils.getInstance().i(TAG, " Attempting to close connection: " + connId);
                     connectionToCloseActual.close();
                     // Remove the timeout handler since we closed successfully
                     mainHandler.removeCallbacks(timeoutRunnable);
-                    WKLoggerUtils.getInstance().i(TAG , " Successfully closed connection: " + connId);
+                    WKLoggerUtils.getInstance().i(TAG, " Successfully closed connection: " + connId);
                 } else {
-                    WKLoggerUtils.getInstance().i(TAG , " Connection was already closed or not open when async close executed: " + connectionToCloseActual.getId());
+                    WKLoggerUtils.getInstance().i(TAG, " Connection was already closed or not open when async close executed: " + connectionToCloseActual.getId());
                 }
             } catch (IOException e) {
                 WKLoggerUtils.getInstance().e(TAG, "IOException during async connection close for " + connectionToCloseActual.getId() + ": " + e.getMessage());
@@ -1007,5 +1072,15 @@ public class WKConnection {
         }, "ConnectionCloser");
         closeThread.setDaemon(true);
         closeThread.start();
+    }
+
+    private boolean tryLockWithTimeout() {
+        try {
+            return connectionLock.tryLock(LOCK_TIMEOUT, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            WKLoggerUtils.getInstance().e(TAG, "获取锁被中断: " + e.getMessage());
+            Thread.currentThread().interrupt();
+            return false;
+        }
     }
 }

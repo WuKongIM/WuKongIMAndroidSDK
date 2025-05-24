@@ -1,0 +1,140 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "com.xinbida.wukongim",
+    "module": "WKIMLib_local",
+    "version": "1.0.7",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.9"
+    }
+  },
+  "variants": [
+    {
+      "name": "releaseApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "files": [
+        {
+          "name": "WKIMLib_local-1.0.7.aar",
+          "url": "WKIMLib_local-1.0.7.aar",
+          "size": 619369,
+          "sha512": "67d5a21983e722346be407c14a7d0dab5de051789cf7764dfaacd686e770e75a9f8377b49af1e5570e29d6a7ae38fedaec5af4c6b17f631116d665570b92fc5d",
+          "sha256": "2731b93ebd3aa8f457aa1dd2ac9634de1fb4641facabbc6683bc2b8575076c28",
+          "sha1": "d7a3b759fd22ae6bb0cc7710e87c9f01b197afd8",
+          "md5": "195544eb25003c80879e6390c389f4b5"
+        }
+      ]
+    },
+    {
+      "name": "releaseRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-bom",
+          "version": {
+            "requires": "1.9.22"
+          },
+          "attributes": {
+            "org.gradle.category": "platform"
+          },
+          "endorseStrictVersions": true
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "1.9.22"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib-jdk8",
+          "version": {
+            "requires": "1.9.22"
+          }
+        },
+        {
+          "group": "com.android.support",
+          "module": "multidex",
+          "version": {
+            "requires": "1.0.3"
+          }
+        },
+        {
+          "group": "net.zetetic",
+          "module": "android-database-sqlcipher",
+          "version": {
+            "requires": "4.5.4"
+          }
+        },
+        {
+          "group": "androidx.sqlite",
+          "module": "sqlite-ktx",
+          "version": {
+            "requires": "2.5.0"
+          }
+        },
+        {
+          "group": "org.whispersystems",
+          "module": "curve25519-android",
+          "version": {
+            "requires": "0.5.0"
+          }
+        },
+        {
+          "group": "org.whispersystems",
+          "module": "signal-protocol-android",
+          "version": {
+            "requires": "2.8.1"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "WKIMLib_local-1.0.7.aar",
+          "url": "WKIMLib_local-1.0.7.aar",
+          "size": 619369,
+          "sha512": "67d5a21983e722346be407c14a7d0dab5de051789cf7764dfaacd686e770e75a9f8377b49af1e5570e29d6a7ae38fedaec5af4c6b17f631116d665570b92fc5d",
+          "sha256": "2731b93ebd3aa8f457aa1dd2ac9634de1fb4641facabbc6683bc2b8575076c28",
+          "sha1": "d7a3b759fd22ae6bb0cc7710e87c9f01b197afd8",
+          "md5": "195544eb25003c80879e6390c389f4b5"
+        }
+      ]
+    },
+    {
+      "name": "releaseSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "files": [
+        {
+          "name": "WKIMLib_local-1.0.7-sources.jar",
+          "url": "WKIMLib_local-1.0.7-sources.jar",
+          "size": 328517,
+          "sha512": "d1a0aa32976653fa04696f6d42edbe8152b59fdaf0135350cdefa14d571212571e85412c8f026a46e43069aadad3603358b63e262635a3716c948dab7b056750",
+          "sha256": "eb0a4ee07731a3ef38f606b2978d16169a6f6388e3f33fa3a10c82f3b0c17bb0",
+          "sha1": "34a3a10b015c40e16a76fe75cb974d675a9cbda6",
+          "md5": "2a8fa0fa06d069610eed09005b343994"
+        }
+      ]
+    }
+  ]
+}

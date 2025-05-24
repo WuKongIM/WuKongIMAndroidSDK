@@ -3,3 +3,42 @@ description:
 globs:
 alwaysApply: false
 ---
+# 连接管理机制
+
+## 连接状态流转
+连接状态在 [WKConnection.java](mdc:wkim/src/main/java/com/xinbida/wukongim/message/WKConnection.java) 中管理，遵循以下规则：
+
+### 有效的状态转换
+- 失败状态 -> 连接中/成功
+- 连接中 -> 成功/失败/无网络
+- 成功 -> 同步消息/被踢/失败
+- 同步消息 -> 成功/失败
+- 无网络 -> 连接中/失败
+
+### 关键同步点
+所有状态转换都需要通过 `connectionLock` 同步锁保护：
+```java
+synchronized (connectionLock) {
+    // 状态转换操作
+}
+```
+
+## 重连机制
+重连策略采用指数退避算法：
+- 基础延迟：1秒
+- 最大延迟：32秒
+- 最大重试次数：5次
+
+## 连接关闭处理
+连接关闭流程：
+1. 使用 `isClosing` 原子变量防止重复关闭
+2. 设置连接标记防止重连
+3. 清理连接资源
+4. 触发超时强制关闭
+
+## 异常处理
+主要在 [ConnectionClient.java](mdc:wkim/src/main/java/com/xinbida/wukongim/message/ConnectionClient.java) 中处理：
+- 连接异常
+- 连接超时
+- 心跳超时
+- 空闲超时

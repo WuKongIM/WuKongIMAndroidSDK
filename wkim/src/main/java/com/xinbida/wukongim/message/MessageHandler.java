@@ -40,6 +40,8 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 5/21/21 11:25 AM
@@ -102,20 +104,42 @@ public class MessageHandler {
 
     private volatile List<WKSyncMsg> receivedMsgList;
     private final Object receivedMsgListLock = new Object();
-    private final Object cacheLock = new Object();
+    private final ReentrantLock cacheLock = new ReentrantLock(true); // 使用公平锁
+    private static final long LOCK_TIMEOUT = 2000; // 2秒超时
     private byte[] cacheData = null;
     private int available_len;
 
     public void clearCacheData() {
-        synchronized (cacheLock) {
-            cacheData = null;
-            available_len = 0;
+        boolean locked = false;
+        try {
+            // 尝试获取锁，最多等待3秒
+            locked = cacheLock.tryLock(LOCK_TIMEOUT, TimeUnit.MILLISECONDS);
+            if (locked) {
+                cacheData = null;
+                available_len = 0;
+            } else {
+                WKLoggerUtils.getInstance().e(TAG, "获取锁超时，clearCacheData失败");
+            }
+        } catch (InterruptedException e) {
+            WKLoggerUtils.getInstance().e(TAG, "clearCacheData等待锁被中断: " + e.getMessage());
+            Thread.currentThread().interrupt();
+        } finally {
+            if (locked) {
+                cacheLock.unlock();
+            }
         }
     }
 
 
     synchronized void handlerOnlineBytes(INonBlockingConnection iNonBlockingConnection) {
-        synchronized (cacheLock) {
+        boolean locked = false;
+        try {
+            locked = cacheLock.tryLock(LOCK_TIMEOUT, TimeUnit.MILLISECONDS);
+            if (!locked) {
+                WKLoggerUtils.getInstance().e(TAG, "获取锁超时，handlerOnlineBytes失败");
+                return;
+            }
+            
             try {
                 // 获取可用数据长度
                 available_len = iNonBlockingConnection.available();
@@ -160,12 +184,26 @@ public class MessageHandler {
                 WKLoggerUtils.getInstance().e(TAG, "onData 中发生意外错误: " + e.getMessage());
                 clearCacheData();
             }
+        } catch (InterruptedException e) {
+            WKLoggerUtils.getInstance().e(TAG, "handlerOnlineBytes等待锁被中断: " + e.getMessage());
+            Thread.currentThread().interrupt();
+        } finally {
+            if (locked) {
+                cacheLock.unlock();
+            }
         }
     }
 
     synchronized void cutBytes(byte[] available_bytes,
                                IReceivedMsgListener mIReceivedMsgListener) {
-        synchronized (cacheLock) {
+        boolean locked = false;
+        try {
+            locked = cacheLock.tryLock(LOCK_TIMEOUT, TimeUnit.MILLISECONDS);
+            if (!locked) {
+                WKLoggerUtils.getInstance().e(TAG, "获取锁超时，cutBytes失败");
+                return;
+            }
+
             if (cacheData == null || cacheData.length == 0) cacheData = available_bytes;
             else {
                 //如果上次还存在未解析完的消息将新数据追加到缓存数据中
@@ -265,6 +303,13 @@ public class MessageHandler {
                 }
             }
             saveReceiveMsg();
+        } catch (InterruptedException e) {
+            WKLoggerUtils.getInstance().e(TAG, "cutBytes等待锁被中断: " + e.getMessage());
+            Thread.currentThread().interrupt();
+        } finally {
+            if (locked) {
+                cacheLock.unlock();
+            }
         }
     }
 

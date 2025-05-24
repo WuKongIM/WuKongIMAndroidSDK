@@ -3,3 +3,36 @@ description:
 globs:
 alwaysApply: false
 ---
+# 消息处理机制
+
+## 消息发送流程
+在 [WKConnection.java](mdc:wkim/src/main/java/com/xinbida/wukongim/message/WKConnection.java) 中实现：
+
+### 发送前检查
+- 检查连接状态
+- 验证消息完整性
+- 处理附件（图片、视频等）
+
+### 消息队列管理
+使用 `sendingMsgHashMap` 管理发送中的消息：
+- 消息重发机制
+- 发送超时处理
+- 发送状态追踪
+
+### 消息同步
+两种同步模式：
+- WRITE模式：完整消息同步
+- READ模式：仅同步会话列表
+
+## 消息接收处理
+主要在 ConnectionClient 的 onData 方法中处理：
+- 消息解析
+- 重复消息过滤
+- 消息排序
+- 存储和回调
+
+## 特殊消息处理
+- 心跳消息（ping/pong）
+- 连接确认消息
+- 踢下线消息
+- 同步完成消息
