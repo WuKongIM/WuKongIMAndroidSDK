@@ -1,6 +1,5 @@
 package com.xinbida.wukongim.message;
 
-import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.Looper;
@@ -52,14 +51,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -770,38 +769,62 @@ public class WKConnection {
         }
         boolean hasAttached = false;
         //如果是图片消息
-        if (msg.baseContentMsgModel instanceof WKImageContent) {
-            WKImageContent imageContent = (WKImageContent) msg.baseContentMsgModel;
+        if (msg.baseContentMsgModel instanceof WKImageContent imageContent) {
             if (!TextUtils.isEmpty(imageContent.localPath)) {
+//                try {
+//                    File file = new File(imageContent.localPath);
+//                    if (file.exists() && file.length() > 0) {
+//                        hasAttached = true;
+//                        Bitmap bitmap = BitmapFactory.decodeFile(imageContent.localPath);
+//                        if (bitmap != null) {
+//                            imageContent.width = bitmap.getWidth();
+//                            imageContent.height = bitmap.getHeight();
+//                            msg.baseContentMsgModel = imageContent;
+//                        }
+//                    }
+//                } catch (Exception ignored) {
+//                }
+
                 try {
                     File file = new File(imageContent.localPath);
                     if (file.exists() && file.length() > 0) {
                         hasAttached = true;
-                        Bitmap bitmap = BitmapFactory.decodeFile(imageContent.localPath);
-                        if (bitmap != null) {
-                            imageContent.width = bitmap.getWidth();
-                            imageContent.height = bitmap.getHeight();
-                            msg.baseContentMsgModel = imageContent;
-                        }
+                        // 使用 Options 只解码尺寸信息
+                        BitmapFactory.Options options = new BitmapFactory.Options();
+                        options.inJustDecodeBounds = true; // 只获取图片信息,不加载到内存
+                        BitmapFactory.decodeFile(imageContent.localPath, options);
+
+                        imageContent.width = options.outWidth;
+                        imageContent.height = options.outHeight;
+                        msg.baseContentMsgModel = imageContent;
                     }
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    WKLoggerUtils.getInstance().e("WKConnection", "Get image size failed: " + e.getMessage());
                 }
             }
         }
         //视频消息
-        if (msg.baseContentMsgModel instanceof WKVideoContent) {
-            WKVideoContent videoContent = (WKVideoContent) msg.baseContentMsgModel;
+        if (msg.baseContentMsgModel instanceof WKVideoContent videoContent) {
             if (!TextUtils.isEmpty(videoContent.localPath)) {
                 try {
                     File file = new File(videoContent.coverLocalPath);
                     if (file.exists() && file.length() > 0) {
                         hasAttached = true;
-                        Bitmap bitmap = BitmapFactory.decodeFile(videoContent.coverLocalPath);
-                        if (bitmap != null) {
-                            videoContent.width = bitmap.getWidth();
-                            videoContent.height = bitmap.getHeight();
-                            msg.baseContentMsgModel = videoContent;
-                        }
+//                        Bitmap bitmap = BitmapFactory.decodeFile(videoContent.coverLocalPath);
+//                        if (bitmap != null) {
+//                            videoContent.width = bitmap.getWidth();
+//                            videoContent.height = bitmap.getHeight();
+//                            msg.baseContentMsgModel = videoContent;
+//                        }
+
+                        // 使用 Options 只解码尺寸信息
+                        BitmapFactory.Options options = new BitmapFactory.Options();
+                        options.inJustDecodeBounds = true; // 只获取图片信息,不加载到内存
+                        BitmapFactory.decodeFile(videoContent.coverLocalPath, options);
+
+                        videoContent.width = options.outWidth;
+                        videoContent.height = options.outHeight;
+                        msg.baseContentMsgModel = videoContent;
                     }
                 } catch (Exception ignored) {
 
