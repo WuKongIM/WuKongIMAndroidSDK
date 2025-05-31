@@ -154,8 +154,8 @@ public class WKConnection {
 
     public final AtomicBoolean isClosing = new AtomicBoolean(false);
 
-    private int maxReconnectAttempts = 5;
-    private long baseReconnectDelay = 500;
+    private final int maxReconnectAttempts = 5;
+    private final long baseReconnectDelay = 500;
 
     private final Object connectionStateLock = new Object();
     private volatile boolean isConnecting = false;
@@ -178,21 +178,39 @@ public class WKConnection {
             return connectionExecutor;
         }
     }
+    private final AtomicBoolean isShuttingDown = new AtomicBoolean(false);
 
     private void shutdownExecutor() {
+        if (!isShuttingDown.compareAndSet(false, true)) {
+            WKLoggerUtils.getInstance().w(TAG, "Executor is already shutting down");
+            return;
+        }
+
+        ExecutorService executorToShutdown;
         synchronized (executorLock) {
-            if (connectionExecutor != null && !connectionExecutor.isShutdown()) {
-                connectionExecutor.shutdown();
+            executorToShutdown = connectionExecutor;
+            connectionExecutor = null;
+        }
+
+        if (executorToShutdown != null && !executorToShutdown.isShutdown()) {
+            dispatchQueuePool.execute(() -> {
                 try {
-                    if (!connectionExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
-                        connectionExecutor.shutdownNow();
+                    WKLoggerUtils.getInstance().i(TAG, "Starting executor shutdown");
+                    executorToShutdown.shutdown();
+
+                    if (!executorToShutdown.awaitTermination(3, TimeUnit.SECONDS)) {
+                        WKLoggerUtils.getInstance().w(TAG, "Executor did not terminate in time, forcing shutdown");
+                        executorToShutdown.shutdownNow();
                     }
                 } catch (InterruptedException e) {
-                    connectionExecutor.shutdownNow();
+                    WKLoggerUtils.getInstance().e(TAG, "Executor shutdown interrupted: " + e.getMessage());
+                    executorToShutdown.shutdownNow();
                     Thread.currentThread().interrupt();
+                } finally {
+                    isShuttingDown.set(false);
+                    WKLoggerUtils.getInstance().i(TAG, "Executor shutdown completed");
                 }
-            }
-            connectionExecutor = null;
+            });
         }
     }
 
@@ -439,7 +457,7 @@ public class WKConnection {
                     }
 
                     // 等待连接完成或超时
-                    boolean connected = connectLatch.await(15000, TimeUnit.MILLISECONDS);
+                    boolean connected = connectLatch.await(5000, TimeUnit.MILLISECONDS);
                     
                     if (!connected || !connectSuccess.get()) {
                         WKLoggerUtils.getInstance().e(TAG, "连接建立超时或失败");
@@ -646,33 +664,33 @@ public class WKConnection {
 
     private boolean isValidStateTransition(int currentState, int newState) {
         // Define valid state transitions
-        switch (currentState) {
-            case WKConnectStatus.fail:
+        return switch (currentState) {
+            case WKConnectStatus.fail ->
                 // From fail state, can move to connecting or success
-                return newState == WKConnectStatus.connecting || 
-                       newState == WKConnectStatus.success;
-            case WKConnectStatus.connecting:
+                    newState == WKConnectStatus.connecting ||
+                            newState == WKConnectStatus.success;
+            case WKConnectStatus.connecting ->
                 // From connecting, can move to success, fail, or no network
-                return newState == WKConnectStatus.success || 
-                       newState == WKConnectStatus.fail || 
-                       newState == WKConnectStatus.noNetwork;
-            case WKConnectStatus.success:
+                    newState == WKConnectStatus.success ||
+                            newState == WKConnectStatus.fail ||
+                            newState == WKConnectStatus.noNetwork;
+            case WKConnectStatus.success ->
                 // From success, can move to syncMsg, kicked, or fail
-                return newState == WKConnectStatus.syncMsg || 
-                       newState == WKConnectStatus.kicked || 
-                       newState == WKConnectStatus.fail;
-            case WKConnectStatus.syncMsg:
+                    newState == WKConnectStatus.syncMsg ||
+                            newState == WKConnectStatus.kicked ||
+                            newState == WKConnectStatus.fail;
+            case WKConnectStatus.syncMsg ->
                 // From syncMsg, can move to success or fail
-                return newState == WKConnectStatus.success || 
-                       newState == WKConnectStatus.fail;
-            case WKConnectStatus.noNetwork:
+                    newState == WKConnectStatus.success ||
+                            newState == WKConnectStatus.fail;
+            case WKConnectStatus.noNetwork ->
                 // From noNetwork, can move to connecting or fail
-                return newState == WKConnectStatus.connecting || 
-                       newState == WKConnectStatus.fail;
-            default:
+                    newState == WKConnectStatus.connecting ||
+                            newState == WKConnectStatus.fail;
+            default ->
                 // For any other state, allow transition to fail state
-                return newState == WKConnectStatus.fail;
-        }
+                    newState == WKConnectStatus.fail;
+        };
     }
 
     public void sendMessage(WKBaseMsg mBaseMsg) {
