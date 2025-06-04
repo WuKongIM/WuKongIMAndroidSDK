@@ -323,7 +323,7 @@ public class MessageHandler {
                 //连接ack
                 if (g_msg.packetType == WKMsgType.CONNACK) {
                     WKConnectAckMsg loginStatusMsg = (WKConnectAckMsg) g_msg;
-                    mIReceivedMsgListener.loginStatusMsg(loginStatusMsg.reasonCode);
+                    mIReceivedMsgListener.loginStatusMsg(loginStatusMsg);
                 } else if (g_msg.packetType == WKMsgType.SENDACK) {
                     //发送ack
                     WKSendAckMsg sendAckMsg = (WKSendAckMsg) g_msg;

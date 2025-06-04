@@ -147,15 +147,19 @@ class WKProto {
         WKConnectAckMsg connectAckMsg = new WKConnectAckMsg();
         try {
             if (hasServerVersion == 1) {
-                byte serverVersion = wkRead.readByte();
-                if (serverVersion != 0) {
-                    WKIMApplication.getInstance().protocolVersion = (byte) Math.min(serverVersion, WKIMApplication.getInstance().protocolVersion);
+                connectAckMsg.serviceProtoVersion = wkRead.readByte();
+               // byte serverVersion = wkRead.readByte();
+                if (connectAckMsg.serviceProtoVersion != 0) {
+                    WKIMApplication.getInstance().protocolVersion = (byte) Math.min(connectAckMsg.serviceProtoVersion, WKIMApplication.getInstance().protocolVersion);
                 }
             }
             long time = wkRead.readLong();
             short reasonCode = wkRead.readByte();
             String serverKey = wkRead.readString();
             String salt = wkRead.readString();
+            if (connectAckMsg.serviceProtoVersion >= 4){
+                connectAckMsg.nodeId = (int) wkRead.readLong();
+            }
             connectAckMsg.serverKey = serverKey;
             connectAckMsg.salt = salt;
             //保存公钥和安全码

@@ -15,7 +15,9 @@ public class WKConnectAckMsg extends WKBaseMsg {
     public String serverKey;
     // 安全码
     public String salt;
-
+    // 节点
+    public int nodeId;
+    public int serviceProtoVersion;
     public WKConnectAckMsg() {
         packetType = WKMsgType.CONNACK;
     }

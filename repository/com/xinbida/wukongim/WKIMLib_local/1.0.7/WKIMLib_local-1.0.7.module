@@ -25,11 +25,11 @@
         {
           "name": "WKIMLib_local-1.0.7.aar",
           "url": "WKIMLib_local-1.0.7.aar",
-          "size": 619745,
-          "sha512": "235f469298429751b299f1b956f7c46dfd3bcea3fd2dd240859d7fbcbf5daa866d8ec5980c5bd4681dcd70e18a41434538aa7ab625694dc940309d0667d86b67",
-          "sha256": "dff199d5a7e342255c74a0639eeeba2c98f5e0844968074d12c92b5adf6ea140",
-          "sha1": "5d9af4f1269d318792cab589bb2fb80e6a5cc0ea",
-          "md5": "c14ed31abb9a31739ed237fde77d3ca3"
+          "size": 620056,
+          "sha512": "a69aec598b0720656eb28b625dae9708ac6791754d85a8e1e70bec0f6e2fa8e2f00e4a8ba0c6c7a79005e55cb7a50af7820deb114cd46cf541de8132556435e6",
+          "sha256": "e7d40b6359ebbe25afa1289decd31ee1e7a59c0cfb85c797399ea84c675f6a3d",
+          "sha1": "6ffe49160768d67098c61e4987f0d88d2ad62a4d",
+          "md5": "df6c53189186f664e21a7349d36f1dbb"
         }
       ]
     },
@@ -106,11 +106,11 @@
         {
           "name": "WKIMLib_local-1.0.7.aar",
           "url": "WKIMLib_local-1.0.7.aar",
-          "size": 619745,
-          "sha512": "235f469298429751b299f1b956f7c46dfd3bcea3fd2dd240859d7fbcbf5daa866d8ec5980c5bd4681dcd70e18a41434538aa7ab625694dc940309d0667d86b67",
-          "sha256": "dff199d5a7e342255c74a0639eeeba2c98f5e0844968074d12c92b5adf6ea140",
-          "sha1": "5d9af4f1269d318792cab589bb2fb80e6a5cc0ea",
-          "md5": "c14ed31abb9a31739ed237fde77d3ca3"
+          "size": 620056,
+          "sha512": "a69aec598b0720656eb28b625dae9708ac6791754d85a8e1e70bec0f6e2fa8e2f00e4a8ba0c6c7a79005e55cb7a50af7820deb114cd46cf541de8132556435e6",
+          "sha256": "e7d40b6359ebbe25afa1289decd31ee1e7a59c0cfb85c797399ea84c675f6a3d",
+          "sha1": "6ffe49160768d67098c61e4987f0d88d2ad62a4d",
+          "md5": "df6c53189186f664e21a7349d36f1dbb"
         }
       ]
     },
@@ -128,11 +128,11 @@
         {
           "name": "WKIMLib_local-1.0.7-sources.jar",
           "url": "WKIMLib_local-1.0.7-sources.jar",
-          "size": 329297,
-          "sha512": "3986f614c58519679f099e8f3fa51e97eb836d03d2c3ac16c9bc5a068ca8788aeef58013543d890c74c1e28fafbfbe92ac01f54de67b3d7ec64f960b25f88f76",
-          "sha256": "16ff7a8390ab7dc4830fdae72c918efb0bc711af52bd2405947a68aac9ef8f8b",
-          "sha1": "e60da7ae73465fa023111466d6be1831d9c5e05d",
-          "md5": "5dbf087c85cf4772c3e3c25ad17e6788"
+          "size": 329531,
+          "sha512": "8376d8a70a8ad8fffac9b2d07abf9afd5d52bf88c4d8a5d5a9d233deab593b14d7e95b90c5e208e61cf9598ef7e616da0750507e4b0a995ae8cda0373f8c102f",
+          "sha256": "cf7b63e05975be54cda1ad1498fda9524dd620473660162b736de3d9ecaa39d0",
+          "sha1": "166ab96e0823138efd465373f6ca853cac37bc06",
+          "md5": "0a34e5316605547bfb6946f666dc7af3"
         }
       ]
     }
