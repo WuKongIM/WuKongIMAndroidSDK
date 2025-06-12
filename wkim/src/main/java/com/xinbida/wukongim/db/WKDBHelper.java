@@ -7,9 +7,13 @@ import android.text.TextUtils;
 
 import com.xinbida.wukongim.utils.WKLoggerUtils;
 
-import net.sqlcipher.database.SQLiteDatabase;
-import net.sqlcipher.database.SQLiteOpenHelper;
+import net.zetetic.database.sqlcipher.SQLiteDatabase;
+import net.zetetic.database.sqlcipher.SQLiteOpenHelper;
+import net.zetetic.database.sqlcipher.SQLiteConnection;
+import net.zetetic.database.sqlcipher.SQLiteDatabaseHook;
 
+import java.io.File;
+import java.util.Arrays;
 import java.util.Map;
 
 /**
@@ -18,7 +22,7 @@ import java.util.Map;
  */
 public class WKDBHelper {
     private static final String TAG = "WKDBHelper";
-    private DatabaseHelper mDbHelper;
+//    private DatabaseHelper mDbHelper;
     private SQLiteDatabase mDb;
 
     public SQLiteDatabase getDb() {
@@ -34,13 +38,15 @@ public class WKDBHelper {
     private WKDBHelper(Context ctx, String uid) {
         WKDBHelper.uid = uid;
         myDBName = "wk_" + uid + ".db";
-
         try {
-            mDbHelper = new DatabaseHelper(ctx);
-            mDb = mDbHelper.getWritableDatabase(uid);
+            System.loadLibrary("sqlcipher");
+            File databaseFile = ctx.getDatabasePath(myDBName);
+            databaseFile.getParentFile().mkdirs();
+            mDb = SQLiteDatabase.openOrCreateDatabase(databaseFile, uid, null, null, null);
             WKDBUpgrade.getInstance().onUpgrade(mDb);
         } catch (Exception e) {
-            WKLoggerUtils.getInstance().e(TAG + " init WKDBHelper error");
+            WKLoggerUtils.getInstance().e(TAG + " init WKDBHelper error: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -64,23 +70,21 @@ public class WKDBHelper {
         return openHelper;
     }
 
-    public static class DatabaseHelper extends SQLiteOpenHelper {
-
-        DatabaseHelper(Context context) {
-            super(context, myDBName, null, version);
-            //不可忽略的 进行so库加载
-            SQLiteDatabase.loadLibs(context);
-        }
-
-        @Override
-        public void onCreate(SQLiteDatabase db) {
-
-        }
-
-        @Override
-        public void onUpgrade(SQLiteDatabase db, int arg1, int arg2) {
-        }
-    }
+//    public static class DatabaseHelper extends SQLiteOpenHelper {
+//        DatabaseHelper(Context context) {
+//            super(context, myDBName, null, version);
+//        }
+//
+//        @Override
+//        public void onCreate(SQLiteDatabase db) {
+//            // 在这里设置数据库密码
+//            db.execSQL("PRAGMA key = '" + uid + "'");
+//        }
+//
+//        @Override
+//        public void onUpgrade(SQLiteDatabase db, int arg1, int arg2) {
+//        }
+//    }
 
     /**
      * 关闭数据库
@@ -93,10 +97,10 @@ public class WKDBHelper {
                 mDb = null;
             }
             myDBName = "";
-            if (mDbHelper != null) {
-                mDbHelper.close();
-                mDbHelper = null;
-            }
+//            if (mDbHelper != null) {
+//                mDbHelper.close();
+//                mDbHelper = null;
+//            }
         } catch (Exception e) {
             WKLoggerUtils.getInstance().e(TAG + " close WKDBHelper error");
         }

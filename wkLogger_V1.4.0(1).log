@@ -1,0 +1,368 @@
+2025-06-04 18:19:32   [main(2): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:19:32   [main(2): WKConnection.java:177] - 创建新的连接线程池
+2025-06-04 18:19:33   [WKConnection-Worker(143): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:19:34   [xNbcPool-1-thread-1(172): MessageHandler.java:257] - 收到包类型2 [连接状态包]|是否不持续化：1，是否显示红点：0，是否只同步一次：0
+2025-06-04 18:19:34   [xNbcPool-1-thread-1(172): WKConnection.java:573] - 连接状态：1，连接节点：1002
+2025-06-04 18:19:34   [xNbcPool-1-thread-1(172): WKConnection.java:581] - Connection state transition: 0 -> 1
+2025-06-04 18:19:34   [TimerTask-1(174): WKConnection.java:716] -  sendMessage: In syncMsg status, message not sent: 7
+2025-06-04 18:19:35   [main(2): WKConnection.java:140] - 连接确认成功
+2025-06-04 18:19:36   [xNbcPool-1-thread-1(172): ConnectionClient.java:111] - Connection timeout ignored - connection already successful
+2025-06-04 18:20:02   [xNbcPool-1-thread-1(172): ConnectionClient.java:168] - 连接断开需要重连
+2025-06-04 18:20:02   [TimerTask-1(174): WKConnection.java:1063] -  Connection object nulled, preparing for async close of: 59c3b57d1973a740d0d3a65be24C1
+2025-06-04 18:20:02   [xNbcPool-1-thread-1(172): WKConnection.java:253] - 重连延迟: 500ms
+2025-06-04 18:20:02   [ConnectionCloser(209): WKConnection.java:1099] -  Connection was already closed or not open when async close executed: 59c3b57d1973a740d0d3a65be24C1
+2025-06-04 18:20:03   [TimerTask-2(175): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:20:03   [WKConnection-Worker(143): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:20:03   [xNbcPool-1-thread-1(172): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:20:03   [WKConnection-Worker(143): WKConnection.java:474] - 连接异常: Connection refused连接地址：:0
+2025-06-04 18:20:03   [xNbcPool-1-thread-1(172): WKConnection.java:253] - 重连延迟: 1000ms
+2025-06-04 18:20:03   [WKConnection-Worker(143): WKConnection.java:229] - 已经在重连计划中，忽略重复请求
+2025-06-04 18:20:03   [main(2): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:20:04   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:20:04   [WKConnection-Worker(143): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:20:05   [xNbcPool-1-thread-1(172): MessageHandler.java:257] - 收到包类型2 [连接状态包]|是否不持续化：1，是否显示红点：0，是否只同步一次：0
+2025-06-04 18:20:05   [xNbcPool-1-thread-1(172): WKConnection.java:573] - 连接状态：1，连接节点：1003
+2025-06-04 18:20:05   [xNbcPool-1-thread-1(172): WKConnection.java:581] - Connection state transition: 0 -> 1
+2025-06-04 18:20:05   [TimerTask-2(175): WKConnection.java:716] -  sendMessage: In syncMsg status, message not sent: 7
+2025-06-04 18:20:06   [main(2): WKConnection.java:140] - 连接确认成功
+2025-06-04 18:20:08   [xNbcPool-1-thread-1(172): ConnectionClient.java:111] - Connection timeout ignored - connection already successful
+2025-06-04 18:20:25   [xNbcPool-1-thread-1(172): ConnectionClient.java:168] - 连接断开需要重连
+2025-06-04 18:20:25   [xNbcPool-1-thread-1(172): WKConnection.java:253] - 重连延迟: 500ms
+2025-06-04 18:20:25   [TimerTask-3(186): WKConnection.java:1063] -  Connection object nulled, preparing for async close of: 59c3b57d1973a740d0d3a65be24C2
+2025-06-04 18:20:25   [ConnectionCloser(224): WKConnection.java:1099] -  Connection was already closed or not open when async close executed: 59c3b57d1973a740d0d3a65be24C2
+2025-06-04 18:20:26   [WKConnection-Worker(143): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:20:27   [xNbcPool-1-thread-1(172): MessageHandler.java:257] - 收到包类型2 [连接状态包]|是否不持续化：1，是否显示红点：0，是否只同步一次：0
+2025-06-04 18:20:27   [xNbcPool-1-thread-1(172): WKConnection.java:573] - 连接状态：1，连接节点：1001
+2025-06-04 18:20:27   [xNbcPool-1-thread-1(172): WKConnection.java:581] - Connection state transition: 0 -> 1
+2025-06-04 18:20:27   [TimerTask-2(175): WKConnection.java:716] -  sendMessage: In syncMsg status, message not sent: 7
+2025-06-04 18:20:27   [main(2): WKConnection.java:140] - 连接确认成功
+2025-06-04 18:20:30   [xNbcPool-1-thread-1(172): ConnectionClient.java:111] - Connection timeout ignored - connection already successful
+2025-06-04 18:20:53   [xNbcPool-1-thread-1(172): ConnectionClient.java:168] - 连接断开需要重连
+2025-06-04 18:20:53   [xNbcPool-1-thread-1(172): WKConnection.java:253] - 重连延迟: 500ms
+2025-06-04 18:20:54   [main(2): WKConnection.java:1063] -  Connection object nulled, preparing for async close of: 59c3b57d1973a740d0d3a65be24C3
+2025-06-04 18:20:54   [ConnectionCloser(234): WKConnection.java:1099] -  Connection was already closed or not open when async close executed: 59c3b57d1973a740d0d3a65be24C3
+2025-06-04 18:20:55   [WKConnection-Worker(143): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:20:56   [xNbcPool-1-thread-1(172): MessageHandler.java:257] - 收到包类型2 [连接状态包]|是否不持续化：1，是否显示红点：0，是否只同步一次：0
+2025-06-04 18:20:56   [xNbcPool-1-thread-1(172): WKConnection.java:573] - 连接状态：1，连接节点：1002
+2025-06-04 18:20:56   [xNbcPool-1-thread-1(172): WKConnection.java:581] - Connection state transition: 0 -> 1
+2025-06-04 18:20:56   [TimerTask-1(174): WKConnection.java:716] -  sendMessage: In syncMsg status, message not sent: 7
+2025-06-04 18:20:56   [main(2): WKConnection.java:140] - 连接确认成功
+2025-06-04 18:20:59   [xNbcPool-1-thread-1(172): ConnectionClient.java:111] - Connection timeout ignored - connection already successful
+2025-06-04 18:21:11   [xNbcPool-1-thread-1(172): ConnectionClient.java:168] - 连接断开需要重连
+2025-06-04 18:21:11   [xNbcPool-1-thread-1(172): WKConnection.java:253] - 重连延迟: 500ms
+2025-06-04 18:21:11   [TimerTask-1(174): WKConnection.java:1063] -  Connection object nulled, preparing for async close of: 59c3b57d1973a740d0d3a65be24C4
+2025-06-04 18:21:11   [ConnectionCloser(245): WKConnection.java:1099] -  Connection was already closed or not open when async close executed: 59c3b57d1973a740d0d3a65be24C4
+2025-06-04 18:21:12   [WKConnection-Worker(143): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:21:18   [TimerTask-1(174): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:21:19   [TimerTask-2(175): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:21:26   [TimerTask-3(186): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:21:27   [TimerTask-1(174): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:21:34   [TimerTask-2(175): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:21:35   [TimerTask-3(186): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:21:42   [TimerTask-1(174): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:21:43   [TimerTask-2(175): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:21:50   [TimerTask-3(186): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:21:51   [TimerTask-1(174): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:21:56   [TimerTask-3(186): WKConnection.java:720] -  sendMessage: Not in success status (is 0), attempting reconnection for: 7
+2025-06-04 18:21:58   [TimerTask-3(186): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:21:59   [TimerTask-1(174): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:22:06   [TimerTask-2(175): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:22:07   [TimerTask-3(186): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:22:14   [TimerTask-1(174): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:22:15   [TimerTask-2(175): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:22:22   [TimerTask-3(186): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:22:23   [TimerTask-1(174): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:22:30   [TimerTask-2(175): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:22:31   [TimerTask-3(186): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:22:38   [TimerTask-1(174): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:22:39   [TimerTask-2(175): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:22:46   [TimerTask-3(186): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:22:47   [TimerTask-1(174): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:22:54   [TimerTask-2(175): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:22:55   [TimerTask-3(186): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:22:56   [TimerTask-1(174): WKConnection.java:720] -  sendMessage: Not in success status (is 0), attempting reconnection for: 7
+2025-06-04 18:23:02   [TimerTask-2(175): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:23:03   [TimerTask-3(186): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:23:10   [TimerTask-1(174): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:23:11   [TimerTask-2(175): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:23:18   [TimerTask-3(186): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:23:19   [TimerTask-1(174): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:23:23   [xNbcPool-1-thread-2(249): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:23:23   [WKConnection-Worker(143): WKConnection.java:474] - 连接异常: Connection timed out连接地址：:0
+2025-06-04 18:23:23   [xNbcPool-1-thread-2(249): WKConnection.java:253] - 重连延迟: 1000ms
+2025-06-04 18:23:23   [WKConnection-Worker(143): WKConnection.java:229] - 已经在重连计划中，忽略重复请求
+2025-06-04 18:23:24   [TimerTask-2(175): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:23:24   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:23:24   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:23:24   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:23:25   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:23:25   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:23:25   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:23:25   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:23:25   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:23:25   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:23:26   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:23:26   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:23:26   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:23:26   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:23:26   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:23:26   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:23:28   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:23:28   [WKConnection-Worker(143): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:23:29   [main(2): WKConnection.java:142] - 等待连接确认--->1
+2025-06-04 18:23:30   [main(2): WKConnection.java:142] - 等待连接确认--->2
+2025-06-04 18:23:31   [main(2): WKConnection.java:142] - 等待连接确认--->3
+2025-06-04 18:23:31   [xNbcPool-1-thread-2(249): ConnectionClient.java:111] - Connection timeout ignored - connection already successful
+2025-06-04 18:23:32   [main(2): WKConnection.java:142] - 等待连接确认--->4
+2025-06-04 18:23:33   [main(2): WKConnection.java:142] - 等待连接确认--->5
+2025-06-04 18:23:34   [main(2): WKConnection.java:142] - 等待连接确认--->6
+2025-06-04 18:23:35   [main(2): WKConnection.java:142] - 等待连接确认--->7
+2025-06-04 18:23:36   [main(2): WKConnection.java:142] - 等待连接确认--->8
+2025-06-04 18:23:37   [main(2): WKConnection.java:142] - 等待连接确认--->9
+2025-06-04 18:23:37   [xNbcPool-1-thread-2(249): MessageHandler.java:257] - 收到包类型2 [连接状态包]|是否不持续化：1，是否显示红点：0，是否只同步一次：0
+2025-06-04 18:23:37   [xNbcPool-1-thread-2(249): WKConnection.java:573] - 连接状态：1，连接节点：1003
+2025-06-04 18:23:37   [xNbcPool-1-thread-2(249): WKConnection.java:581] - Connection state transition: 0 -> 1
+2025-06-04 18:23:37   [TimerTask-1(174): WKConnection.java:716] -  sendMessage: In syncMsg status, message not sent: 7
+2025-06-04 18:23:38   [main(2): WKConnection.java:140] - 连接确认成功
+2025-06-04 18:24:38   [TimerTask-2(175): WKProto.java:71] - ping...
+2025-06-04 18:24:38   [xNbcPool-1-thread-3(277): MessageHandler.java:257] - 收到包类型8 [心跳包]|是否不持续化：0，是否显示红点：0，是否只同步一次：0
+2025-06-04 18:24:38   [xNbcPool-1-thread-3(277): MessageHandler.java:266] - pong...
+2025-06-04 18:25:30   [xNbcPool-1-thread-3(277): ConnectionClient.java:168] - 连接断开需要重连
+2025-06-04 18:25:30   [xNbcPool-1-thread-3(277): WKConnection.java:253] - 重连延迟: 500ms
+2025-06-04 18:25:30   [TimerTask-2(175): WKConnection.java:1063] -  Connection object nulled, preparing for async close of: 59c3b57d1973a740d0d3a65be24C5
+2025-06-04 18:25:30   [ConnectionCloser(281): WKConnection.java:1099] -  Connection was already closed or not open when async close executed: 59c3b57d1973a740d0d3a65be24C5
+2025-06-04 18:25:31   [WKConnection-Worker(143): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:25:31   [xNbcPool-1-thread-3(277): WKConnection.java:429] - 无效的连接回调
+2025-06-04 18:25:31   [WKConnection-Worker(143): WKConnection.java:465] - 连接建立超时或失败
+2025-06-04 18:25:31   [WKConnection-Worker(143): WKConnection.java:1063] -  Connection object nulled, preparing for async close of: 59c3b57d1973a740d0d3a65be24C6
+2025-06-04 18:25:31   [WKConnection-Worker(143): WKConnection.java:253] - 重连延迟: 1000ms
+2025-06-04 18:25:31   [ConnectionCloser(293): WKConnection.java:1093] -  Attempting to close connection: 59c3b57d1973a740d0d3a65be24C6
+2025-06-04 18:25:31   [ConnectionCloser(293): WKConnection.java:1097] -  Successfully closed connection: 59c3b57d1973a740d0d3a65be24C6
+2025-06-04 18:25:31   [xNbcPool-1-thread-3(277): ConnectionClient.java:157] - 主动断开不重连
+2025-06-04 18:25:32   [TimerTask-1(174): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:25:32   [WKConnection-Worker(143): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:25:38   [TimerTask-1(174): WKConnection.java:720] -  sendMessage: Not in success status (is 0), attempting reconnection for: 7
+2025-06-04 18:25:39   [TimerTask-3(186): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:25:40   [TimerTask-1(174): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:25:42   [main(2): WKConnection.java:142] - 等待连接确认--->1
+2025-06-04 18:25:43   [main(2): WKConnection.java:142] - 等待连接确认--->2
+2025-06-04 18:25:44   [xNbcPool-1-thread-3(277): ConnectionClient.java:111] - Connection timeout ignored - connection already successful
+2025-06-04 18:25:44   [main(2): WKConnection.java:142] - 等待连接确认--->3
+2025-06-04 18:25:44   [xNbcPool-1-thread-3(277): ConnectionClient.java:168] - 连接断开需要重连
+2025-06-04 18:25:44   [xNbcPool-1-thread-3(277): WKConnection.java:253] - 重连延迟: 500ms
+2025-06-04 18:25:44   [TimerTask-2(175): WKConnection.java:1063] -  Connection object nulled, preparing for async close of: 59c3b57d1973a740d0d3a65be24C7
+2025-06-04 18:25:44   [ConnectionCloser(294): WKConnection.java:1099] -  Connection was already closed or not open when async close executed: 59c3b57d1973a740d0d3a65be24C7
+2025-06-04 18:25:45   [main(2): WKConnection.java:142] - 等待连接确认--->4
+2025-06-04 18:25:45   [WKConnection-Worker(143): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:25:46   [main(2): WKConnection.java:142] - 等待连接确认--->5
+2025-06-04 18:25:47   [main(2): WKConnection.java:142] - 等待连接确认--->6
+2025-06-04 18:25:48   [main(2): WKConnection.java:142] - 等待连接确认--->7
+2025-06-04 18:25:49   [main(2): WKConnection.java:142] - 等待连接确认--->8
+2025-06-04 18:25:50   [main(2): WKConnection.java:142] - 等待连接确认--->9
+2025-06-04 18:25:51   [main(2): WKConnection.java:142] - 等待连接确认--->10
+2025-06-04 18:25:51   [TimerTask-3(186): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:25:52   [main(2): WKConnection.java:134] - 连接确认超时
+2025-06-04 18:25:52   [main(2): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:25:52   [main(2): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:25:59   [TimerTask-2(175): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:26:00   [TimerTask-3(186): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:26:07   [TimerTask-1(174): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:26:08   [TimerTask-2(175): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:26:15   [TimerTask-3(186): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:26:16   [TimerTask-1(174): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:26:23   [TimerTask-2(175): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:26:24   [TimerTask-3(186): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:26:31   [TimerTask-3(186): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:26:32   [TimerTask-1(174): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:26:38   [TimerTask-1(174): WKConnection.java:720] -  sendMessage: Not in success status (is 0), attempting reconnection for: 7
+2025-06-04 18:26:39   [TimerTask-3(186): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:26:40   [TimerTask-1(174): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:26:47   [TimerTask-2(175): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:26:48   [TimerTask-3(186): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:26:55   [TimerTask-1(174): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:26:56   [TimerTask-2(175): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:27:03   [TimerTask-3(186): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:27:04   [TimerTask-1(174): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:27:11   [TimerTask-2(175): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:27:12   [TimerTask-3(186): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:27:19   [TimerTask-1(174): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:27:20   [TimerTask-2(175): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:27:27   [TimerTask-3(186): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:27:28   [TimerTask-1(174): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:27:35   [TimerTask-2(175): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:27:36   [TimerTask-3(186): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:27:38   [TimerTask-2(175): WKConnection.java:720] -  sendMessage: Not in success status (is 0), attempting reconnection for: 7
+2025-06-04 18:27:43   [TimerTask-2(175): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:27:44   [TimerTask-3(186): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:27:51   [TimerTask-1(174): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:27:52   [TimerTask-2(175): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:27:56   [WKConnection-Worker(143): WKConnection.java:474] - 连接异常: Connection timed out连接地址：:0
+2025-06-04 18:27:56   [xNbcPool-1-thread-4(295): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:27:56   [WKConnection-Worker(143): WKConnection.java:253] - 重连延迟: 1000ms
+2025-06-04 18:27:56   [xNbcPool-1-thread-4(295): WKConnection.java:229] - 已经在重连计划中，忽略重复请求
+2025-06-04 18:27:56   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:27:56   [TimerTask-3(186): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:27:56   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:27:57   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:27:57   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:27:57   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:27:57   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:27:57   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:27:57   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:27:58   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:27:58   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:27:58   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:27:58   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:27:58   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:27:58   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:27:59   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:28:00   [WKConnection-Worker(143): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:00   [xNbcPool-1-thread-4(295): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:28:00   [WKConnection-Worker(143): WKConnection.java:474] - 连接异常: Connection refused连接地址：:0
+2025-06-04 18:28:00   [xNbcPool-1-thread-4(295): WKConnection.java:253] - 重连延迟: 2000ms
+2025-06-04 18:28:00   [WKConnection-Worker(143): WKConnection.java:229] - 已经在重连计划中，忽略重复请求
+2025-06-04 18:28:00   [TimerTask-1(174): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:02   [WKConnection-Worker(143): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:02   [xNbcPool-1-thread-4(295): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:28:02   [WKConnection-Worker(143): WKConnection.java:474] - 连接异常: Connection refused连接地址：:0
+2025-06-04 18:28:02   [xNbcPool-1-thread-4(295): WKConnection.java:253] - 重连延迟: 4000ms
+2025-06-04 18:28:02   [WKConnection-Worker(143): WKConnection.java:229] - 已经在重连计划中，忽略重复请求
+2025-06-04 18:28:02   [TimerTask-3(186): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:06   [WKConnection-Worker(143): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:06   [xNbcPool-1-thread-4(295): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:28:06   [WKConnection-Worker(143): WKConnection.java:474] - 连接异常: Connection refused连接地址：:0
+2025-06-04 18:28:06   [xNbcPool-1-thread-4(295): WKConnection.java:253] - 重连延迟: 8000ms
+2025-06-04 18:28:06   [WKConnection-Worker(143): WKConnection.java:229] - 已经在重连计划中，忽略重复请求
+2025-06-04 18:28:06   [TimerTask-1(174): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:13   [TimerTask-2(175): WKConnection.java:297] - 重置了正在连接
+2025-06-04 18:28:14   [WKConnection-Worker(143): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:14   [WKConnection-Worker(143): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:14   [xNbcPool-1-thread-4(295): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:28:14   [WKConnection-Worker(143): WKConnection.java:474] - 连接异常: Connection refused连接地址：:0
+2025-06-04 18:28:14   [xNbcPool-1-thread-4(295): WKConnection.java:242] - 达到最大重连次数，停止重连
+2025-06-04 18:28:14   [xNbcPool-1-thread-4(295): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:14   [WKConnection-Worker(143): WKConnection.java:177] - 创建新的连接线程池
+2025-06-04 18:28:14   [WKConnection-Worker(143): WKConnection.java:253] - 重连延迟: 500ms
+2025-06-04 18:28:14   [DispatchQueuePool-312450412_-1257110634(300): WKConnection.java:200] - Starting executor shutdown
+2025-06-04 18:28:14   [WKConnection-Worker(143): WKConnection.java:405] - 已经在连接中，忽略重复连接请求
+2025-06-04 18:28:14   [DispatchQueuePool-312450412_-1257110634(300): WKConnection.java:213] - Executor shutdown completed
+2025-06-04 18:28:15   [WKConnection-Worker(301): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:15   [WKConnection-Worker(301): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:15   [WKConnection-Worker(301): WKConnection.java:474] - 连接异常: Connection refused连接地址：:0
+2025-06-04 18:28:15   [xNbcPool-1-thread-4(295): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:28:15   [WKConnection-Worker(301): WKConnection.java:253] - 重连延迟: 1000ms
+2025-06-04 18:28:15   [xNbcPool-1-thread-4(295): WKConnection.java:229] - 已经在重连计划中，忽略重复请求
+2025-06-04 18:28:16   [WKConnection-Worker(301): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:16   [WKConnection-Worker(301): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:16   [xNbcPool-1-thread-4(295): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:28:16   [WKConnection-Worker(301): WKConnection.java:474] - 连接异常: Connection refused连接地址：:0
+2025-06-04 18:28:16   [xNbcPool-1-thread-4(295): WKConnection.java:253] - 重连延迟: 2000ms
+2025-06-04 18:28:16   [WKConnection-Worker(301): WKConnection.java:229] - 已经在重连计划中，忽略重复请求
+2025-06-04 18:28:18   [WKConnection-Worker(301): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:18   [WKConnection-Worker(301): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:18   [xNbcPool-1-thread-4(295): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:28:18   [xNbcPool-1-thread-4(295): WKConnection.java:253] - 重连延迟: 4000ms
+2025-06-04 18:28:18   [WKConnection-Worker(301): WKConnection.java:474] - 连接异常: Connection refused连接地址：:0
+2025-06-04 18:28:18   [WKConnection-Worker(301): WKConnection.java:229] - 已经在重连计划中，忽略重复请求
+2025-06-04 18:28:22   [WKConnection-Worker(301): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:22   [WKConnection-Worker(301): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:22   [xNbcPool-1-thread-4(295): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:28:22   [WKConnection-Worker(301): WKConnection.java:474] - 连接异常: Connection refused连接地址：:0
+2025-06-04 18:28:22   [xNbcPool-1-thread-4(295): WKConnection.java:253] - 重连延迟: 8000ms
+2025-06-04 18:28:22   [WKConnection-Worker(301): WKConnection.java:229] - 已经在重连计划中，忽略重复请求
+2025-06-04 18:28:30   [WKConnection-Worker(301): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:30   [WKConnection-Worker(301): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:30   [xNbcPool-1-thread-4(295): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:28:30   [WKConnection-Worker(301): WKConnection.java:474] - 连接异常: Connection refused连接地址：:0
+2025-06-04 18:28:30   [xNbcPool-1-thread-4(295): WKConnection.java:242] - 达到最大重连次数，停止重连
+2025-06-04 18:28:30   [xNbcPool-1-thread-4(295): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:30   [DispatchQueuePool-312450412_-1257110634(300): WKConnection.java:200] - Starting executor shutdown
+2025-06-04 18:28:30   [WKConnection-Worker(301): WKConnection.java:177] - 创建新的连接线程池
+2025-06-04 18:28:31   [WKConnection-Worker(301): WKConnection.java:253] - 重连延迟: 500ms
+2025-06-04 18:28:31   [DispatchQueuePool-312450412_-1257110634(300): WKConnection.java:213] - Executor shutdown completed
+2025-06-04 18:28:31   [WKConnection-Worker(302): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:31   [WKConnection-Worker(302): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:31   [WKConnection-Worker(302): WKConnection.java:474] - 连接异常: Connection refused连接地址：:0
+2025-06-04 18:28:31   [xNbcPool-1-thread-4(295): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:28:31   [WKConnection-Worker(302): WKConnection.java:253] - 重连延迟: 1000ms
+2025-06-04 18:28:31   [xNbcPool-1-thread-4(295): WKConnection.java:229] - 已经在重连计划中，忽略重复请求
+2025-06-04 18:28:32   [WKConnection-Worker(302): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:32   [WKConnection-Worker(302): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:32   [WKConnection-Worker(302): WKConnection.java:474] - 连接异常: Connection refused连接地址：:0
+2025-06-04 18:28:32   [xNbcPool-1-thread-4(295): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:28:32   [WKConnection-Worker(302): WKConnection.java:253] - 重连延迟: 2000ms
+2025-06-04 18:28:32   [xNbcPool-1-thread-4(295): WKConnection.java:229] - 已经在重连计划中，忽略重复请求
+2025-06-04 18:28:34   [WKConnection-Worker(302): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:34   [WKConnection-Worker(302): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:34   [xNbcPool-1-thread-4(295): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:28:34   [WKConnection-Worker(302): WKConnection.java:474] - 连接异常: Connection refused连接地址：:0
+2025-06-04 18:28:34   [xNbcPool-1-thread-4(295): WKConnection.java:253] - 重连延迟: 4000ms
+2025-06-04 18:28:34   [WKConnection-Worker(302): WKConnection.java:229] - 已经在重连计划中，忽略重复请求
+2025-06-04 18:28:39   [WKConnection-Worker(302): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:39   [WKConnection-Worker(302): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:39   [xNbcPool-1-thread-4(295): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:28:39   [WKConnection-Worker(302): WKConnection.java:474] - 连接异常: Connection refused连接地址：:0
+2025-06-04 18:28:39   [xNbcPool-1-thread-4(295): WKConnection.java:253] - 重连延迟: 8000ms
+2025-06-04 18:28:39   [WKConnection-Worker(302): WKConnection.java:229] - 已经在重连计划中，忽略重复请求
+2025-06-04 18:28:47   [WKConnection-Worker(302): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:47   [WKConnection-Worker(302): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:47   [xNbcPool-1-thread-4(295): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:28:47   [WKConnection-Worker(302): WKConnection.java:474] - 连接异常: Connection refused连接地址：:0
+2025-06-04 18:28:47   [xNbcPool-1-thread-4(295): WKConnection.java:242] - 达到最大重连次数，停止重连
+2025-06-04 18:28:47   [xNbcPool-1-thread-4(295): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:47   [WKConnection-Worker(302): WKConnection.java:177] - 创建新的连接线程池
+2025-06-04 18:28:47   [DispatchQueuePool-312450412_-1257110634(300): WKConnection.java:200] - Starting executor shutdown
+2025-06-04 18:28:47   [WKConnection-Worker(302): WKConnection.java:253] - 重连延迟: 500ms
+2025-06-04 18:28:47   [DispatchQueuePool-312450412_-1257110634(300): WKConnection.java:213] - Executor shutdown completed
+2025-06-04 18:28:47   [WKConnection-Worker(303): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:47   [WKConnection-Worker(303): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:47   [xNbcPool-1-thread-4(295): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:28:47   [xNbcPool-1-thread-4(295): WKConnection.java:253] - 重连延迟: 1000ms
+2025-06-04 18:28:47   [WKConnection-Worker(303): WKConnection.java:474] - 连接异常: Connection refused连接地址：:0
+2025-06-04 18:28:47   [WKConnection-Worker(303): WKConnection.java:229] - 已经在重连计划中，忽略重复请求
+2025-06-04 18:28:49   [WKConnection-Worker(303): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:49   [WKConnection-Worker(303): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:49   [xNbcPool-1-thread-4(295): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:28:49   [WKConnection-Worker(303): WKConnection.java:474] - 连接异常: Connection refused连接地址：:0
+2025-06-04 18:28:49   [xNbcPool-1-thread-4(295): WKConnection.java:253] - 重连延迟: 2000ms
+2025-06-04 18:28:49   [WKConnection-Worker(303): WKConnection.java:229] - 已经在重连计划中，忽略重复请求
+2025-06-04 18:28:51   [WKConnection-Worker(303): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:51   [WKConnection-Worker(303): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:51   [xNbcPool-1-thread-4(295): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:28:51   [WKConnection-Worker(303): WKConnection.java:474] - 连接异常: Connection refused连接地址：:0
+2025-06-04 18:28:51   [xNbcPool-1-thread-4(295): WKConnection.java:253] - 重连延迟: 4000ms
+2025-06-04 18:28:51   [WKConnection-Worker(303): WKConnection.java:229] - 已经在重连计划中，忽略重复请求
+2025-06-04 18:28:55   [WKConnection-Worker(303): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:55   [WKConnection-Worker(303): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:28:55   [xNbcPool-1-thread-4(295): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:28:55   [WKConnection-Worker(303): WKConnection.java:474] - 连接异常: Connection refused连接地址：:0
+2025-06-04 18:28:55   [xNbcPool-1-thread-4(295): WKConnection.java:253] - 重连延迟: 8000ms
+2025-06-04 18:28:55   [WKConnection-Worker(303): WKConnection.java:229] - 已经在重连计划中，忽略重复请求
+2025-06-04 18:29:03   [WKConnection-Worker(303): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:29:03   [WKConnection-Worker(303): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:29:03   [xNbcPool-1-thread-4(295): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:29:03   [WKConnection-Worker(303): WKConnection.java:474] - 连接异常: Connection refused连接地址：:0
+2025-06-04 18:29:03   [xNbcPool-1-thread-4(295): WKConnection.java:242] - 达到最大重连次数，停止重连
+2025-06-04 18:29:03   [xNbcPool-1-thread-4(295): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:29:03   [WKConnection-Worker(303): WKConnection.java:177] - 创建新的连接线程池
+2025-06-04 18:29:03   [WKConnection-Worker(303): WKConnection.java:253] - 重连延迟: 500ms
+2025-06-04 18:29:03   [DispatchQueuePool-312450412_-1257110634(300): WKConnection.java:200] - Starting executor shutdown
+2025-06-04 18:29:03   [DispatchQueuePool-312450412_-1257110634(300): WKConnection.java:213] - Executor shutdown completed
+2025-06-04 18:29:04   [WKConnection-Worker(304): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:29:04   [WKConnection-Worker(304): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:29:04   [xNbcPool-1-thread-4(295): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:29:04   [WKConnection-Worker(304): WKConnection.java:474] - 连接异常: Connection refused连接地址：:0
+2025-06-04 18:29:04   [xNbcPool-1-thread-4(295): WKConnection.java:253] - 重连延迟: 1000ms
+2025-06-04 18:29:04   [WKConnection-Worker(304): WKConnection.java:229] - 已经在重连计划中，忽略重复请求
+2025-06-04 18:29:05   [WKConnection-Worker(304): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:29:05   [WKConnection-Worker(304): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:29:05   [xNbcPool-1-thread-4(295): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:29:05   [WKConnection-Worker(304): WKConnection.java:474] - 连接异常: Connection refused连接地址：:0
+2025-06-04 18:29:05   [xNbcPool-1-thread-4(295): WKConnection.java:253] - 重连延迟: 2000ms
+2025-06-04 18:29:05   [WKConnection-Worker(304): WKConnection.java:229] - 已经在重连计划中，忽略重复请求
+2025-06-04 18:29:07   [WKConnection-Worker(304): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:29:07   [WKConnection-Worker(304): WKConnection.java:1049] -  closeConnect called but connection is already null.
+2025-06-04 18:29:07   [xNbcPool-1-thread-4(295): ConnectionClient.java:42] - 连接异常
+2025-06-04 18:29:07   [xNbcPool-1-thread-4(295): WKConnection.java:253] - 重连延迟: 4000ms
+2025-06-04 18:29:07   [WKConnection-Worker(304): WKConnection.java:474] - 连接异常: Connection refused连接地址：:0
+2025-06-04 18:29:07   [WKConnection-Worker(304): WKConnection.java:229] - 已经在重连计划中，忽略重复请求

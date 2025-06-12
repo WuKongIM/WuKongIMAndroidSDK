@@ -2,12 +2,12 @@ package com.xinbida.wukongim.db;
 
 import android.content.res.AssetManager;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.xinbida.wukongim.WKIMApplication;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
 
-import net.sqlcipher.database.SQLiteDatabase;
+
+import net.zetetic.database.sqlcipher.SQLiteDatabase;
 
 import java.io.BufferedReader;
 import java.io.IOException;

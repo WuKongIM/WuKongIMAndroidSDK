@@ -123,6 +123,7 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
         if (id instanceof String) {
             if (id.toString().startsWith("close")) {
                 return true;
+
             }
             if (!TextUtils.isEmpty(WKConnection.getInstance().socketSingleID) && !WKConnection.getInstance().socketSingleID.equals(id)) {
                 WKLoggerUtils.getInstance().e(TAG, "非当前连接的消息");

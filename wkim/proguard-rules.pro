@@ -43,8 +43,23 @@
 -keep class org.whispersystems.** { *; }
 -keep class org.thoughtcrime.securesms.** { *; }
 
-# sqlcipher
--keep,includedescriptorclasses class net.sqlcipher.** { *; }
--keep,includedescriptorclasses interface net.sqlcipher.** { *; }
+# SQLCipher 数据库加密相关混淆规则
+-keep class net.sqlcipher.** { *; }
+-keep class net.sqlcipher.database.** { *; }
+-keep interface net.sqlcipher.** { *; }
+-keepclassmembers class net.sqlcipher.** { *; }
+-keepclassmembers class net.sqlcipher.database.** { *; }
+-dontwarn net.sqlcipher.database.**
+-dontwarn net.sqlcipher.**
+
+# 保留本地数据库相关类
+-keep class com.xinbida.wukongim.db.** { *; }
+-keepclassmembers class com.xinbida.wukongim.db.** { *; }
+
+# SQLCipher 原生库
+-keepattributes *Annotation*
+-keepattributes Signature
+-keepattributes Exceptions
+-keepattributes InnerClasses
 
 -flattenpackagehierarchy 'wkim'
