@@ -1,7 +1,6 @@
 package com.xinbida.wukongim.interfaces;
 
 
-import com.xinbida.wukongim.entity.WKMsg;
 import com.xinbida.wukongim.protocol.WKConnectAckMsg;
 import com.xinbida.wukongim.protocol.WKDisconnectMsg;
 import com.xinbida.wukongim.protocol.WKPongMsg;
@@ -15,7 +14,7 @@ public interface IReceivedMsgListener {
     /**
      * 登录状态消息
      *
-     * @param statusCode 状态
+     * @param connectAckMsg 状态
      */
     void loginStatusMsg(WKConnectAckMsg connectAckMsg);
 

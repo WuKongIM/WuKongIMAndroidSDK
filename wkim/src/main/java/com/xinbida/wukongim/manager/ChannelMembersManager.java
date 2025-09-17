@@ -254,7 +254,7 @@ public class ChannelMembersManager extends BaseManager {
             iGetChannelMemberList.request(channelID, channelType, searchKey, page, limit, list1 -> {
                 iGetChannelMemberListResult.onResult(list1, true);
                 if (WKCommonUtils.isNotEmpty(list1)) {
-                    ChannelMembersDbManager.getInstance().deleteWithChannel(channelID, channelType);
+                  //  ChannelMembersDbManager.getInstance().deleteWithChannel(channelID, channelType);
                     save(list1);
                 }
             });
