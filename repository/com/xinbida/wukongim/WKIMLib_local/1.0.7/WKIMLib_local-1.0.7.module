@@ -10,7 +10,7 @@
   },
   "createdBy": {
     "gradle": {
-      "version": "8.9"
+      "version": "8.13"
     }
   },
   "variants": [
@@ -25,11 +25,11 @@
         {
           "name": "WKIMLib_local-1.0.7.aar",
           "url": "WKIMLib_local-1.0.7.aar",
-          "size": 619513,
-          "sha512": "1343a1dbdced7c2522276eb96f64154cf71a8ea0b6d2d3916c2086dc033e5fa58c3c20c3d2d46692d4bbefdd41633d5afe008b6f70324e0c9cec686a465623ff",
-          "sha256": "73a9967a0646e688f68711d14a36540742de517dd2bb54cc93a0816ce449bd0c",
-          "sha1": "0db92db1e267b589c7cdda81cf1f1e4c4e91e72a",
-          "md5": "28971ab006836790ac22bd70bcbd64a5"
+          "size": 624814,
+          "sha512": "2d9ed368118fa6fc126eb5c5135cd8bc8b78f1376c0973639341e8f41b21962d460f5dc425c0bbff91dd26bad410ac80dd8d32014d768cdc008b738a264a767f",
+          "sha256": "d4899cb4b64fcc988506c5ac878f17d05dd9356295e1b07331171a933fb85384",
+          "sha1": "caf7a1e99411a3593174551cca238e5cbe35b65c",
+          "md5": "99363e9f9368d96449088e39f2078b8b"
         }
       ]
     },
@@ -106,11 +106,11 @@
         {
           "name": "WKIMLib_local-1.0.7.aar",
           "url": "WKIMLib_local-1.0.7.aar",
-          "size": 619513,
-          "sha512": "1343a1dbdced7c2522276eb96f64154cf71a8ea0b6d2d3916c2086dc033e5fa58c3c20c3d2d46692d4bbefdd41633d5afe008b6f70324e0c9cec686a465623ff",
-          "sha256": "73a9967a0646e688f68711d14a36540742de517dd2bb54cc93a0816ce449bd0c",
-          "sha1": "0db92db1e267b589c7cdda81cf1f1e4c4e91e72a",
-          "md5": "28971ab006836790ac22bd70bcbd64a5"
+          "size": 624814,
+          "sha512": "2d9ed368118fa6fc126eb5c5135cd8bc8b78f1376c0973639341e8f41b21962d460f5dc425c0bbff91dd26bad410ac80dd8d32014d768cdc008b738a264a767f",
+          "sha256": "d4899cb4b64fcc988506c5ac878f17d05dd9356295e1b07331171a933fb85384",
+          "sha1": "caf7a1e99411a3593174551cca238e5cbe35b65c",
+          "md5": "99363e9f9368d96449088e39f2078b8b"
         }
       ]
     },
@@ -128,11 +128,11 @@
         {
           "name": "WKIMLib_local-1.0.7-sources.jar",
           "url": "WKIMLib_local-1.0.7-sources.jar",
-          "size": 329829,
-          "sha512": "42b9e5c4f9b883895e1988da4f8a9a3bd50ba9444da657df09facafc21754595b3dddfdeba6933bcf05bc6dc4e095e0a92a284d55183e8d97b920f0054948460",
-          "sha256": "e969812abf444c8e5c84e3bb01a2b24038a27ff5bb68d3069b3570a204b9a405",
-          "sha1": "5213ab678cac393bf7d0da3d340ddc43a28294a1",
-          "md5": "58de0c2f13f1422c82dfd191046563f0"
+          "size": 501669,
+          "sha512": "1fff1f7e8f059985aa3627dfa0d49825c8a6f61f1a11f838dc625627360e9911b18ff438321cd7dd59096cb3b39869bffd0d1c3340ec2d2fdfb446ceb24333a5",
+          "sha256": "9439201aaa2b489bcd509a1578069f22ed221ecaf1608216e83c554b43fb2981",
+          "sha1": "b4f21ed4697b703bc3e6f93199154d9b5da93c50",
+          "md5": "6b847548e67c967da9bac41e457c41c7"
         }
       ]
     }

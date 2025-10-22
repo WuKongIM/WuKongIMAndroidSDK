@@ -77,6 +77,7 @@ public class ConnectionManager extends BaseManager {
         MessageHandler.getInstance().updateLastSendingMsgFail();
         WKConnection.getInstance().stopAll();
         WKIM.getInstance().getChannelManager().clearARMCache();
+        WKIM.getInstance().getReminderManager().clearAllCache();
         WKIMApplication.getInstance().closeDbHelper();
     }
 

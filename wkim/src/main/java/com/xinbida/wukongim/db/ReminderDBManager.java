@@ -10,6 +10,7 @@ import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.WKIMApplication;
 import com.xinbida.wukongim.entity.WKReminder;
 import com.xinbida.wukongim.entity.WKUIConversationMsg;
+import com.xinbida.wukongim.interfaces.IReminderResult;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
 
 import org.json.JSONException;
@@ -60,6 +61,12 @@ public class ReminderDBManager {
         return version;
     }
 
+    /**
+     * 同步查询（仅供后台线程使用）
+     *
+     * @deprecated 建议使用 queryWithChannelAndDoneAsync 避免 ANR
+     */
+    @Deprecated
     public List<WKReminder> queryWithChannelAndDone(String channelID, byte channelType, int done) {
         String sql = "select * from " + reminders + " where channel_id=? and channel_type=? and done=? order by message_seq desc";
         List<WKReminder> list = new ArrayList<>();
@@ -74,6 +81,38 @@ public class ReminderDBManager {
         }
         return list;
     }
+
+    /**
+     * 异步查询（推荐使用，避免 ANR）
+     */
+    public void queryWithChannelAndDoneAsync(String channelID, byte channelType, int done, IReminderResult callback) {
+        String sql = "select * from " + reminders + " where channel_id=? and channel_type=? and done=? order by message_seq desc";
+        WKIMApplication.getInstance().getDbHelper().rawQueryAsync(sql, new Object[]{channelID, channelType, done},
+                new WKDBHelper.QueryCallback<List<WKReminder>>() {
+                    @Override
+                    public List<WKReminder> onQuery(Cursor cursor) {
+                        // 在后台线程处理 Cursor
+                        List<WKReminder> list = new ArrayList<>();
+                        if (cursor == null) {
+                            return list;
+                        }
+                        for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
+                            WKReminder reminder = serializeReminder(cursor);
+                            list.add(reminder);
+                        }
+                        return list;
+                    }
+
+                    @Override
+                    public void onResult(List<WKReminder> result) {
+                        // 在主线程回调结果
+                        if (callback != null) {
+                            callback.onResult(result);
+                        }
+                    }
+                });
+    }
+
 
     public List<WKReminder> queryWithChannelAndTypeAndDone(String channelID, byte channelType, int type, int done) {
         String sql = "select * from " + reminders + " where channel_id=? and channel_type=? and done=? and type =? order by message_seq desc";
@@ -199,9 +238,9 @@ public class ReminderDBManager {
             if (maps.containsKey(key)) {
                 uiMsgList.get(i).setReminderList(maps.get(key));
             }
-           // WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsgList.get(i), i == list.size() - 1, "saveReminders");
+            // WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsgList.get(i), i == list.size() - 1, "saveReminders");
         }
-        WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsgList,"saveReminders");
+        WKIM.getInstance().getConversationManager().setOnRefreshMsg(uiMsgList, "saveReminders");
         return reminderList;
     }
 

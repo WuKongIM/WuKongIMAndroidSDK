@@ -3,8 +3,10 @@ package com.xinbida.wukongim.entity;
 
 import android.text.TextUtils;
 
+import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.db.MsgDbManager;
 import com.xinbida.wukongim.db.ReminderDBManager;
+import com.xinbida.wukongim.interfaces.IReminderResult;
 import com.xinbida.wukongim.manager.ChannelManager;
 
 import java.util.HashMap;
@@ -64,11 +66,16 @@ public class WKUIConversationMsg {
 
     public List<WKReminder> getReminderList() {
         if (reminderList == null) {
-            reminderList = ReminderDBManager.getInstance().queryWithChannelAndDone(channelID, channelType, 0);
+            reminderList = WKIM.getInstance().getReminderManager().getReminders(channelID, channelType);
+//            reminderList = ReminderDBManager.getInstance().queryWithChannelAndDone(channelID, channelType, 0);
         }
 
         return reminderList;
     }
+
+//    public void getReminderListAsync(IReminderResult iReminderResult) {
+//        ReminderDBManager.getInstance().queryWithChannelAndDoneAsync(channelID, channelType, 0, iReminderResult);
+//    }
 
     public void setReminderList(List<WKReminder> list) {
         this.reminderList = list;
