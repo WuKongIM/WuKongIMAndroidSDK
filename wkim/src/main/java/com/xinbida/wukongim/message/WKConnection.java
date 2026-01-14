@@ -578,7 +578,7 @@ public class WKConnection {
                 return;
             }
 
-            WKLoggerUtils.getInstance().e(TAG, "Connection state transition: " + connectStatus + " -> " + status);
+            WKLoggerUtils.getInstance().e(TAG, "Connection state : " + connectStatus + " -> " + status);
             String reason = WKConnectReason.ConnectSuccess;
             if (status == WKConnectStatus.kicked) {
                 reason = WKConnectReason.ReasonAuthFail;
