@@ -147,22 +147,22 @@ public class WKConnection {
         }
     };
 
-    // 替换原有的 Object 锁
-    public final ReentrantLock connectionLock = new ReentrantLock(true); // 使用公平锁
-    private static final long LOCK_TIMEOUT = 3000; // 3秒超时
+    // 统一使用 ReentrantLock（非公平锁，性能更好）
+    private final ReentrantLock connectionLock = new ReentrantLock();
+    // 后台线程锁超时时间（主线程不应该等待锁）
+    private static final long LOCK_TIMEOUT_MS = 3000;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
-    private static final long CONNECTION_CLOSE_TIMEOUT = 5000; // 5 seconds timeout
+    private static final long CONNECTION_CLOSE_TIMEOUT = 5000;
 
     public final AtomicBoolean isClosing = new AtomicBoolean(false);
 
     private final int maxReconnectAttempts = 5;
     private final long baseReconnectDelay = 500;
 
-    private final Object connectionStateLock = new Object();
-    private volatile boolean isConnecting = false;
-
-    private final Object reconnectLock = new Object();
-    private volatile boolean isReconnectScheduled = false;
+    // 使用原子变量替代锁保护的状态
+    private final AtomicBoolean isConnecting = new AtomicBoolean(false);
+    private final AtomicBoolean isReconnectScheduled = new AtomicBoolean(false);
+    
     private final Object executorLock = new Object();
     private volatile ExecutorService connectionExecutor;
 
@@ -223,63 +223,61 @@ public class WKConnection {
         networkChecker.startNetworkCheck();
     }
 
-    public synchronized void forcedReconnection() {
-        synchronized (reconnectLock) {
-            if (isReconnectScheduled) {
-                WKLoggerUtils.getInstance().w(TAG, "已经在重连计划中，忽略重复请求");
-                return;
-            }
+    public void forcedReconnection() {
+        // 使用 CAS 操作避免重复调度，无需锁
+        if (!isReconnectScheduled.compareAndSet(false, true)) {
+            WKLoggerUtils.getInstance().w(TAG, "已经在重连计划中，忽略重复请求");
+            return;
+        }
 
-            // 检查线程池状态
-            ExecutorService executor = getOrCreateExecutor();
-            if (executor.isShutdown() || executor.isTerminated()) {
-                WKLoggerUtils.getInstance().e(TAG, "线程池已关闭，无法执行重连");
-                return;
-            }
+        // 检查线程池状态
+        ExecutorService executor = getOrCreateExecutor();
+        if (executor.isShutdown() || executor.isTerminated()) {
+            WKLoggerUtils.getInstance().e(TAG, "线程池已关闭，无法执行重连");
+            isReconnectScheduled.set(false);
+            return;
+        }
 
-            connCount++;
-            if (connCount > maxReconnectAttempts) {
-                WKLoggerUtils.getInstance().e(TAG, "达到最大重连次数，停止重连");
-                stopAll();
-                return;
-            }
+        connCount++;
+        if (connCount > maxReconnectAttempts) {
+            WKLoggerUtils.getInstance().e(TAG, "达到最大重连次数，停止重连");
+            isReconnectScheduled.set(false);
+            stopAll();
+            return;
+        }
 
-            isReconnectScheduled = true;
-            isReConnecting = false;
-            requestIPTime = 0;
+        isReConnecting = false;
+        requestIPTime = 0;
 
-            // 使用指数退避延迟，最大延迟改为8秒
-            long delay = Math.min(baseReconnectDelay * (1L << (connCount - 1)), 8000);
-            WKLoggerUtils.getInstance().e(TAG, "重连延迟: " + delay + "ms");
+        // 使用指数退避延迟，最大延迟改为8秒
+        long delay = Math.min(baseReconnectDelay * (1L << (connCount - 1)), 8000);
+        WKLoggerUtils.getInstance().e(TAG, "重连延迟: " + delay + "ms");
 
-            try {
-                // 使用单独的线程池处理重连
-                executor.execute(() -> {
-                    try {
-                        Thread.sleep(delay);
-                        if (WKIMApplication.getInstance().isCanConnect &&
-                                !executor.isShutdown()) {
-                            reconnection();
-                        }
-                    } catch (InterruptedException e) {
-                        WKLoggerUtils.getInstance().e(TAG, "重连等待被中断");
-                        Thread.currentThread().interrupt();
-                    } finally {
-                        isReconnectScheduled = false;
+        try {
+            executor.execute(() -> {
+                try {
+                    Thread.sleep(delay);
+                    if (WKIMApplication.getInstance().isCanConnect && !executor.isShutdown()) {
+                        reconnection();
                     }
-                });
-            } catch (RejectedExecutionException e) {
-                WKLoggerUtils.getInstance().e(TAG, "重连任务被拒绝执行: " + e.getMessage());
-                isReconnectScheduled = false;
-            }
+                } catch (InterruptedException e) {
+                    WKLoggerUtils.getInstance().e(TAG, "重连等待被中断");
+                    Thread.currentThread().interrupt();
+                } finally {
+                    isReconnectScheduled.set(false);
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            WKLoggerUtils.getInstance().e(TAG, "重连任务被拒绝执行: " + e.getMessage());
+            isReconnectScheduled.set(false);
         }
     }
 
-    public synchronized void reconnection() {
-        // 如果正在关闭连接，等待关闭完成
+    public void reconnection() {
+        // 如果正在关闭连接，延迟到后台线程重试（避免主线程阻塞）
         if (isClosing.get()) {
             WKLoggerUtils.getInstance().e(TAG, "等待连接关闭完成后再重连");
-            mainHandler.postDelayed(this::reconnection, 500);
+            scheduleReconnectionOnBackground(500);
             return;
         }
 
@@ -312,6 +310,27 @@ public class WKConnection {
             if (networkChecker != null && networkChecker.checkNetWorkTimerIsRunning) {
                 WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.noNetwork, WKConnectReason.NoNetwork);
                 forcedReconnection();
+            }
+        }
+    }
+
+    /**
+     * 在后台线程延迟执行重连，避免主线程阻塞
+     */
+    private void scheduleReconnectionOnBackground(long delayMs) {
+        ExecutorService executor = getOrCreateExecutor();
+        if (executor != null && !executor.isShutdown()) {
+            try {
+                executor.execute(() -> {
+                    try {
+                        Thread.sleep(delayMs);
+                        reconnection();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                });
+            } catch (RejectedExecutionException e) {
+                WKLoggerUtils.getInstance().e(TAG, "延迟重连任务被拒绝: " + e.getMessage());
             }
         }
     }
@@ -387,8 +406,8 @@ public class WKConnection {
         } catch (RejectedExecutionException e) {
             WKLoggerUtils.getInstance().e(TAG, "任务提交被拒绝，重试: " + e.getMessage());
             isReConnecting = false;
-            // 短暂延迟后重试
-            mainHandler.postDelayed(this::reconnection, 1000);
+            // 在后台线程延迟重试，避免主线程阻塞
+            scheduleReconnectionOnBackground(1000);
         }
     }
 
@@ -419,10 +438,8 @@ public class WKConnection {
                     AtomicBoolean connectSuccess = new AtomicBoolean(false);
 
                     ConnectionClient newClient = new ConnectionClient(iNonBlockingConnection -> {
-                        INonBlockingConnection currentConn = null;
-                        synchronized (connectionLock) {
-                            currentConn = connection;
-                        }
+                        // 使用 volatile 读取，无需锁（只是读取检查）
+                        INonBlockingConnection currentConn = connection;
 
                         if (iNonBlockingConnection == null || currentConn == null ||
                                 !currentConn.getId().equals(iNonBlockingConnection.getId())) {
@@ -452,10 +469,13 @@ public class WKConnection {
                     newConnection.setAttachment(newSocketId);
 
                     // 原子性地更新连接相关的字段
-                    synchronized (connectionLock) {
+                    connectionLock.lock();
+                    try {
                         connectionClient = newClient;
                         connection = newConnection;
                         socketSingleID = newSocketId;
+                    } finally {
+                        connectionLock.unlock();
                     }
 
                     // 等待连接完成或超时
@@ -485,13 +505,14 @@ public class WKConnection {
         }
     }
 
-    // 使用CAS操作设置连接状态
+    // 使用 CAS 操作设置连接状态（无锁）
     private boolean setConnectingState(boolean connecting) {
-        synchronized (connectionLock) {
-            if (connecting && isConnecting) {
-                return false;
-            }
-            isConnecting = connecting;
+        if (connecting) {
+            // 尝试从 false 设置为 true
+            return isConnecting.compareAndSet(false, true);
+        } else {
+            // 设置为 false
+            isConnecting.set(false);
             return true;
         }
     }
@@ -560,8 +581,8 @@ public class WKConnection {
         }).start();
     }
 
-    //将要发送的消息添加到队列
-    private synchronized void addSendingMsg(WKSendMsg sendingMsg) {
+    // 将要发送的消息添加到队列（使用 ConcurrentHashMap，无需 synchronized）
+    private void addSendingMsg(WKSendMsg sendingMsg) {
         removeSendingMsg();
         sendingMsgHashMap.put(sendingMsg.clientSeq, new WKSendingMsg(1, sendingMsg, true));
     }
@@ -703,6 +724,10 @@ public class WKConnection {
             return;
         }
 
+        // 快速读取状态，减少锁持有时间
+        int currentStatus;
+        INonBlockingConnection currentConnection;
+        
         boolean locked = false;
         try {
             locked = tryLockWithTimeout();
@@ -710,35 +735,39 @@ public class WKConnection {
                 WKLoggerUtils.getInstance().e(TAG, "获取锁超时，sendMessage失败");
                 return;
             }
-
-            if (mBaseMsg.packetType != WKMsgType.CONNECT) {
-                if (connectStatus == WKConnectStatus.syncMsg) {
-                    WKLoggerUtils.getInstance().i(TAG, " sendMessage: In syncMsg status, message not sent: " + mBaseMsg.packetType);
-                    return;
-                }
-                if (connectStatus != WKConnectStatus.success) {
-                    WKLoggerUtils.getInstance().w(TAG, " sendMessage: Not in success status (is " + connectStatus + "), attempting reconnection for: " + mBaseMsg.packetType);
-                    reconnection();
-                    return;
-                }
-            }
-
-            INonBlockingConnection currentConnection = this.connection;
-            if (currentConnection == null || !currentConnection.isOpen()) {
-                WKLoggerUtils.getInstance().w(TAG, " sendMessage: Connection is null or not open, attempting reconnection for: " + mBaseMsg.packetType);
-                reconnection();
-                return;
-            }
-
-            int status = MessageHandler.getInstance().sendMessage(currentConnection, mBaseMsg);
-            if (status == 0) {
-                WKLoggerUtils.getInstance().e(TAG, "发消息失败 (status 0 from MessageHandler), attempting reconnection for: " + mBaseMsg.packetType);
-                reconnection();
-            }
+            // 只在锁内读取状态
+            currentStatus = connectStatus;
+            currentConnection = this.connection;
         } finally {
             if (locked) {
                 connectionLock.unlock();
             }
+        }
+
+        // 在锁外进行状态检查和发送操作
+        if (mBaseMsg.packetType != WKMsgType.CONNECT) {
+            if (currentStatus == WKConnectStatus.syncMsg) {
+                WKLoggerUtils.getInstance().i(TAG, " sendMessage: In syncMsg status, message not sent: " + mBaseMsg.packetType);
+                return;
+            }
+            if (currentStatus != WKConnectStatus.success) {
+                WKLoggerUtils.getInstance().w(TAG, " sendMessage: Not in success status (is " + currentStatus + "), attempting reconnection for: " + mBaseMsg.packetType);
+                reconnection();
+                return;
+            }
+        }
+
+        if (currentConnection == null || !currentConnection.isOpen()) {
+            WKLoggerUtils.getInstance().w(TAG, " sendMessage: Connection is null or not open, attempting reconnection for: " + mBaseMsg.packetType);
+            reconnection();
+            return;
+        }
+
+        // 发送操作在锁外执行，避免长时间持有锁
+        int status = MessageHandler.getInstance().sendMessage(currentConnection, mBaseMsg);
+        if (status == 0) {
+            WKLoggerUtils.getInstance().e(TAG, "发消息失败 (status 0 from MessageHandler), attempting reconnection for: " + mBaseMsg.packetType);
+            reconnection();
         }
     }
 
@@ -754,8 +783,8 @@ public class WKConnection {
         }
     }
 
-    //检测正在发送的消息
-    public synchronized void checkSendingMsg() {
+    // 检测正在发送的消息（使用 ConcurrentHashMap 的安全迭代）
+    public void checkSendingMsg() {
         removeSendingMsg();
         if (!sendingMsgHashMap.isEmpty()) {
             Iterator<Map.Entry<Integer, WKSendingMsg>> it = sendingMsgHashMap.entrySet().iterator();
@@ -924,13 +953,16 @@ public class WKConnection {
         }
     }
 
+    /**
+     * 检查连接是否为空（后台线程使用，可等待锁）
+     */
     public boolean connectionIsNull() {
         boolean locked = false;
         try {
             locked = tryLockWithTimeout();
             if (!locked) {
                 WKLoggerUtils.getInstance().e(TAG, "获取锁超时，connectionIsNull检查失败");
-                return true; // 保守起见，如果获取锁失败就认为连接为空
+                return true;
             }
             return connection == null || !connection.isOpen();
         } finally {
@@ -940,7 +972,23 @@ public class WKConnection {
         }
     }
 
-    private synchronized void startConnAckTimer() {
+    /**
+     * 非阻塞检查连接状态（主线程安全，不会阻塞）
+     * 利用 volatile 特性直接读取，无需锁
+     */
+    public boolean connectionIsNullFast() {
+        INonBlockingConnection conn = connection;
+        if (conn == null) {
+            return true;
+        }
+        try {
+            return !conn.isOpen();
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    private void startConnAckTimer() {
         // 移除之前的回调
         checkConnAckHandler.removeCallbacks(checkConnAckRunnable);
         connAckTime = DateUtils.getInstance().getCurrentSeconds();
@@ -1001,7 +1049,8 @@ public class WKConnection {
             // 重置所有状态
             connectStatus = WKConnectStatus.fail;
             isReConnecting = false;
-            isConnecting = false;
+            isConnecting.set(false);
+            isReconnectScheduled.set(false);
             ip = "";
             port = 0;
             requestIPTime = 0;
@@ -1103,16 +1152,11 @@ public class WKConnection {
             } catch (Exception e) {
                 WKLoggerUtils.getInstance().e(TAG, "Exception during async connection close for " + connectionToCloseActual.getId() + ": " + e.getMessage());
             } finally {
-                synchronized (connectionLock) {
-                    isClosing.set(false);
-                    // Only trigger reconnection if we're still supposed to be connected
-                    if (WKIMApplication.getInstance().isCanConnect && connectStatus != WKConnectStatus.kicked) {
-                        mainHandler.postDelayed(() -> {
-                            if (connectionIsNull() && !isClosing.get()) {
-                                reconnection();
-                            }
-                        }, 1000);
-                    }
+                isClosing.set(false);
+                // Only trigger reconnection if we're still supposed to be connected
+                if (WKIMApplication.getInstance().isCanConnect && connectStatus != WKConnectStatus.kicked) {
+                    // 在后台线程检查并重连，避免主线程阻塞
+                    scheduleReconnectionOnBackground(1000);
                 }
             }
         }, "ConnectionCloser");
@@ -1122,7 +1166,7 @@ public class WKConnection {
 
     private boolean tryLockWithTimeout() {
         try {
-            return connectionLock.tryLock(LOCK_TIMEOUT, TimeUnit.MILLISECONDS);
+            return connectionLock.tryLock(LOCK_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             WKLoggerUtils.getInstance().e(TAG, "获取锁被中断: " + e.getMessage());
             Thread.currentThread().interrupt();

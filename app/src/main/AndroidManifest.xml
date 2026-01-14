@@ -25,6 +25,10 @@
         </activity>
         <activity android:name=".MainActivity" />
         <activity android:name="com.xinbida.wukongdemo.ConversationActivity" />
+        <activity
+            android:name=".ConnectionTestActivity"
+            android:label="连接功能测试"
+            android:exported="false" />
     </application>
 
 </manifest>

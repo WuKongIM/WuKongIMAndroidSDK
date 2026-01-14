@@ -48,6 +48,10 @@ class ConversationActivity : AppCompatActivity() {
         findViewById<Button>(R.id.conn).setOnClickListener{
             WKIM.getInstance().connectionManager.connection()
         }
+        // 连接测试按钮
+        findViewById<Button>(R.id.btn_connection_test).setOnClickListener{
+            startActivity(Intent(this, ConnectionTestActivity::class.java))
+        }
         // 监听连接状态
         WKIM.getInstance().connectionManager.addOnConnectionStatusListener(
             "conv"

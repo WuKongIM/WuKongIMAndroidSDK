@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- 状态显示区域 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="8dp"
+        android:background="#F5F5F5">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="连接状态: "
+            android:textSize="16sp"
+            android:textColor="#333333" />
+
+        <TextView
+            android:id="@+id/tv_status"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="未连接"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#9E9E9E" />
+
+        <TextView
+            android:id="@+id/tv_fps"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="FPS: -- | 丢帧: 0"
+            android:textSize="12sp"
+            android:textColor="#666666" />
+    </LinearLayout>
+
+    <!-- 测试按钮区域 -->
+    <GridLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:columnCount="2"
+        android:rowCount="4"
+        android:useDefaultMargins="true">
+
+        <Button
+            android:id="@+id/btn_connect_normal"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:text="正常连接"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btn_disconnect"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:text="主动断开"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btn_disconnect_network"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:text="模拟网络断开"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btn_restore_network"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:text="模拟网络恢复"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btn_slow_network"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:text="模拟慢网络"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btn_stress_test"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:text="压力测试"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btn_ui_stress"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:text="UI卡顿测试"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btn_clear_log"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:text="清除日志"
+            android:textSize="12sp" />
+    </GridLayout>
+
+    <!-- 日志显示区域 -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="测试日志:"
+        android:textSize="14sp"
+        android:textColor="#333333" />
+
+    <ScrollView
+        android:id="@+id/scroll_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="4dp"
+        android:background="#1A000000"
+        android:padding="8dp">
+
+        <TextView
+            android:id="@+id/tv_log"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="11sp"
+            android:textColor="#333333"
+            android:fontFamily="monospace"
+            android:lineSpacingExtra="2dp" />
+    </ScrollView>
+
+</LinearLayout>
+
