@@ -414,8 +414,8 @@ public class MessageHandler {
                     receivedAckMsgList.add(receivedAckMsg);
                 }
             }
-            sendAck();
         }
+        sendAck();
     }
 
     private final Handler sendAckHandler = new Handler(Looper.getMainLooper());
@@ -431,7 +431,7 @@ public class MessageHandler {
 
             synchronized (receivedAckMsgList) {
                 if (!receivedAckMsgList.isEmpty()) {
-                    WKConnection.getInstance().sendMessage(receivedAckMsgList.get(0));
+                    WKLoggerUtils.getInstance().i(TAG,"发送received ack");                    WKConnection.getInstance().sendMessage(receivedAckMsgList.get(0));
                     receivedAckMsgList.remove(0);
                     // 如果列表不为空，继续发送下一条
                     if (!receivedAckMsgList.isEmpty()) {
@@ -452,6 +452,7 @@ public class MessageHandler {
                 return;
             }
             if (receivedAckMsgList.size() == 1) {
+                WKLoggerUtils.getInstance().i(TAG,"发送received ack");
                 WKConnection.getInstance().sendMessage(receivedAckMsgList.get(0));
                 receivedAckMsgList.clear();
                 return;
