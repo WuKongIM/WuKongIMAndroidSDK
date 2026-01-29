@@ -39,9 +39,14 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
 
     @Override
     public boolean onConnectException(INonBlockingConnection iNonBlockingConnection, IOException e) {
-        WKLoggerUtils.getInstance().e(TAG,"连接异常");
-        WKConnection.getInstance().forcedReconnection();
+        WKLoggerUtils.getInstance().e(TAG, "连接异常: " + e.getMessage());
         close(iNonBlockingConnection);
+        // 检查网络状态，有网络才累加重连计数
+        if (WKIMApplication.getInstance().isNetworkConnected()) {
+            WKConnection.getInstance().forcedReconnection();
+        } else {
+            WKLoggerUtils.getInstance().i(TAG, "无网络导致连接异常，不累加重连计数");
+        }
         return true;
     }
 
@@ -89,7 +94,12 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
                 if (timeoutRetryCount >= MAX_TIMEOUT_RETRIES) {
                     WKLoggerUtils.getInstance().e(TAG, "Maximum timeout retries reached, initiating reconnection");
                     timeoutRetryCount = 0;
-                    WKConnection.getInstance().forcedReconnection();
+                    // 检查网络状态，有网络才累加重连计数
+                    if (WKIMApplication.getInstance().isNetworkConnected()) {
+                        WKConnection.getInstance().forcedReconnection();
+                    } else {
+                        WKLoggerUtils.getInstance().i(TAG, "无网络导致连接超时，不累加重连计数");
+                    }
                 } else {
                     // Log retry attempt
                     WKLoggerUtils.getInstance().i(TAG, "Retrying connection after timeout");
@@ -165,8 +175,13 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
             
             // Only attempt reconnection if we're allowed to connect and it's not a planned closure
             if (WKIMApplication.getInstance().isCanConnect && !WKConnection.getInstance().isClosing.get()) {
-                WKLoggerUtils.getInstance().e("连接断开需要重连");
-                WKConnection.getInstance().forcedReconnection();
+                // 检查网络状态，有网络才累加重连计数
+                if (WKIMApplication.getInstance().isNetworkConnected()) {
+                    WKLoggerUtils.getInstance().e("连接断开需要重连");
+                    WKConnection.getInstance().forcedReconnection();
+                } else {
+                    WKLoggerUtils.getInstance().i(TAG, "无网络导致连接断开，不累加重连计数");
+                }
             }
             close(iNonBlockingConnection);
         } catch (Exception ignored) {
@@ -177,8 +192,13 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
     @Override
     public boolean onIdleTimeout(INonBlockingConnection iNonBlockingConnection) {
         if (!isConnectSuccess) {
-            WKConnection.getInstance().forcedReconnection();
             close(iNonBlockingConnection);
+            // 检查网络状态，有网络才累加重连计数
+            if (WKIMApplication.getInstance().isNetworkConnected()) {
+                WKConnection.getInstance().forcedReconnection();
+            } else {
+                WKLoggerUtils.getInstance().i(TAG, "无网络导致空闲超时，不累加重连计数");
+            }
         }
         return true;
     }

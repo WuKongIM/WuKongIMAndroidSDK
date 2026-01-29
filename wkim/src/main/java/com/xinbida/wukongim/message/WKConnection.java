@@ -1,6 +1,7 @@
 package com.xinbida.wukongim.message;
 
 import android.graphics.BitmapFactory;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
@@ -36,6 +37,7 @@ import com.xinbida.wukongim.protocol.WKPongMsg;
 import com.xinbida.wukongim.protocol.WKSendAckMsg;
 import com.xinbida.wukongim.protocol.WKSendMsg;
 import com.xinbida.wukongim.utils.DateUtils;
+import com.xinbida.wukongim.utils.DispatchQueue;
 import com.xinbida.wukongim.utils.DispatchQueuePool;
 import com.xinbida.wukongim.utils.FileUtils;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
@@ -47,7 +49,10 @@ import org.xsocket.connection.NonBlockingConnection;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -81,6 +86,8 @@ public class WKConnection {
     }
 
     private final DispatchQueuePool dispatchQueuePool = new DispatchQueuePool(3);
+    // 消息重发专用队列（单线程保证顺序）
+    private final DispatchQueue resendQueue = new DispatchQueue("WKResendQueue");
     // 正在发送的消息
     private final ConcurrentHashMap<Integer, WKSendingMsg> sendingMsgHashMap = new ConcurrentHashMap<>();
     // 正在重连中
@@ -162,7 +169,7 @@ public class WKConnection {
     // 使用原子变量替代锁保护的状态
     private final AtomicBoolean isConnecting = new AtomicBoolean(false);
     private final AtomicBoolean isReconnectScheduled = new AtomicBoolean(false);
-    
+
     private final Object executorLock = new Object();
     private volatile ExecutorService connectionExecutor;
 
@@ -223,7 +230,28 @@ public class WKConnection {
         networkChecker.startNetworkCheck();
     }
 
+    /**
+     * 重置重连计数器
+     * 在网络恢复后调用，给予完整的重连机会
+     */
+    public void resetConnCount() {
+        connCount = 0;
+        isReconnectScheduled.set(false);
+        isReConnecting = false;  // 重置连接中标志，允许立即重新获取地址
+        isConnecting.set(false); // 重置正在连接标志
+        ip = "";  // 清空旧地址，强制重新获取
+        port = 0;
+        WKLoggerUtils.getInstance().i(TAG, "重连计数已重置");
+    }
+
     public void forcedReconnection() {
+        // 无网络时不累加重连计数，直接返回等待网络恢复
+        if (!WKIMApplication.getInstance().isNetworkConnected()) {
+            WKLoggerUtils.getInstance().i(TAG, "无网络，跳过重连计数累加");
+            WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.noNetwork, WKConnectReason.NoNetwork);
+            return;
+        }
+
         // 使用 CAS 操作避免重复调度，无需锁
         if (!isReconnectScheduled.compareAndSet(false, true)) {
             WKLoggerUtils.getInstance().w(TAG, "已经在重连计划中，忽略重复请求");
@@ -307,10 +335,10 @@ public class WKConnection {
             requestIPTime = DateUtils.getInstance().getCurrentSeconds();
             getConnAddress();
         } else {
-            if (networkChecker != null && networkChecker.checkNetWorkTimerIsRunning) {
-                WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.noNetwork, WKConnectReason.NoNetwork);
-                forcedReconnection();
-            }
+            // 无网络时只更新状态，不累加重连计数
+            // 等待网络恢复后由 NetworkChecker 触发重连
+            WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.noNetwork, WKConnectReason.NoNetwork);
+            WKLoggerUtils.getInstance().i(TAG, "无网络，等待网络恢复后自动重连");
         }
     }
 
@@ -378,7 +406,8 @@ public class WKConnection {
                     if (!gotAddress) {
                         WKLoggerUtils.getInstance().e(TAG, "获取连接地址超时");
                         isReConnecting = false;
-                        forcedReconnection();
+                        // 地址获取超时使用延迟重试，不累加重连计数
+                        scheduleReconnectionOnBackground(2000);
                         return;
                     }
 
@@ -386,9 +415,10 @@ public class WKConnection {
                     int port = receivedPort.get();
 
                     if (TextUtils.isEmpty(ip) || port == 0) {
-                        WKLoggerUtils.getInstance().e(TAG, "无效的连接地址");
+                        WKLoggerUtils.getInstance().e(TAG, "无效的连接地址: " + ip + ":" + port);
                         isReConnecting = false;
-                        forcedReconnection();
+                        // 无效地址使用延迟重试，不累加重连计数
+                        scheduleReconnectionOnBackground(2000);
                         return;
                     }
 
@@ -400,18 +430,28 @@ public class WKConnection {
                 } catch (Exception e) {
                     WKLoggerUtils.getInstance().e(TAG, "获取地址异常: " + e.getMessage());
                     isReConnecting = false;
-                    forcedReconnection();
+                    // 获取地址异常使用延迟重试，不累加重连计数
+                    scheduleReconnectionOnBackground(2000);
                 }
             });
         } catch (RejectedExecutionException e) {
             WKLoggerUtils.getInstance().e(TAG, "任务提交被拒绝，重试: " + e.getMessage());
             isReConnecting = false;
             // 在后台线程延迟重试，避免主线程阻塞
-            scheduleReconnectionOnBackground(1000);
+            scheduleReconnectionOnBackground(2000);
         }
     }
 
     private void connSocket() {
+        // 检查地址有效性，防止使用空地址连接
+        if (TextUtils.isEmpty(ip) || port == 0) {
+            WKLoggerUtils.getInstance().e(TAG, "连接地址无效，跳过连接: " + ip + ":" + port);
+            isReConnecting = false;
+            // 延迟重新获取地址
+            scheduleReconnectionOnBackground(2000);
+            return;
+        }
+
         // 检查线程池状态
         ExecutorService executor = getOrCreateExecutor();
         if (executor.isShutdown() || executor.isTerminated()) {
@@ -424,6 +464,10 @@ public class WKConnection {
             WKLoggerUtils.getInstance().e(TAG, "已经在连接中，忽略重复连接请求");
             return;
         }
+
+        // 保存当前地址到局部变量，避免在连接过程中被修改
+        final String connIp = ip;
+        final int connPort = port;
 
         try {
             executor.execute(() -> {
@@ -464,8 +508,8 @@ public class WKConnection {
                         }
                     });
 
-                    // 创建新连接
-                    INonBlockingConnection newConnection = new NonBlockingConnection(ip, port, newClient);
+                    // 创建新连接（使用局部变量避免并发修改）
+                    INonBlockingConnection newConnection = new NonBlockingConnection(connIp, connPort, newClient);
                     newConnection.setAttachment(newSocketId);
 
                     // 原子性地更新连接相关的字段
@@ -482,18 +526,31 @@ public class WKConnection {
                     boolean connected = connectLatch.await(5000, TimeUnit.MILLISECONDS);
 
                     if (!connected || !connectSuccess.get()) {
-                        WKLoggerUtils.getInstance().e(TAG, "连接建立超时或失败");
+                        WKLoggerUtils.getInstance().e(TAG, "连接建立超时或失败，地址：" + connIp + ":" + connPort);
                         closeConnect();
                         if (!executor.isShutdown()) {
-                            forcedReconnection();
+                            // 检查网络状态，有网络才累加重连计数
+                            if (WKIMApplication.getInstance().isNetworkConnected()) {
+                                forcedReconnection();
+                            } else {
+                                WKLoggerUtils.getInstance().i(TAG, "无网络导致连接失败，不累加重连计数");
+                                scheduleReconnectionOnBackground(2000);
+                            }
                         }
                     } else {
+                        WKLoggerUtils.getInstance().i(TAG, "连接成功，地址：" + connIp + ":" + connPort);
                         sendConnectMsg();
                     }
                 } catch (Exception e) {
-                    WKLoggerUtils.getInstance().e(TAG, "连接异常: " + e.getMessage() + "连接地址：" + ip + ":" + port);
+                    WKLoggerUtils.getInstance().e(TAG, "连接异常: " + e.getMessage() + " 连接地址：" + connIp + ":" + connPort);
                     if (!executor.isShutdown()) {
-                        forcedReconnection();
+                        // 检查网络状态，有网络才累加重连计数
+                        if (WKIMApplication.getInstance().isNetworkConnected()) {
+                            forcedReconnection();
+                        } else {
+                            WKLoggerUtils.getInstance().i(TAG, "无网络导致连接异常，不累加重连计数");
+                            scheduleReconnectionOnBackground(2000);
+                        }
                     }
                 } finally {
                     setConnectingState(false);
@@ -565,20 +622,38 @@ public class WKConnection {
     }
 
 
-    //重发未发送成功的消息
+    //重发未发送成功的消息（使用 DispatchQueue 延迟发送，避免 socket 通道阻塞）
     public void resendMsg() {
         removeSendingMsg();
-        new Thread(() -> {
-            for (Map.Entry<Integer, WKSendingMsg> entry : sendingMsgHashMap.entrySet()) {
-                if (entry.getValue().isCanResend) {
-                    sendMessage(Objects.requireNonNull(sendingMsgHashMap.get(entry.getKey())).wkSendMsg);
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException ignored) {
-                    }
-                }
+        
+        // 先取消之前未执行的重发任务
+        resendQueue.cleanupQueue();
+        
+        // 获取所有可重发的消息并按 clientSeq 排序
+        List<Integer> sortedKeys = new ArrayList<>();
+        for (Map.Entry<Integer, WKSendingMsg> entry : sendingMsgHashMap.entrySet()) {
+            if (entry.getValue().isCanResend) {
+                sortedKeys.add(entry.getKey());
             }
-        }).start();
+        }
+        Collections.sort(sortedKeys);
+        
+        // 按顺序延迟发送，每条消息间隔 100ms
+        for (int i = 0; i < sortedKeys.size(); i++) {
+            final Integer clientSeq = sortedKeys.get(i);
+            long delay = i * 150L;
+            
+            resendQueue.postRunnable(() -> {
+                WKSendingMsg sendingMsg = sendingMsgHashMap.get(clientSeq);
+                if (sendingMsg != null && sendingMsg.isCanResend) {
+                    sendMessage(sendingMsg.wkSendMsg);
+                }
+            }, delay);
+        }
+        
+        if (!sortedKeys.isEmpty()) {
+            WKLoggerUtils.getInstance().i(TAG, "计划重发 " + sortedKeys.size() + " 条消息");
+        }
     }
 
     // 将要发送的消息添加到队列（使用 ConcurrentHashMap，无需 synchronized）
@@ -727,7 +802,7 @@ public class WKConnection {
         // 快速读取状态，减少锁持有时间
         int currentStatus;
         INonBlockingConnection currentConnection;
-        
+
         boolean locked = false;
         try {
             locked = tryLockWithTimeout();
@@ -1045,6 +1120,10 @@ public class WKConnection {
             if (reconnectionHandler != null) {
                 reconnectionHandler.removeCallbacks(reconnectionRunnable);
             }
+            // 清理待发送消息队列中的任务
+            if (resendQueue != null) {
+                resendQueue.cleanupQueue();
+            }
 
             // 重置所有状态
             connectStatus = WKConnectStatus.fail;
@@ -1058,10 +1137,11 @@ public class WKConnection {
             lastMsgTime = 0;
             connCount = 0;
 
-            // 清空发送消息队列
-            if (sendingMsgHashMap != null) {
-                sendingMsgHashMap.clear();
-            }
+            // 注意：不清空 sendingMsgHashMap，保留待发送的消息
+            // 这样网络恢复后可以继续发送
+            // if (sendingMsgHashMap != null) {
+            //     sendingMsgHashMap.clear();
+            // }
             // 清理连接客户端
             connectionClient = null;
 

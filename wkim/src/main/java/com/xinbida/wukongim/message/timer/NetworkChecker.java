@@ -37,13 +37,14 @@ public class NetworkChecker {
         } else {
             //有网络
             if (WKConnection.getInstance().connectionIsNull() || isForcedReconnect) {
+                // 网络恢复时，重置重连计数，给予完整的重连机会
+                if (isForcedReconnect) {
+                    WKConnection.getInstance().resetConnCount();
+                }
                 WKConnection.getInstance().reconnection();
                 isForcedReconnect = false;
             }
         }
-//        if (WKConnection.getInstance().connection == null || !WKConnection.getInstance().connection.isOpen()) {
-//            WKConnection.getInstance().reconnection("网络2");
-//        }
         checkNetWorkTimerIsRunning = true;
     }
 }

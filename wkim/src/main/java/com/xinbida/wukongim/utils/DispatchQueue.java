@@ -15,7 +15,7 @@ import android.os.SystemClock;
 
 import java.util.concurrent.CountDownLatch;
 
-class DispatchQueue extends Thread {
+public class DispatchQueue extends Thread {
 
     private volatile Handler handler = null;
     private final CountDownLatch syncLatch = new CountDownLatch(1);
