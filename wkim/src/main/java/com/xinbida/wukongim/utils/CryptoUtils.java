@@ -54,7 +54,7 @@ public class CryptoUtils {
     }
 
     public void initKey() {
-        Curve25519KeyPair keyPair = Curve25519.getInstance(Curve25519.BEST).generateKeyPair();
+        Curve25519KeyPair keyPair = Curve25519.getInstance(Curve25519.JAVA).generateKeyPair();
         privateKey = keyPair.getPrivateKey();
         publicKey = keyPair.getPublicKey();
     }
@@ -79,7 +79,7 @@ public class CryptoUtils {
         this.serverKey = base64Decode(serverKey);
         this.salt = salt;
 
-        Curve25519 cipher = Curve25519.getInstance(Curve25519.BEST);
+        Curve25519 cipher = Curve25519.getInstance(Curve25519.JAVA);
         byte[] sharedSecret = cipher.calculateAgreement(this.serverKey, privateKey);
         String key = digestMD5(base64Encode(sharedSecret));
         if (!TextUtils.isEmpty(key) && key.length() > 16) {
