@@ -353,6 +353,10 @@ class WKProto {
      * @return 网络消息
      */
     WKSendMsg getSendBaseMsg(WKMsg msg) {
+        if (msg == null || TextUtils.isEmpty(msg.clientMsgNO) || TextUtils.isEmpty(msg.channelID)) {
+            WKLoggerUtils.getInstance().e(TAG, "getSendBaseMsg: msg is null or missing clientMsgNO/channelID");
+            return null;
+        }
         //发送消息
         JSONObject jsonObject = getSendPayload(msg);
         WKSendMsg sendMsg = new WKSendMsg();

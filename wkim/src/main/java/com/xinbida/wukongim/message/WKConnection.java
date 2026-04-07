@@ -798,6 +798,14 @@ public class WKConnection {
             WKLoggerUtils.getInstance().w(TAG, "sendMessage called with null mBaseMsg.");
             return;
         }
+        if (mBaseMsg.packetType == WKMsgType.SEND) {
+            WKSendMsg sendMsg = (WKSendMsg) mBaseMsg;
+            if (TextUtils.isEmpty(sendMsg.channelId) || TextUtils.isEmpty(sendMsg.clientMsgNo)) {
+                WKLoggerUtils.getInstance().e(TAG, "sendMessage: SEND msg missing channelId or clientMsgNo, skip sending");
+                sendingMsgHashMap.remove(sendMsg.clientSeq);
+                return;
+            }
+        }
 
         // 快速读取状态，减少锁持有时间
         int currentStatus;
@@ -888,6 +896,14 @@ public class WKConnection {
 
 
     public void sendMessage(WKMsg msg) {
+        if (msg == null) {
+            return;
+        }
+        if (TextUtils.isEmpty(msg.channelID) || TextUtils.isEmpty(msg.clientMsgNO)) {
+            WKLoggerUtils.getInstance().e(TAG, "sendMessage: channelID or clientMsgNO is empty, skip sending");
+            MsgDbManager.getInstance().updateMsgStatus(msg.clientSeq, WKSendMsgResult.send_fail);
+            return;
+        }
         if (TextUtils.isEmpty(msg.fromUID)) {
             msg.fromUID = WKIMApplication.getInstance().getUid();
         }
@@ -1011,8 +1027,10 @@ public class WKConnection {
                     WKIM.getInstance().getMsgManager().updateContentAndRefresh(msg.clientMsgNO, msg.content, false);
                     if (!sendingMsgHashMap.containsKey((int) msg.clientSeq)) {
                         WKSendMsg base1 = WKProto.getInstance().getSendBaseMsg(msg);
-                        addSendingMsg(base1);
-                        sendMessage(base1);
+                        if (base1 != null) {
+                            addSendingMsg(base1);
+                            sendMessage(base1);
+                        }
                     }
                 } else {
                     MsgDbManager.getInstance().updateMsgStatus(msg.clientSeq, WKSendMsgResult.send_fail);
