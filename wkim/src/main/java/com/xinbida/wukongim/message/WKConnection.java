@@ -42,10 +42,9 @@ import com.xinbida.wukongim.utils.DispatchQueuePool;
 import com.xinbida.wukongim.utils.FileUtils;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
 
+import com.xinbida.wukongim.message.type.WKTransportMode;
+
 import org.json.JSONObject;
-import org.xsocket.connection.IConnection;
-import org.xsocket.connection.INonBlockingConnection;
-import org.xsocket.connection.NonBlockingConnection;
 
 import java.io.File;
 import java.io.IOException;
@@ -97,8 +96,8 @@ public class WKConnection {
     private long lastMsgTime = 0;
     private String ip;
     private int port;
-    public volatile INonBlockingConnection connection;
-    volatile ConnectionClient connectionClient;
+    private String wssAddr; // WebSocket 地址
+    volatile WKTransport transport;
     private long requestIPTime;
     private long connAckTime;
     private final long requestIPTimeoutTime = 6;
@@ -241,6 +240,7 @@ public class WKConnection {
         isConnecting.set(false); // 重置正在连接标志
         ip = "";  // 清空旧地址，强制重新获取
         port = 0;
+        wssAddr = null;
         WKLoggerUtils.getInstance().i(TAG, "重连计数已重置");
     }
 
@@ -388,17 +388,26 @@ public class WKConnection {
                     CountDownLatch addressLatch = new CountDownLatch(1);
                     AtomicReference<String> receivedIp = new AtomicReference<>();
                     AtomicInteger receivedPort = new AtomicInteger();
+                    AtomicReference<String> receivedWssAddr = new AtomicReference<>();
 
-                    ConnectionManager.getInstance().getIpAndPort(currentRequestId, (requestId, ip, port) -> {
-                        if (!currentRequestId.equals(requestId)) {
-                            WKLoggerUtils.getInstance().w(TAG, "收到过期的地址响应");
-                            addressLatch.countDown();
-                            return;
+                    ConnectionManager.getInstance().getIpAndPort(currentRequestId, new ConnectionManager.IRequestIP() {
+                        @Override
+                        public void onResult(String requestId, String ip, int port) {
+                            onResult(requestId, ip, port, null);
                         }
 
-                        receivedIp.set(ip);
-                        receivedPort.set(port);
-                        addressLatch.countDown();
+                        @Override
+                        public void onResult(String requestId, String ip, int port, String wssAddr) {
+                            if (!currentRequestId.equals(requestId)) {
+                                WKLoggerUtils.getInstance().w(TAG, "收到过期的地址响应");
+                                addressLatch.countDown();
+                                return;
+                            }
+                            receivedIp.set(ip);
+                            receivedPort.set(port);
+                            receivedWssAddr.set(wssAddr);
+                            addressLatch.countDown();
+                        }
                     });
 
                     // 等待地址响应或超时
@@ -413,17 +422,26 @@ public class WKConnection {
 
                     String ip = receivedIp.get();
                     int port = receivedPort.get();
+                    String wssAddr = receivedWssAddr.get();
 
-                    if (TextUtils.isEmpty(ip) || port == 0) {
+                    int mode = ConnectionManager.getInstance().getTransportMode();
+                    if (mode == WKTransportMode.WSS) {
+                        // WSS 模式：检查 wssAddr
+                        if (TextUtils.isEmpty(wssAddr)) {
+                            WKLoggerUtils.getInstance().e(TAG, "WSS模式但无WSS地址，回退TCP");
+                            mode = WKTransportMode.TCP;
+                        }
+                    }
+                    if (mode == WKTransportMode.TCP && (TextUtils.isEmpty(ip) || port == 0)) {
                         WKLoggerUtils.getInstance().e(TAG, "无效的连接地址: " + ip + ":" + port);
                         isReConnecting = false;
-                        // 无效地址使用延迟重试，不累加重连计数
                         scheduleReconnectionOnBackground(2000);
                         return;
                     }
 
                     WKConnection.this.ip = ip;
                     WKConnection.this.port = port;
+                    WKConnection.this.wssAddr = wssAddr;
                     if (connectionIsNull()) {
                         connSocket();
                     }
@@ -443,13 +461,23 @@ public class WKConnection {
     }
 
     private void connSocket() {
-        // 检查地址有效性，防止使用空地址连接
-        if (TextUtils.isEmpty(ip) || port == 0) {
-            WKLoggerUtils.getInstance().e(TAG, "连接地址无效，跳过连接: " + ip + ":" + port);
-            isReConnecting = false;
-            // 延迟重新获取地址
-            scheduleReconnectionOnBackground(2000);
-            return;
+        int mode = ConnectionManager.getInstance().getTransportMode();
+
+        // 检查地址有效性
+        if (mode == WKTransportMode.WSS) {
+            if (TextUtils.isEmpty(wssAddr)) {
+                WKLoggerUtils.getInstance().e(TAG, "WSS地址无效，跳过连接");
+                isReConnecting = false;
+                scheduleReconnectionOnBackground(2000);
+                return;
+            }
+        } else {
+            if (TextUtils.isEmpty(ip) || port == 0) {
+                WKLoggerUtils.getInstance().e(TAG, "连接地址无效，跳过连接: " + ip + ":" + port);
+                isReConnecting = false;
+                scheduleReconnectionOnBackground(2000);
+                return;
+            }
         }
 
         // 检查线程池状态
@@ -468,56 +496,84 @@ public class WKConnection {
         // 保存当前地址到局部变量，避免在连接过程中被修改
         final String connIp = ip;
         final int connPort = port;
+        final String connWssAddr = wssAddr;
+        final int connMode = mode;
 
         try {
             executor.execute(() -> {
                 try {
-                    // 关闭现有连接
+                    // 关闭现有传输层（先摘 delegate 避免二次重连）
                     closeConnect();
-
-                    // 生成新的连接ID
-                    String newSocketId = UUID.randomUUID().toString().replace("-", "");
 
                     CountDownLatch connectLatch = new CountDownLatch(1);
                     AtomicBoolean connectSuccess = new AtomicBoolean(false);
 
-                    ConnectionClient newClient = new ConnectionClient(iNonBlockingConnection -> {
-                        // 使用 volatile 读取，无需锁（只是读取检查）
-                        INonBlockingConnection currentConn = connection;
-
-                        if (iNonBlockingConnection == null || currentConn == null ||
-                                !currentConn.getId().equals(iNonBlockingConnection.getId())) {
-                            WKLoggerUtils.getInstance().e(TAG, "无效的连接回调");
-                            connectLatch.countDown();
-                            return;
-                        }
-
-                        try {
-                            iNonBlockingConnection.setIdleTimeoutMillis(1000 * 3);
-                            iNonBlockingConnection.setConnectionTimeoutMillis(1000 * 3);
-                            iNonBlockingConnection.setFlushmode(IConnection.FlushMode.ASYNC);
-                            iNonBlockingConnection.setAutoflush(true);
-
+                    WKTransport.Delegate transportDelegate = new WKTransport.Delegate() {
+                        @Override
+                        public void onConnected() {
                             connectSuccess.set(true);
                             isReConnecting = false;
                             connCount = 0;
-                        } catch (Exception e) {
-                            WKLoggerUtils.getInstance().e(TAG, "设置连接参数失败: " + e.getMessage());
-                        } finally {
                             connectLatch.countDown();
                         }
-                    });
 
-                    // 创建新连接（使用局部变量避免并发修改）
-                    INonBlockingConnection newConnection = new NonBlockingConnection(connIp, connPort, newClient);
-                    newConnection.setAttachment(newSocketId);
+                        @Override
+                        public void onDisconnected(Throwable error) {
+                            if (!connectSuccess.get()) {
+                                // 连接建立阶段的失败
+                                connectLatch.countDown();
+                                return;
+                            }
+                            // 已建立连接后的断开
+                            WKLoggerUtils.getInstance().e(TAG, "传输层断开" +
+                                    (error != null ? ": " + error.getMessage() : ""));
+                            if (WKIMApplication.getInstance().isCanConnect && !isClosing.get()) {
+                                if (WKIMApplication.getInstance().isNetworkConnected()) {
+                                    forcedReconnection();
+                                } else {
+                                    WKLoggerUtils.getInstance().i(TAG, "无网络导致连接断开，不累加重连计数");
+                                }
+                            }
+                        }
 
-                    // 原子性地更新连接相关的字段
+                        @Override
+                        public void onReceivedData(byte[] data) {
+                            if (transport == null || isReConnecting) return;
+                            receivedData(data);
+                        }
+                    };
+
+                    // 创建并启动传输层
+                    WKTransport newTransport;
+                    String connDesc;
+                    if (connMode == WKTransportMode.WSS) {
+                        newTransport = new WKWebSocketTransport();
+                        connDesc = "WSS:" + connWssAddr;
+                    } else {
+                        newTransport = new WKTCPTransport();
+                        connDesc = "TCP:" + connIp + ":" + connPort;
+                    }
+
+                    // 原子性地更新传输层
                     connectionLock.lock();
                     try {
-                        connectionClient = newClient;
-                        connection = newConnection;
-                        socketSingleID = newSocketId;
+                        transport = newTransport;
+                        socketSingleID = null; // 将在连接成功后设置
+                    } finally {
+                        connectionLock.unlock();
+                    }
+
+                    // 发起连接
+                    if (connMode == WKTransportMode.WSS) {
+                        newTransport.connect(connWssAddr, transportDelegate);
+                    } else {
+                        newTransport.connect(connIp, connPort, transportDelegate);
+                    }
+
+                    // 更新 socketSingleID
+                    connectionLock.lock();
+                    try {
+                        socketSingleID = newTransport.getId();
                     } finally {
                         connectionLock.unlock();
                     }
@@ -526,10 +582,9 @@ public class WKConnection {
                     boolean connected = connectLatch.await(5000, TimeUnit.MILLISECONDS);
 
                     if (!connected || !connectSuccess.get()) {
-                        WKLoggerUtils.getInstance().e(TAG, "连接建立超时或失败，地址：" + connIp + ":" + connPort);
+                        WKLoggerUtils.getInstance().e(TAG, "连接建立超时或失败，" + connDesc);
                         closeConnect();
                         if (!executor.isShutdown()) {
-                            // 检查网络状态，有网络才累加重连计数
                             if (WKIMApplication.getInstance().isNetworkConnected()) {
                                 forcedReconnection();
                             } else {
@@ -538,13 +593,14 @@ public class WKConnection {
                             }
                         }
                     } else {
-                        WKLoggerUtils.getInstance().i(TAG, "连接成功，地址：" + connIp + ":" + connPort);
+                        WKLoggerUtils.getInstance().i(TAG, "连接成功，" + connDesc);
                         sendConnectMsg();
                     }
                 } catch (Exception e) {
-                    WKLoggerUtils.getInstance().e(TAG, "连接异常: " + e.getMessage() + " 连接地址：" + connIp + ":" + connPort);
+                    String desc = connMode == WKTransportMode.WSS ?
+                            "WSS:" + connWssAddr : "TCP:" + connIp + ":" + connPort;
+                    WKLoggerUtils.getInstance().e(TAG, "连接异常: " + e.getMessage() + " " + desc);
                     if (!executor.isShutdown()) {
-                        // 检查网络状态，有网络才累加重连计数
                         if (WKIMApplication.getInstance().isNetworkConnected()) {
                             forcedReconnection();
                         } else {
@@ -705,7 +761,7 @@ public class WKConnection {
                                     WKLoggerUtils.getInstance().e(TAG, "获取锁超时，setSyncOfflineMsg回调处理失败");
                                     return;
                                 }
-                                if (connection != null && !isClosing.get()) {
+                                if (transport != null && !isClosing.get()) {
                                     connectStatus = WKConnectStatus.success;
                                     MessageHandler.getInstance().saveReceiveMsg();
                                     WKIMApplication.getInstance().isCanConnect = true;
@@ -729,7 +785,7 @@ public class WKConnection {
                                 WKLoggerUtils.getInstance().e(TAG, "获取锁超时，setSyncConversationListener回调处理失败");
                                 return;
                             }
-                            if (connection != null && !isClosing.get()) {
+                            if (transport != null && !isClosing.get()) {
                                 connectStatus = WKConnectStatus.success;
                                 WKIMApplication.getInstance().isCanConnect = true;
                                 MessageHandler.getInstance().sendAck();
@@ -809,7 +865,7 @@ public class WKConnection {
 
         // 快速读取状态，减少锁持有时间
         int currentStatus;
-        INonBlockingConnection currentConnection;
+        WKTransport currentTransport;
 
         boolean locked = false;
         try {
@@ -820,7 +876,7 @@ public class WKConnection {
             }
             // 只在锁内读取状态
             currentStatus = connectStatus;
-            currentConnection = this.connection;
+            currentTransport = this.transport;
         } finally {
             if (locked) {
                 connectionLock.unlock();
@@ -840,14 +896,14 @@ public class WKConnection {
             }
         }
 
-        if (currentConnection == null || !currentConnection.isOpen()) {
-            WKLoggerUtils.getInstance().w(TAG, " sendMessage: Connection is null or not open, attempting reconnection for: " + mBaseMsg.packetType);
+        if (currentTransport == null || !currentTransport.isConnected()) {
+            WKLoggerUtils.getInstance().w(TAG, " sendMessage: Transport is null or not connected, attempting reconnection for: " + mBaseMsg.packetType);
             reconnection();
             return;
         }
 
         // 发送操作在锁外执行，避免长时间持有锁
-        int status = MessageHandler.getInstance().sendMessage(currentConnection, mBaseMsg);
+        int status = MessageHandler.getInstance().sendMessage(currentTransport, mBaseMsg);
         if (status == 0) {
             WKLoggerUtils.getInstance().e(TAG, "发消息失败 (status 0 from MessageHandler), attempting reconnection for: " + mBaseMsg.packetType);
             reconnection();
@@ -1057,7 +1113,7 @@ public class WKConnection {
                 WKLoggerUtils.getInstance().e(TAG, "获取锁超时，connectionIsNull检查失败");
                 return true;
             }
-            return connection == null || !connection.isOpen();
+            return transport == null || !transport.isConnected();
         } finally {
             if (locked) {
                 connectionLock.unlock();
@@ -1070,12 +1126,12 @@ public class WKConnection {
      * 利用 volatile 特性直接读取，无需锁
      */
     public boolean connectionIsNullFast() {
-        INonBlockingConnection conn = connection;
-        if (conn == null) {
+        WKTransport t = transport;
+        if (t == null) {
             return true;
         }
         try {
-            return !conn.isOpen();
+            return !t.isConnected();
         } catch (Exception e) {
             return true;
         }
@@ -1150,18 +1206,11 @@ public class WKConnection {
             isReconnectScheduled.set(false);
             ip = "";
             port = 0;
+            wssAddr = null;
             requestIPTime = 0;
             connAckTime = 0;
             lastMsgTime = 0;
             connCount = 0;
-
-            // 注意：不清空 sendingMsgHashMap，保留待发送的消息
-            // 这样网络恢复后可以继续发送
-            // if (sendingMsgHashMap != null) {
-            //     sendingMsgHashMap.clear();
-            // }
-            // 清理连接客户端
-            connectionClient = null;
 
             // 关闭线程池
             shutdownExecutor();
@@ -1175,13 +1224,12 @@ public class WKConnection {
     }
 
     private void closeConnect() {
-        final INonBlockingConnection connectionToCloseActual;
-
         if (!isClosing.compareAndSet(false, true)) {
             WKLoggerUtils.getInstance().i(TAG, " Close operation already in progress");
             return;
         }
 
+        final WKTransport transportToClose;
         boolean locked = false;
         try {
             locked = tryLockWithTimeout();
@@ -1191,73 +1239,32 @@ public class WKConnection {
                 return;
             }
 
-            if (connection == null) {
+            if (transport == null) {
                 isClosing.set(false);
-                WKLoggerUtils.getInstance().i(TAG, " closeConnect called but connection is already null.");
+                WKLoggerUtils.getInstance().i(TAG, " closeConnect called but transport is already null.");
                 return;
             }
-            connectionToCloseActual = connection;
-            String connId = connectionToCloseActual.getId();
-
-            try {
-                connectionToCloseActual.setAttachment("closing_" + System.currentTimeMillis() + "_" + connId);
-            } catch (Exception e) {
-                WKLoggerUtils.getInstance().e(TAG, "Failed to set closing attachment: " + e.getMessage());
-            }
-
-            connection = null;
-            connectionClient = null;
-            WKLoggerUtils.getInstance().i(TAG, " Connection object nulled, preparing for async close of: " + connId);
+            transportToClose = transport;
+            transport = null;
+            WKLoggerUtils.getInstance().i(TAG, " Transport nulled, preparing disconnect: " + transportToClose.getId());
         } finally {
             if (locked) {
                 connectionLock.unlock();
             }
         }
 
-        // Create a timeout handler to force close after timeout
-        final Runnable timeoutRunnable = () -> {
-            try {
-                if (connectionToCloseActual.isOpen()) {
-                    String connId = connectionToCloseActual.getId();
-                    WKLoggerUtils.getInstance().w(TAG, " Connection close timeout reached for: " + connId);
-                    connectionToCloseActual.close();
-                }
-            } catch (Exception e) {
-                WKLoggerUtils.getInstance().e(TAG, "Force close connection exception: " + e.getMessage());
-            } finally {
-                isClosing.set(false);
-            }
-        };
-
-        // Schedule the timeout
-        mainHandler.postDelayed(timeoutRunnable, CONNECTION_CLOSE_TIMEOUT);
-
-        // Execute the close operation on a background thread
+        // 在后台线程执行关闭，避免阻塞
         Thread closeThread = new Thread(() -> {
             try {
-                if (connectionToCloseActual.isOpen()) {
-                    String connId = connectionToCloseActual.getId();
-                    WKLoggerUtils.getInstance().i(TAG, " Attempting to close connection: " + connId);
-                    connectionToCloseActual.close();
-                    // Remove the timeout handler since we closed successfully
-                    mainHandler.removeCallbacks(timeoutRunnable);
-                    WKLoggerUtils.getInstance().i(TAG, " Successfully closed connection: " + connId);
-                } else {
-                    WKLoggerUtils.getInstance().i(TAG, " Connection was already closed or not open when async close executed: " + connectionToCloseActual.getId());
-                }
-            } catch (IOException e) {
-                WKLoggerUtils.getInstance().e(TAG, "IOException during async connection close for " + connectionToCloseActual.getId() + ": " + e.getMessage());
+                // disconnect() 内部会先摘 delegate 再关闭，不会触发二次重连
+                transportToClose.disconnect();
+                WKLoggerUtils.getInstance().i(TAG, " Transport disconnected: " + transportToClose.getId());
             } catch (Exception e) {
-                WKLoggerUtils.getInstance().e(TAG, "Exception during async connection close for " + connectionToCloseActual.getId() + ": " + e.getMessage());
+                WKLoggerUtils.getInstance().e(TAG, "Transport disconnect error: " + e.getMessage());
             } finally {
                 isClosing.set(false);
-                // Only trigger reconnection if we're still supposed to be connected
-                if (WKIMApplication.getInstance().isCanConnect && connectStatus != WKConnectStatus.kicked) {
-                    // 在后台线程检查并重连，避免主线程阻塞
-                    scheduleReconnectionOnBackground(1000);
-                }
             }
-        }, "ConnectionCloser");
+        }, "TransportCloser");
         closeThread.setDaemon(true);
         closeThread.start();
     }

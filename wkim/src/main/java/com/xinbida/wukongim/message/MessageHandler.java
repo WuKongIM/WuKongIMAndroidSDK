@@ -28,12 +28,7 @@ import com.xinbida.wukongim.utils.WKTypeUtils;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.xsocket.connection.INonBlockingConnection;
-
 import java.io.IOException;
-import java.net.SocketTimeoutException;
-import java.nio.BufferOverflowException;
-import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -63,7 +58,7 @@ public class MessageHandler {
 
     private final List<WKReceivedAckMsg> receivedAckMsgList = Collections.synchronizedList(new ArrayList<>());
 
-    int sendMessage(INonBlockingConnection connection, WKBaseMsg msg) {
+    int sendMessage(WKTransport transport, WKBaseMsg msg) {
         if (msg == null) {
             return 1;
         }
@@ -73,30 +68,15 @@ public class MessageHandler {
             return 1;
         }
 
-        if (connection != null && connection.isOpen()) {
-            try {
-                connection.write(bytes, 0, bytes.length);
-                connection.flush();
+        if (transport != null && transport.isConnected()) {
+            if (transport.write(bytes)) {
                 return 1;
-            } catch (BufferOverflowException e) {
-                WKLoggerUtils.getInstance().e(TAG, "发消息异常 BufferOverflowException"
-                        + e.getMessage());
-                return 0;
-            } catch (ClosedChannelException e) {
-                WKLoggerUtils.getInstance().e(TAG, "发消息异常 ClosedChannelException"
-                        + e.getMessage());
-                return 0;
-            } catch (SocketTimeoutException e) {
-                WKLoggerUtils.getInstance().e(TAG, "发消息异常 SocketTimeoutException"
-                        + e.getMessage());
-                return 0;
-            } catch (IOException e) {
-                WKLoggerUtils.getInstance().e(TAG, "发消息异常 IOException" + e.getMessage());
+            } else {
+                WKLoggerUtils.getInstance().e(TAG, "发消息异常: transport.write failed");
                 return 0;
             }
         } else {
-            WKLoggerUtils.getInstance().e("发消息异常:"
-                    + connection);
+            WKLoggerUtils.getInstance().e("发消息异常: transport=" + transport);
             return 0;
         }
     }
@@ -131,68 +111,7 @@ public class MessageHandler {
     }
 
 
-    synchronized void handlerOnlineBytes(INonBlockingConnection iNonBlockingConnection) {
-        boolean locked = false;
-        try {
-            locked = cacheLock.tryLock(LOCK_TIMEOUT, TimeUnit.MILLISECONDS);
-            if (!locked) {
-                WKLoggerUtils.getInstance().e(TAG, "获取锁超时，handlerOnlineBytes失败");
-                return;
-            }
-            
-            try {
-                // 获取可用数据长度
-                available_len = iNonBlockingConnection.available();
-
-                // 安全检查
-                if (available_len <= 0) {
-                    return;
-                }
-
-                // 限制单次最大读取大小为150kb
-                int bufLen = 1024 / 2;
-
-                // 分批读取数据
-                while (available_len > 0) {
-                    // 计算本次应该读取的长度
-                    int readLen = Math.min(bufLen, available_len);
-                    if (readLen <= 0) break;
-                    // 读取数据前确保连接仍然有效
-                    if (!iNonBlockingConnection.isOpen()) {
-                        WKLoggerUtils.getInstance().e(TAG, "读取数据时连接关闭");
-                        break;
-                    }
-                    // 读取数据
-                    byte[] buffBytes = iNonBlockingConnection.readBytesByLength(readLen);
-                    if (buffBytes != null && buffBytes.length > 0) {
-                        WKConnection.getInstance().receivedData(buffBytes);
-                        available_len -= buffBytes.length;
-                    } else {
-                        WKLoggerUtils.getInstance().e(TAG, "读取数据失败或收到空数据");
-                        break;
-                    }
-                    // 给一个很小的延迟，避免过快读取
-                    try {
-                        Thread.sleep(1);
-                    } catch (InterruptedException ignored) {
-                    }
-                }
-            } catch (IOException e) {
-                WKLoggerUtils.getInstance().e(TAG, "处理接收到的数据异常:" + e.getMessage());
-                clearCacheData();
-            } catch (Exception e) {
-                WKLoggerUtils.getInstance().e(TAG, "onData 中发生意外错误: " + e.getMessage());
-                clearCacheData();
-            }
-        } catch (InterruptedException e) {
-            WKLoggerUtils.getInstance().e(TAG, "handlerOnlineBytes等待锁被中断: " + e.getMessage());
-            Thread.currentThread().interrupt();
-        } finally {
-            if (locked) {
-                cacheLock.unlock();
-            }
-        }
-    }
+    // handlerOnlineBytes 已移至 WKTCPTransport.onData()，由 Transport 层读取字节后回调
 
     synchronized void cutBytes(byte[] available_bytes,
                                IReceivedMsgListener mIReceivedMsgListener) {

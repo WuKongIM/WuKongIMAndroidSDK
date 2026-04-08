@@ -6,8 +6,10 @@ import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.WKIMApplication;
 import com.xinbida.wukongim.interfaces.IConnectionStatus;
 import com.xinbida.wukongim.interfaces.IGetIpAndPort;
+import com.xinbida.wukongim.interfaces.IGetSocketIpAndPortListener;
 import com.xinbida.wukongim.message.MessageHandler;
 import com.xinbida.wukongim.message.WKConnection;
+import com.xinbida.wukongim.message.type.WKTransportMode;
 import com.xinbida.wukongim.utils.WKLoggerUtils;
 
 import java.util.Map;
@@ -34,6 +36,17 @@ public class ConnectionManager extends BaseManager {
 
     private IGetIpAndPort iGetIpAndPort;
     private ConcurrentHashMap<String, IConnectionStatus> connectionListenerMap;
+
+    // 传输模式（默认 TCP）
+    private volatile int transportMode = WKTransportMode.TCP;
+
+    public int getTransportMode() {
+        return transportMode;
+    }
+
+    public void setTransportMode(int mode) {
+        this.transportMode = mode;
+    }
 
     // 连接
     public void connection() {
@@ -83,11 +96,27 @@ public class ConnectionManager extends BaseManager {
 
     public interface IRequestIP {
         void onResult(String requestId, String ip, int port);
+
+        /** 同时返回 TCP 和 WSS 地址 */
+        default void onResult(String requestId, String ip, int port, String wssAddr) {
+            onResult(requestId, ip, port);
+        }
     }
 
     public void getIpAndPort(String requestId, IRequestIP iRequestIP) {
         if (iGetIpAndPort != null) {
-            runOnMainThread(() -> iGetIpAndPort.getIP((ip, port) -> iRequestIP.onResult(requestId, ip, port)));
+            runOnMainThread(() -> iGetIpAndPort.getIP(new IGetSocketIpAndPortListener() {
+                @Override
+                public void onGetSocketIpAndPort(String ip, int port) {
+                    // 兼容旧的只返回 ip+port 的实现
+                    iRequestIP.onResult(requestId, ip, port, null);
+                }
+
+                @Override
+                public void onGetSocketIpAndPort(String ip, int port, String wssAddr) {
+                    iRequestIP.onResult(requestId, ip, port, wssAddr);
+                }
+            }));
         } else {
             WKLoggerUtils.getInstance().e(TAG,"未注册获取连接地址的事件");
         }
