@@ -36,13 +36,26 @@ public class WKDBUpgrade {
 
     void onUpgrade(SQLiteDatabase db) {
         long maxIndex = WKIMApplication.getInstance().getDBUpgradeIndex();
+
+        // 防护：如果 SharedPreferences 记录了升级进度，但核心表不存在（DB 文件被删除/损坏后重建），
+        // 则重置升级索引，从头执行所有建表和迁移 SQL
+        if (maxIndex > 0 && !tableExists(db, "message")) {
+            WKLoggerUtils.getInstance().e(TAG, "检测到核心表缺失（message），重置升级索引从头执行迁移");
+            maxIndex = 0;
+        }
+
         long tempIndex = maxIndex;
         List<WKDBSql> list = getExecSQL();
         for (int i = 0; i < list.size(); i++) {
             if (list.get(i).index > maxIndex && list.get(i).sqlList != null && !list.get(i).sqlList.isEmpty()) {
                 for (String sql : list.get(i).sqlList) {
                     if (!TextUtils.isEmpty(sql)) {
-                        db.execSQL(sql);
+                        try {
+                            db.execSQL(sql);
+                        } catch (Exception e) {
+                            // ALTER TABLE ADD COLUMN 如果列已存在会报错，跳过继续
+                            WKLoggerUtils.getInstance().e(TAG, "执行迁移SQL异常（已跳过）: " + e.getMessage());
+                        }
                     }
                 }
                 if (list.get(i).index > tempIndex) {
@@ -51,6 +64,22 @@ public class WKDBUpgrade {
             }
         }
         WKIMApplication.getInstance().setDBUpgradeIndex(tempIndex);
+    }
+
+    /**
+     * 检查表是否存在
+     */
+    private boolean tableExists(SQLiteDatabase db, String tableName) {
+        try (android.database.Cursor cursor = db.rawQuery(
+                "SELECT count(*) FROM sqlite_master WHERE type='table' AND name=?",
+                new String[]{tableName})) {
+            if (cursor != null && cursor.moveToFirst()) {
+                return cursor.getInt(0) > 0;
+            }
+        } catch (Exception e) {
+            WKLoggerUtils.getInstance().e(TAG, "检查表存在性异常: " + e.getMessage());
+        }
+        return false;
     }
 
     private List<WKDBSql> getExecSQL() {

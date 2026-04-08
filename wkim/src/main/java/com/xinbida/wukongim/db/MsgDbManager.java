@@ -266,6 +266,8 @@ public class MsgDbManager {
                 WKMsg extra = serializeMsg(cursor);
                 list.add(extra);
             }
+        } catch (Exception e) {
+            WKLoggerUtils.getInstance().e(TAG, "queryWithFlame异常: " + e.getMessage());
         }
         return list;
     }
