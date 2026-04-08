@@ -145,14 +145,24 @@ public class WKDBHelper {
         if (mDb == null) {
             return null;
         }
-        return mDb.rawQuery(sql, null);
+        try {
+            return mDb.rawQuery(sql, null);
+        } catch (android.database.sqlite.SQLiteException e) {
+            WKLoggerUtils.getInstance().e(TAG, "rawQuery异常: " + e.getMessage() + " SQL: " + sql);
+            return null;
+        }
     }
 
     public Cursor rawQuery(String sql, Object[] selectionArgs) {
         if (mDb == null) {
             return null;
         }
-        return mDb.rawQuery(sql, selectionArgs);
+        try {
+            return mDb.rawQuery(sql, selectionArgs);
+        } catch (android.database.sqlite.SQLiteException e) {
+            WKLoggerUtils.getInstance().e(TAG, "rawQuery异常: " + e.getMessage() + " SQL: " + sql);
+            return null;
+        }
     }
 
     public Cursor select(String table, String selection,
