@@ -173,8 +173,9 @@ public class ConversationDbManager {
     }
 
     public List<WKUIConversationMsg> queryWithChannelIds(List<String> channelIds) {
-        String sql = "select " + conversation + ".*," + channelCols + "," + extraCols + " from " + conversation + " left join " + channel + " on " + conversation + ".channel_id=" + channel + ".channel_id and " + conversation + ".channel_type=" + channel + ".channel_type left join " + conversationExtra + " on " + conversation + ".channel_id=" + conversationExtra + ".channel_id and " + conversation + ".channel_type=" + conversationExtra + ".channel_type where " + conversation + ".is_deleted=0 and " + conversation + ".channel_id in (" + WKCursor.getPlaceholders(channelIds.size()) + ")";
         List<WKUIConversationMsg> list = new ArrayList<>();
+        if (channelIds == null || channelIds.isEmpty()) return list;
+        String sql = "select " + conversation + ".*," + channelCols + "," + extraCols + " from " + conversation + " left join " + channel + " on " + conversation + ".channel_id=" + channel + ".channel_id and " + conversation + ".channel_type=" + channel + ".channel_type left join " + conversationExtra + " on " + conversation + ".channel_id=" + conversationExtra + ".channel_id and " + conversation + ".channel_type=" + conversationExtra + ".channel_type where " + conversation + ".is_deleted=0 and " + conversation + ".channel_id in (" + WKCursor.getPlaceholders(channelIds.size()) + ")";
         try (Cursor cursor = WKIMApplication
                 .getInstance()
                 .getDbHelper()
@@ -444,6 +445,7 @@ public class ConversationDbManager {
 
     private List<WKConversationMsgExtra> queryWithExtraChannelIds(List<String> channelIds) {
         List<WKConversationMsgExtra> list = new ArrayList<>();
+        if (channelIds == null || channelIds.isEmpty()) return list;
         try (Cursor cursor = WKIMApplication.getInstance().getDbHelper().select(conversationExtra, "channel_id in (" + WKCursor.getPlaceholders(channelIds.size()) + ")", channelIds.toArray(new String[0]), null)) {
             if (cursor == null) {
                 return list;

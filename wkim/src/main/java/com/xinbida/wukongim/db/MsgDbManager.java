@@ -1363,9 +1363,9 @@ public class MsgDbManager {
     }
 
     public List<WKMsg> queryWithMsgIds(List<String> messageIds) {
-
-        String sql = "select " + messageCols + "," + extraCols + " from " + message + " left join " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id where " + message + ".message_id in (" + WKCursor.getPlaceholders(messageIds.size()) + ")";
         List<WKMsg> list = new ArrayList<>();
+        if (messageIds == null || messageIds.isEmpty()) return list;
+        String sql = "select " + messageCols + "," + extraCols + " from " + message + " left join " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id where " + message + ".message_id in (" + WKCursor.getPlaceholders(messageIds.size()) + ")";
         List<String> gChannelIds = new ArrayList<>();
         List<String> pChannelIds = new ArrayList<>();
         List<String> fromChannelIds = new ArrayList<>();
