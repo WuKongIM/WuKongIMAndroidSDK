@@ -38,21 +38,21 @@ class MsgReactionDBManager {
         for (WKMsgReaction reaction : list) {
             insertCVs.add(WKSqlContentValues.getContentValuesWithMsgReaction(reaction));
         }
+        net.zetetic.database.sqlcipher.SQLiteDatabase db = WKIMApplication.getInstance().getDbHelper().getDb();
+        if (db == null) return;
         try {
-            WKIMApplication.getInstance().getDbHelper().getDb()
-                    .beginTransaction();
+            db.beginTransaction();
             if (!insertCVs.isEmpty()) {
                 for (ContentValues cv : insertCVs) {
                     WKIMApplication.getInstance().getDbHelper().insert(messageReaction, cv);
                 }
             }
-            WKIMApplication.getInstance().getDbHelper().getDb()
-                    .setTransactionSuccessful();
+            db.setTransactionSuccessful();
         } catch (Exception ignored) {
         } finally {
-            if (WKIMApplication.getInstance().getDbHelper().getDb().inTransaction()) {
-                WKIMApplication.getInstance().getDbHelper().getDb()
-                        .endTransaction();
+            try {
+                if (db.inTransaction()) db.endTransaction();
+            } catch (Exception ignored2) {
             }
         }
     }

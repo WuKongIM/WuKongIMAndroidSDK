@@ -675,15 +675,20 @@ public class MsgDbManager {
             ContentValues cv = WKSqlContentValues.getContentValuesWithMsg(wkMsg);
             cvList.add(cv);
         }
+        net.zetetic.database.sqlcipher.SQLiteDatabase db = WKIMApplication.getInstance().getDbHelper().getDb();
+        if (db == null) return;
         try {
-            WKIMApplication.getInstance().getDbHelper().getDb().beginTransaction();
+            db.beginTransaction();
             for (ContentValues cv : cvList) {
                 WKIMApplication.getInstance().getDbHelper()
                         .insert(message, cv);
             }
-            WKIMApplication.getInstance().getDbHelper().getDb().setTransactionSuccessful();
+            db.setTransactionSuccessful();
         } finally {
-            WKIMApplication.getInstance().getDbHelper().getDb().endTransaction();
+            try {
+                if (db.inTransaction()) db.endTransaction();
+            } catch (Exception ignored) {
+            }
         }
     }
 
@@ -947,12 +952,12 @@ public class MsgDbManager {
             }
             cvList.add(WKSqlContentValues.getCVWithMsgExtra(list.get(i)));
         }
+        net.zetetic.database.sqlcipher.SQLiteDatabase db = WKIMApplication.getInstance().getDbHelper().getDb();
+        if (db == null) {
+            WKLoggerUtils.getInstance().e(TAG, "insertOrReplaceExtra: db is null");
+            return queryWithMsgIds(msgIds);
+        }
         try {
-            net.zetetic.database.sqlcipher.SQLiteDatabase db = WKIMApplication.getInstance().getDbHelper().getDb();
-            if (db == null) {
-                WKLoggerUtils.getInstance().e(TAG, "insertOrReplaceExtra: db is null");
-                return queryWithMsgIds(msgIds);
-            }
             db.beginTransaction();
             if (!cvList.isEmpty()) {
                 for (ContentValues cv : cvList) {
@@ -964,8 +969,7 @@ public class MsgDbManager {
             WKLoggerUtils.getInstance().e(TAG, "insertOrReplace error");
         } finally {
             try {
-                net.zetetic.database.sqlcipher.SQLiteDatabase db = WKIMApplication.getInstance().getDbHelper().getDb();
-                if (db != null && db.inTransaction()) {
+                if (db.inTransaction()) {
                     db.endTransaction();
                 }
             } catch (Exception ignored) {

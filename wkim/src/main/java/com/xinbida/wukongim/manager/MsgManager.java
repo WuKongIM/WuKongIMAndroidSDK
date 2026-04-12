@@ -367,22 +367,22 @@ public class MsgManager extends BaseManager {
     public void deleteWithClientMsgNos(List<String> clientMsgNos) {
         if (WKCommonUtils.isEmpty(clientMsgNos)) return;
         List<WKMsg> list = new ArrayList<>();
+        net.zetetic.database.sqlcipher.SQLiteDatabase db = WKIMApplication.getInstance().getDbHelper().getDb();
+        if (db == null) return;
         try {
-            WKIMApplication.getInstance().getDbHelper().getDb()
-                    .beginTransaction();
+            db.beginTransaction();
             for (int i = 0, size = clientMsgNos.size(); i < size; i++) {
                 WKMsg msg = MsgDbManager.getInstance().deleteWithClientMsgNo(clientMsgNos.get(i));
                 if (msg != null) {
                     list.add(msg);
                 }
             }
-            WKIMApplication.getInstance().getDbHelper().getDb()
-                    .setTransactionSuccessful();
+            db.setTransactionSuccessful();
         } catch (Exception ignored) {
         } finally {
-            if (WKIMApplication.getInstance().getDbHelper().getDb().inTransaction()) {
-                WKIMApplication.getInstance().getDbHelper().getDb()
-                        .endTransaction();
+            try {
+                if (db.inTransaction()) db.endTransaction();
+            } catch (Exception ignored2) {
             }
         }
         List<WKMsg> deleteMsgList = new ArrayList<>();

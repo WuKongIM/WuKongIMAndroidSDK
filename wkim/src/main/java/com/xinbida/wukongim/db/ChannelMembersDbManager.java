@@ -216,21 +216,21 @@ public class ChannelMembersDbManager {
             ContentValues cv = WKSqlContentValues.getContentValuesWithChannelMember(member);
             newCVList.add(cv);
         }
+        net.zetetic.database.sqlcipher.SQLiteDatabase db = WKIMApplication.getInstance().getDbHelper().getDb();
+        if (db == null) return;
         try {
-            WKIMApplication.getInstance().getDbHelper().getDb()
-                    .beginTransaction();
+            db.beginTransaction();
             if (WKCommonUtils.isNotEmpty(newCVList)) {
                 for (ContentValues cv : newCVList) {
                     WKIMApplication.getInstance().getDbHelper().insert(channelMembers, cv);
                 }
             }
-            WKIMApplication.getInstance().getDbHelper().getDb()
-                    .setTransactionSuccessful();
+            db.setTransactionSuccessful();
         } catch (Exception ignored) {
         } finally {
-            if (WKIMApplication.getInstance().getDbHelper().getDb().inTransaction()) {
-                WKIMApplication.getInstance().getDbHelper().getDb()
-                        .endTransaction();
+            try {
+                if (db.inTransaction()) db.endTransaction();
+            } catch (Exception ignored2) {
             }
         }
     }
@@ -251,29 +251,20 @@ public class ChannelMembersDbManager {
             insertCVList.add(WKSqlContentValues.getContentValuesWithChannelMember(channelMember));
 //            }
         }
-        WKIMApplication.getInstance().getDbHelper().getDb()
-                .beginTransaction();
+        net.zetetic.database.sqlcipher.SQLiteDatabase db2 = WKIMApplication.getInstance().getDbHelper().getDb();
+        if (db2 == null) return;
         try {
+            db2.beginTransaction();
             if (WKCommonUtils.isNotEmpty(insertCVList)) {
                 for (ContentValues cv : insertCVList) {
                     WKIMApplication.getInstance().getDbHelper().insert(channelMembers, cv);
                 }
             }
-//            if (WKCommonUtils.isNotEmpty(updateCVList)) {
-//                for (ContentValues cv : updateCVList) {
-//                    String[] update = new String[3];
-//                    update[0] = cv.getAsString(WKDBColumns.WKChannelMembersColumns.channel_id);
-//                    update[1] = String.valueOf(cv.getAsByte(WKDBColumns.WKChannelMembersColumns.channel_type));
-//                    update[2] = cv.getAsString(WKDBColumns.WKChannelMembersColumns.member_uid);
-//                    WKIMApplication.getInstance().getDbHelper()
-//                            .update(channelMembers, cv, WKDBColumns.WKChannelMembersColumns.channel_id + "=? and " + WKDBColumns.WKChannelMembersColumns.channel_type + "=? and " + WKDBColumns.WKChannelMembersColumns.member_uid + "=?", update);
-//                }
-//            }
-            WKIMApplication.getInstance().getDbHelper().getDb().setTransactionSuccessful();
+            db2.setTransactionSuccessful();
         } finally {
-            if (WKIMApplication.getInstance().getDbHelper().getDb().inTransaction()) {
-                WKIMApplication.getInstance().getDbHelper().getDb()
-                        .endTransaction();
+            try {
+                if (db2.inTransaction()) db2.endTransaction();
+            } catch (Exception ignored) {
             }
         }
     }
@@ -349,21 +340,21 @@ public class ChannelMembersDbManager {
      * @param list 频道成员
      */
     public synchronized void deleteMembers(List<WKChannelMember> list) {
+        net.zetetic.database.sqlcipher.SQLiteDatabase db = WKIMApplication.getInstance().getDbHelper().getDb();
+        if (db == null) return;
         try {
-            WKIMApplication.getInstance().getDbHelper().getDb()
-                    .beginTransaction();
+            db.beginTransaction();
             if (WKCommonUtils.isNotEmpty(list)) {
                 for (int i = 0, size = list.size(); i < size; i++) {
                     insertOrUpdate(list.get(i));
                 }
-                WKIMApplication.getInstance().getDbHelper().getDb()
-                        .setTransactionSuccessful();
+                db.setTransactionSuccessful();
             }
         } catch (Exception ignored) {
         } finally {
-            if (WKIMApplication.getInstance().getDbHelper().getDb().inTransaction()) {
-                WKIMApplication.getInstance().getDbHelper().getDb()
-                        .endTransaction();
+            try {
+                if (db.inTransaction()) db.endTransaction();
+            } catch (Exception ignored2) {
             }
         }
         ChannelMembersManager.getInstance().setOnRemoveChannelMember(list);

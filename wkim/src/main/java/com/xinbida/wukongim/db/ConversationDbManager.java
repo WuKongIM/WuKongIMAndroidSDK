@@ -502,8 +502,10 @@ public class ConversationDbManager {
             }
         }
 
+        net.zetetic.database.sqlcipher.SQLiteDatabase db = WKIMApplication.getInstance().getDbHelper().getDb();
+        if (db == null) return;
         try {
-            WKIMApplication.getInstance().getDbHelper().getDb().beginTransaction();
+            db.beginTransaction();
             if (WKCommonUtils.isNotEmpty(insertCVList)) {
                 for (ContentValues cv : insertCVList) {
                     WKIMApplication.getInstance().getDbHelper()
@@ -519,9 +521,12 @@ public class ConversationDbManager {
                             .update(conversationExtra, cv, "channel_id=? and channel_type=?", sv);
                 }
             }
-            WKIMApplication.getInstance().getDbHelper().getDb().setTransactionSuccessful();
+            db.setTransactionSuccessful();
         } finally {
-            WKIMApplication.getInstance().getDbHelper().getDb().endTransaction();
+            try {
+                if (db.inTransaction()) db.endTransaction();
+            } catch (Exception ignored) {
+            }
         }
         List<WKUIConversationMsg> uiMsgList = ConversationDbManager.getInstance().queryWithChannelIds(channelIds);
 //        for (int i = 0, size = uiMsgList.size(); i < size; i++) {

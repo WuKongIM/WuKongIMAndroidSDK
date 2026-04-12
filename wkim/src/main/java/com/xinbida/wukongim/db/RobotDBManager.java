@@ -123,15 +123,19 @@ public class RobotDBManager {
         for (WKRobot robot : list) {
             cvList.add(getCV(robot));
         }
+        net.zetetic.database.sqlcipher.SQLiteDatabase db = WKIMApplication.getInstance().getDbHelper().getDb();
+        if (db == null) return;
         try {
-            WKIMApplication.getInstance().getDbHelper().getDb().beginTransaction();
+            db.beginTransaction();
             for (ContentValues cv : cvList) {
                 WKIMApplication.getInstance().getDbHelper().insert(robot, cv);
             }
-            WKIMApplication.getInstance().getDbHelper().getDb().setTransactionSuccessful();
-
+            db.setTransactionSuccessful();
         } finally {
-            WKIMApplication.getInstance().getDbHelper().getDb().endTransaction();
+            try {
+                if (db.inTransaction()) db.endTransaction();
+            } catch (Exception ignored) {
+            }
         }
     }
 
@@ -213,15 +217,19 @@ public class RobotDBManager {
         for (WKRobotMenu robot : list) {
             cvList.add(getCV(robot));
         }
+        net.zetetic.database.sqlcipher.SQLiteDatabase db = WKIMApplication.getInstance().getDbHelper().getDb();
+        if (db == null) return;
         try {
-            WKIMApplication.getInstance().getDbHelper().getDb().beginTransaction();
+            db.beginTransaction();
             for (ContentValues cv : cvList) {
                 WKIMApplication.getInstance().getDbHelper().insert(robotMenu, cv);
             }
-            WKIMApplication.getInstance().getDbHelper().getDb().setTransactionSuccessful();
-
+            db.setTransactionSuccessful();
         } finally {
-            WKIMApplication.getInstance().getDbHelper().getDb().endTransaction();
+            try {
+                if (db.inTransaction()) db.endTransaction();
+            } catch (Exception ignored) {
+            }
         }
     }
 
