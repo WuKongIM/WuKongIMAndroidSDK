@@ -948,21 +948,27 @@ public class MsgDbManager {
             cvList.add(WKSqlContentValues.getCVWithMsgExtra(list.get(i)));
         }
         try {
-            WKIMApplication.getInstance().getDbHelper().getDb()
-                    .beginTransaction();
+            net.zetetic.database.sqlcipher.SQLiteDatabase db = WKIMApplication.getInstance().getDbHelper().getDb();
+            if (db == null) {
+                WKLoggerUtils.getInstance().e(TAG, "insertOrReplaceExtra: db is null");
+                return queryWithMsgIds(msgIds);
+            }
+            db.beginTransaction();
             if (!cvList.isEmpty()) {
                 for (ContentValues cv : cvList) {
                     WKIMApplication.getInstance().getDbHelper().insert(messageExtra, cv);
                 }
             }
-            WKIMApplication.getInstance().getDbHelper().getDb()
-                    .setTransactionSuccessful();
+            db.setTransactionSuccessful();
         } catch (Exception ignored) {
             WKLoggerUtils.getInstance().e(TAG, "insertOrReplace error");
         } finally {
-            if (WKIMApplication.getInstance().getDbHelper().getDb().inTransaction()) {
-                WKIMApplication.getInstance().getDbHelper().getDb()
-                        .endTransaction();
+            try {
+                net.zetetic.database.sqlcipher.SQLiteDatabase db = WKIMApplication.getInstance().getDbHelper().getDb();
+                if (db != null && db.inTransaction()) {
+                    db.endTransaction();
+                }
+            } catch (Exception ignored) {
             }
         }
         List<WKMsg> msgList = queryWithMsgIds(msgIds);
