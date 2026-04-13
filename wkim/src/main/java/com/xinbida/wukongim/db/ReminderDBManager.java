@@ -205,7 +205,7 @@ public class ReminderDBManager {
             }
         }
         net.zetetic.database.sqlcipher.SQLiteDatabase db = WKIMApplication.getInstance().getDbHelper().getDb();
-        if (db == null) return;
+        if (db == null) return new ArrayList<>();
         try {
             db.beginTransaction();
             if (!insertCVs.isEmpty()) {
