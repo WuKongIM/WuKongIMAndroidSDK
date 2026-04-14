@@ -463,11 +463,19 @@ public class ChannelMembersDbManager {
         String sql = "select count(*) from " + channelMembers
                 + " where (" + WKDBColumns.WKChannelMembersColumns.channel_id + "=? and "
                 + WKDBColumns.WKChannelMembersColumns.channel_type + "=? and " + WKDBColumns.WKChannelMembersColumns.is_deleted + "=0 and " + WKDBColumns.WKChannelMembersColumns.status + "=1)";
-        Cursor cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql, args);
-        cursor.moveToFirst();
-        int count = cursor.getInt(0);
-        cursor.close();
-        return count;
+        Cursor cursor = null;
+        try {
+            if (WKIMApplication.getInstance().getDbHelper() == null) return 0;
+            cursor = WKIMApplication.getInstance().getDbHelper().rawQuery(sql, args);
+            if (cursor != null && cursor.moveToFirst()) {
+                return cursor.getInt(0);
+            }
+        } catch (Exception e) {
+            WKLoggerUtils.getInstance().e(TAG, "queryCount error: " + e.getMessage());
+        } finally {
+            if (cursor != null) cursor.close();
+        }
+        return 0;
     }
 
     /**
