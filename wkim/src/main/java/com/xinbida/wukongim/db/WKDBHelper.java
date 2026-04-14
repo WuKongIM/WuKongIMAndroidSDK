@@ -70,7 +70,10 @@ public class WKDBHelper {
             File databaseFile = ctx.getDatabasePath(myDBName);
             databaseFile.getParentFile().mkdirs();
             mDb = SQLiteDatabase.openOrCreateDatabase(databaseFile, uid, null, null, null);
-            mDb.execSQL("PRAGMA journal_mode=WAL");
+            // 开启WAL模式：读写分离，解决锁竞争导致的ANR
+            try (Cursor c = mDb.rawQuery("PRAGMA journal_mode=WAL", null)) {
+                if (c != null) c.moveToFirst();
+            }
             WKDBUpgrade.getInstance().onUpgrade(mDb);
         } catch (Exception e) {
             WKLoggerUtils.getInstance().e(TAG + " init WKDBHelper error: " + e.getMessage());
