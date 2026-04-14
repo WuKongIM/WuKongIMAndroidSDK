@@ -146,6 +146,12 @@ public class ConversationDbManager {
             }
             ids.add(msgIds.get(i));
         }
+        if (!ids.isEmpty()) {
+            List<WKMsgExtra> list = MsgDbManager.getInstance().queryMsgExtrasWithMsgIds(ids);
+            if (WKCommonUtils.isNotEmpty(list)) {
+                msgExtraList.addAll(list);
+            }
+        }
         return msgExtraList;
     }
 

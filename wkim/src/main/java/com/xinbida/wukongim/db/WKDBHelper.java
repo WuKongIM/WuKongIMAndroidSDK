@@ -29,8 +29,8 @@ public class WKDBHelper {
 //    private DatabaseHelper mDbHelper;
     private SQLiteDatabase mDb;
     
-    // 数据库操作线程池（单线程，保证数据库操作的顺序性）
-    private static final ExecutorService dbExecutor = Executors.newSingleThreadExecutor();
+    // 数据库操作线程池（3线程，配合WAL模式支持读写并发）
+    private static final ExecutorService dbExecutor = Executors.newFixedThreadPool(3);
     // 主线程 Handler，用于回调
     private static final Handler mainHandler = new Handler(Looper.getMainLooper());
 
@@ -70,6 +70,7 @@ public class WKDBHelper {
             File databaseFile = ctx.getDatabasePath(myDBName);
             databaseFile.getParentFile().mkdirs();
             mDb = SQLiteDatabase.openOrCreateDatabase(databaseFile, uid, null, null, null);
+            mDb.execSQL("PRAGMA journal_mode=WAL");
             WKDBUpgrade.getInstance().onUpgrade(mDb);
         } catch (Exception e) {
             WKLoggerUtils.getInstance().e(TAG + " init WKDBHelper error: " + e.getMessage());
