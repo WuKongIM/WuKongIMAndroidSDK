@@ -377,20 +377,24 @@ public class ConversationManager extends BaseManager {
                             uiMsgList.add(uiMsg);
                         }
                     }
-                    WKIMApplication.getInstance().getDbHelper().getDb()
-                            .beginTransaction();
-                    for (ContentValues cv : cvList) {
-                        ConversationDbManager.getInstance().insertSyncMsg(cv);
+                    net.zetetic.database.sqlcipher.SQLiteDatabase db = WKIMApplication.getInstance().getDbHelper().getDb();
+                    if (db != null) {
+                        db.beginTransaction();
+                        for (ContentValues cv : cvList) {
+                            ConversationDbManager.getInstance().insertSyncMsg(cv);
+                        }
+                        db.setTransactionSuccessful();
                     }
-                    WKIMApplication.getInstance().getDbHelper().getDb()
-                            .setTransactionSuccessful();
                 }
             } catch (Exception ignored) {
                 WKLoggerUtils.getInstance().e(TAG, "Save synchronization session message exception");
             } finally {
-                if (WKIMApplication.getInstance().getDbHelper().getDb().inTransaction()) {
-                    WKIMApplication.getInstance().getDbHelper().getDb()
-                            .endTransaction();
+                try {
+                    net.zetetic.database.sqlcipher.SQLiteDatabase db = WKIMApplication.getInstance().getDbHelper().getDb();
+                    if (db != null && db.inTransaction()) {
+                        db.endTransaction();
+                    }
+                } catch (Exception ignored2) {
                 }
             }
             if (WKCommonUtils.isNotEmpty(msgReactionList)) {

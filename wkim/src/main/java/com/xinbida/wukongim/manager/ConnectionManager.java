@@ -71,14 +71,21 @@ public class ConnectionManager extends BaseManager {
     private void logoutChat() {
         WKLoggerUtils.getInstance().e(TAG,"exit");
         WKIMApplication.getInstance().isCanConnect = false;
-        MessageHandler.getInstance().saveReceiveMsg();
-
         WKIMApplication.getInstance().setToken("");
-        MessageHandler.getInstance().updateLastSendingMsgFail();
         WKConnection.getInstance().stopAll();
         WKIM.getInstance().getChannelManager().clearARMCache();
         WKIM.getInstance().getReminderManager().clearAllCache();
-        WKIMApplication.getInstance().closeDbHelper();
+        // DB操作移到后台线程，避免主线程ANR
+        new Thread(() -> {
+            try {
+                MessageHandler.getInstance().saveReceiveMsg();
+                MessageHandler.getInstance().updateLastSendingMsgFail();
+            } finally {
+                // 延迟关闭DB，等待其他in-flight DB操作完成
+                try { Thread.sleep(500); } catch (InterruptedException ignored) {}
+                WKIMApplication.getInstance().closeDbHelper();
+            }
+        }, "logout-db").start();
     }
 
     public interface IRequestIP {

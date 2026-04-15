@@ -72,6 +72,9 @@ public class WKLoggerUtils {
     }
 
     private String createMessage(String msg) {
+        if (!WKIM.getInstance().isDebug()) {
+            return msg;
+        }
         String functionName = getFunctionName();
         return (functionName == null ? msg : (functionName + " - " + msg));
     }
@@ -158,6 +161,7 @@ public class WKLoggerUtils {
      * log.error
      */
     public void error(Exception e) {
+        if (!WKIM.getInstance().isDebug()) return;
         StringBuilder sb = new StringBuilder();
         String name = getFunctionName();
         StackTraceElement[] sts = e.getStackTrace();

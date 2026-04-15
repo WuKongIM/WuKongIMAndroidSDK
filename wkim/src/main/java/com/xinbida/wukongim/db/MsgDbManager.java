@@ -266,6 +266,8 @@ public class MsgDbManager {
                 WKMsg extra = serializeMsg(cursor);
                 list.add(extra);
             }
+        } catch (Exception e) {
+            WKLoggerUtils.getInstance().e(TAG, "queryWithFlame异常: " + e.getMessage());
         }
         return list;
     }
@@ -673,15 +675,20 @@ public class MsgDbManager {
             ContentValues cv = WKSqlContentValues.getContentValuesWithMsg(wkMsg);
             cvList.add(cv);
         }
+        net.zetetic.database.sqlcipher.SQLiteDatabase db = WKIMApplication.getInstance().getDbHelper().getDb();
+        if (db == null) return;
         try {
-            WKIMApplication.getInstance().getDbHelper().getDb().beginTransaction();
+            db.beginTransaction();
             for (ContentValues cv : cvList) {
                 WKIMApplication.getInstance().getDbHelper()
                         .insert(message, cv);
             }
-            WKIMApplication.getInstance().getDbHelper().getDb().setTransactionSuccessful();
+            db.setTransactionSuccessful();
         } finally {
-            WKIMApplication.getInstance().getDbHelper().getDb().endTransaction();
+            try {
+                if (db.inTransaction()) db.endTransaction();
+            } catch (Exception ignored) {
+            }
         }
     }
 
@@ -945,22 +952,27 @@ public class MsgDbManager {
             }
             cvList.add(WKSqlContentValues.getCVWithMsgExtra(list.get(i)));
         }
+        net.zetetic.database.sqlcipher.SQLiteDatabase db = WKIMApplication.getInstance().getDbHelper().getDb();
+        if (db == null) {
+            WKLoggerUtils.getInstance().e(TAG, "insertOrReplaceExtra: db is null");
+            return queryWithMsgIds(msgIds);
+        }
         try {
-            WKIMApplication.getInstance().getDbHelper().getDb()
-                    .beginTransaction();
+            db.beginTransaction();
             if (!cvList.isEmpty()) {
                 for (ContentValues cv : cvList) {
                     WKIMApplication.getInstance().getDbHelper().insert(messageExtra, cv);
                 }
             }
-            WKIMApplication.getInstance().getDbHelper().getDb()
-                    .setTransactionSuccessful();
+            db.setTransactionSuccessful();
         } catch (Exception ignored) {
             WKLoggerUtils.getInstance().e(TAG, "insertOrReplace error");
         } finally {
-            if (WKIMApplication.getInstance().getDbHelper().getDb().inTransaction()) {
-                WKIMApplication.getInstance().getDbHelper().getDb()
-                        .endTransaction();
+            try {
+                if (db.inTransaction()) {
+                    db.endTransaction();
+                }
+            } catch (Exception ignored) {
             }
         }
         List<WKMsg> msgList = queryWithMsgIds(msgIds);
@@ -1361,9 +1373,9 @@ public class MsgDbManager {
     }
 
     public List<WKMsg> queryWithMsgIds(List<String> messageIds) {
-
-        String sql = "select " + messageCols + "," + extraCols + " from " + message + " left join " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id where " + message + ".message_id in (" + WKCursor.getPlaceholders(messageIds.size()) + ")";
         List<WKMsg> list = new ArrayList<>();
+        if (messageIds == null || messageIds.isEmpty()) return list;
+        String sql = "select " + messageCols + "," + extraCols + " from " + message + " left join " + messageExtra + " on " + message + ".message_id=" + messageExtra + ".message_id where " + message + ".message_id in (" + WKCursor.getPlaceholders(messageIds.size()) + ")";
         List<String> gChannelIds = new ArrayList<>();
         List<String> pChannelIds = new ArrayList<>();
         List<String> fromChannelIds = new ArrayList<>();
