@@ -955,10 +955,13 @@ public class MsgManager extends BaseManager {
     public void setSyncChannelMsgListener(String channelID, byte channelType, long startMessageSeq, long endMessageSeq, int limit, int pullMode, ISyncChannelMsgBack iSyncChannelMsgBack) {
         if (this.iSyncChannelMsgListener != null) {
             runOnMainThread(() -> iSyncChannelMsgListener.syncChannelMsgs(channelID, channelType, startMessageSeq, endMessageSeq, limit, pullMode, syncChannelMsg -> {
-                if (syncChannelMsg != null && WKCommonUtils.isNotEmpty(syncChannelMsg.messages)) {
-                    saveSyncChannelMSGs(syncChannelMsg.messages);
-                }
-                iSyncChannelMsgBack.onBack(syncChannelMsg);
+                // DB写入和后续查询移至后台线程，避免主线程SQLCipher连接池竞争ANR
+                new Thread(() -> {
+                    if (syncChannelMsg != null && WKCommonUtils.isNotEmpty(syncChannelMsg.messages)) {
+                        saveSyncChannelMSGs(syncChannelMsg.messages);
+                    }
+                    iSyncChannelMsgBack.onBack(syncChannelMsg);
+                }).start();
             }));
         }
     }
