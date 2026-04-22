@@ -1251,11 +1251,6 @@ public class WKConnection {
                 WKLoggerUtils.getInstance().e(TAG, "Exception during async connection close for " + connectionToCloseActual.getId() + ": " + e.getMessage());
             } finally {
                 isClosing.set(false);
-                // Only trigger reconnection if we're still supposed to be connected
-                if (WKIMApplication.getInstance().isCanConnect && connectStatus != WKConnectStatus.kicked) {
-                    // 在后台线程检查并重连，避免主线程阻塞
-                    scheduleReconnectionOnBackground(1000);
-                }
             }
         }, "ConnectionCloser");
         closeThread.setDaemon(true);
