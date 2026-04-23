@@ -998,8 +998,15 @@ public class MsgManager extends BaseManager {
         if (WKCommonUtils.isNotEmpty(reactionList)) {
             MsgDbManager.getInstance().insertMsgReactions(reactionList);
         }
-        List<WKMsg> saveList = MsgDbManager.getInstance().queryWithMsgIds(msgIds);
-        getMsgReactionsAndRefreshMsg(msgIds, saveList);
+        // Bugly#30231 OOM 优化：复用 msgList 而不是再次全量 queryWithMsgIds，
+        // 避免 200-500 条消息同时在堆里持有两份（50-200MB 重复占用）
+        // reactionList 清空让 getMsgReactionsAndRefreshMsg 从 DB 重建，行为与原 saveList 路径等价
+        if (WKCommonUtils.isNotEmpty(msgList)) {
+            for (int i = 0, size = msgList.size(); i < size; i++) {
+                msgList.get(i).reactionList = null;
+            }
+            getMsgReactionsAndRefreshMsg(msgIds, msgList);
+        }
     }
 
     public void addOnSendMsgAckListener(String key, ISendACK iSendACKListener) {
