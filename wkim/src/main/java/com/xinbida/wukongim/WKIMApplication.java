@@ -148,6 +148,20 @@ public class WKIMApplication {
         }
     }
 
+    /**
+     * 关闭指定的 DBHelper 实例。
+     * 注意：WKDBHelper.getInstance 是按 uid 键控的单例，同 uid 重登会返回同一对象。
+     * 所以这里只在 mDbHelper 仍指向 target 时才关——否则说明已被替换或复用，交给替换方管理。
+     * 调用方（如 ConnectionManager.logoutChat）还应额外检查 token/会话状态，避免关掉复用的活实例。
+     */
+    public synchronized void closeDbHelper(WKDBHelper target) {
+        if (target == null) return;
+        if (mDbHelper == target) {
+            mDbHelper.close();
+            mDbHelper = null;
+        }
+    }
+
     public long getDBUpgradeIndex() {
         if (mContext == null) return 0;
         SharedPreferences setting = mContext.get().getSharedPreferences(

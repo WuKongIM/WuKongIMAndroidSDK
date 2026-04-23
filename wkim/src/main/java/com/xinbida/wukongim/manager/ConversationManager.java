@@ -82,8 +82,14 @@ public class ConversationManager extends BaseManager {
             return;
         }
         dispatchQueuePool.execute(() -> {
-            List<WKUIConversationMsg> list = ConversationDbManager.getInstance().queryAll();
-            iAllConversations.onResult(list);
+            try {
+                List<WKUIConversationMsg> list = ConversationDbManager.getInstance().queryAll();
+                iAllConversations.onResult(list);
+            } catch (Throwable t) {
+                // Bugly#33246 防御：DB 关闭竞态导致的后台线程崩溃
+                WKLoggerUtils.getInstance().e("ConversationManager", "getAll aborted: " + t.getMessage());
+                iAllConversations.onResult(new java.util.ArrayList<>());
+            }
         });
     }
 
@@ -293,7 +299,14 @@ public class ConversationManager extends BaseManager {
             long version = ConversationDbManager.getInstance().queryMaxVersion();
             String lastMsgSeqStr = ConversationDbManager.getInstance().queryLastMsgSeqs();
             runOnMainThread(() -> iSyncConversationChat.syncConversationChat(lastMsgSeqStr, 10, version, syncChat -> {
-                dispatchQueuePool.execute(() -> saveSyncChat(syncChat, () -> iSyncConversationChatBack.onBack(syncChat)));
+                dispatchQueuePool.execute(() -> {
+                    try {
+                        saveSyncChat(syncChat, () -> iSyncConversationChatBack.onBack(syncChat));
+                    } catch (Throwable t) {
+                        // Bugly#33246 防御：DB 关闭竞态导致的后台线程崩溃
+                        WKLoggerUtils.getInstance().e("ConversationManager", "saveSyncChat aborted: " + t.getMessage());
+                    }
+                });
             }));
         } else {
             WKLoggerUtils.getInstance().e("未设置同步最近会话事件");

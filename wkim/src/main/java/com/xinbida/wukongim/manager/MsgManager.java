@@ -304,6 +304,7 @@ public class MsgManager extends BaseManager {
      */
     public void getOrSyncHistoryMessages(String channelId, byte channelType, long oldestOrderSeq, boolean contain, int pullMode, int limit, long aroundMsgOrderSeq, final IGetOrSyncHistoryMsgBack iGetOrSyncHistoryMsgBack) {
         new Thread(() -> {
+            try {
             int tempPullMode = pullMode;
             long tempOldestOrderSeq = oldestOrderSeq;
             boolean tempContain = contain;
@@ -348,6 +349,10 @@ public class MsgManager extends BaseManager {
                 }
             }
             MsgDbManager.getInstance().queryOrSyncHistoryMessages(channelId, channelType, tempOldestOrderSeq, tempContain, tempPullMode, limit, iGetOrSyncHistoryMsgBack);
+            } catch (Throwable t) {
+                // Bugly#33246 防御：DB 关闭竞态 / 登出路径导致的连接池关闭等异步崩溃，在此兜底
+                com.xinbida.wukongim.utils.WKLoggerUtils.getInstance().e("MsgManager", "getOrSyncHistoryMessages aborted: " + t.getMessage());
+            }
         }).start();
     }
 
@@ -957,10 +962,15 @@ public class MsgManager extends BaseManager {
             runOnMainThread(() -> iSyncChannelMsgListener.syncChannelMsgs(channelID, channelType, startMessageSeq, endMessageSeq, limit, pullMode, syncChannelMsg -> {
                 // DB写入和后续查询移至后台线程，避免主线程SQLCipher连接池竞争ANR
                 new Thread(() -> {
-                    if (syncChannelMsg != null && WKCommonUtils.isNotEmpty(syncChannelMsg.messages)) {
-                        saveSyncChannelMSGs(syncChannelMsg.messages);
+                    try {
+                        if (syncChannelMsg != null && WKCommonUtils.isNotEmpty(syncChannelMsg.messages)) {
+                            saveSyncChannelMSGs(syncChannelMsg.messages);
+                        }
+                        iSyncChannelMsgBack.onBack(syncChannelMsg);
+                    } catch (Throwable t) {
+                        // Bugly#33246 防御：DB 关闭竞态导致的后台线程崩溃
+                        com.xinbida.wukongim.utils.WKLoggerUtils.getInstance().e("MsgManager", "saveSyncChannelMSGs aborted: " + t.getMessage());
                     }
-                    iSyncChannelMsgBack.onBack(syncChannelMsg);
                 }).start();
             }));
         }
