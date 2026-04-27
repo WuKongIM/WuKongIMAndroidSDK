@@ -15,6 +15,7 @@ import org.xsocket.connection.INonBlockingConnection;
 
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 2020-12-18 10:28
@@ -26,7 +27,7 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
     private final String TAG = "ConnectionClient";
     private boolean isConnectSuccess;
     private static final int MAX_TIMEOUT_RETRIES = 3;
-    private int timeoutRetryCount = 0;
+    private final AtomicInteger timeoutRetryCount = new AtomicInteger(0);
 
     interface IConnResult {
         void onResult(INonBlockingConnection iNonBlockingConnection);
@@ -84,16 +85,16 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
     public boolean onConnectionTimeout(INonBlockingConnection iNonBlockingConnection) {
         // 使用 volatile 读取 connection，无需锁保护（只读操作）
         if (!isConnectSuccess) {
-            timeoutRetryCount++;
-            WKLoggerUtils.getInstance().e(TAG, String.format("Connection timeout (attempt %d/%d)", timeoutRetryCount, MAX_TIMEOUT_RETRIES));
-            
+            int retryCount = timeoutRetryCount.incrementAndGet();
+            WKLoggerUtils.getInstance().e(TAG, String.format("Connection timeout (attempt %d/%d)", retryCount, MAX_TIMEOUT_RETRIES));
+
             // Check if this is the current connection (connection 是 volatile，可安全读取)
             INonBlockingConnection currentConn = WKConnection.getInstance().connection;
             if (currentConn != null && currentConn.getId().equals(iNonBlockingConnection.getId())) {
-                
-                if (timeoutRetryCount >= MAX_TIMEOUT_RETRIES) {
+
+                if (retryCount >= MAX_TIMEOUT_RETRIES) {
                     WKLoggerUtils.getInstance().e(TAG, "Maximum timeout retries reached, initiating reconnection");
-                    timeoutRetryCount = 0;
+                    timeoutRetryCount.set(0);
                     // 检查网络状态，有网络才累加重连计数
                     if (WKIMApplication.getInstance().isNetworkConnected()) {
                         WKConnection.getInstance().forcedReconnection();
@@ -103,11 +104,11 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
                 } else {
                     // Log retry attempt
                     WKLoggerUtils.getInstance().i(TAG, "Retrying connection after timeout");
-                    
+
                     // Attempt to reset connection state
                     try {
                         iNonBlockingConnection.setConnectionTimeoutMillis(
-                            Math.min(3000 * (timeoutRetryCount + 1), 10000) // Increase timeout with each retry
+                            Math.min(3000 * (retryCount + 1), 10000) // Increase timeout with each retry
                         );
                     } catch (Exception e) {
                         WKLoggerUtils.getInstance().e(TAG, "Failed to adjust connection timeout: " + e.getMessage());
@@ -115,7 +116,7 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
                 }
             } else {
                 WKLoggerUtils.getInstance().w(TAG, "Timeout for old connection, ignoring");
-                timeoutRetryCount = 0;
+                timeoutRetryCount.set(0);
             }
         } else {
             WKLoggerUtils.getInstance().i(TAG, "Connection timeout ignored - connection already successful");
@@ -171,7 +172,7 @@ class ConnectionClient implements IDataHandler, IConnectHandler,
             }
             
             // Reset timeout counter on disconnect
-            timeoutRetryCount = 0;
+            timeoutRetryCount.set(0);
             
             // Only attempt reconnection if we're allowed to connect and it's not a planned closure
             if (WKIMApplication.getInstance().isCanConnect && !WKConnection.getInstance().isClosing.get()) {

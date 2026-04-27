@@ -91,7 +91,7 @@ public class WKConnection {
     // 正在发送的消息
     private final ConcurrentHashMap<Integer, WKSendingMsg> sendingMsgHashMap = new ConcurrentHashMap<>();
     // 正在重连中
-    public boolean isReConnecting = false;
+    public volatile boolean isReConnecting = false;
     // 连接状态
     private int connectStatus;
     private long lastMsgTime = 0;
@@ -105,7 +105,7 @@ public class WKConnection {
     private final long connAckTimeoutTime = 10;
     public String socketSingleID;
     private String lastRequestId;
-    public volatile Handler reconnectionHandler = new Handler(Objects.requireNonNull(Looper.myLooper()));
+    public volatile Handler reconnectionHandler = new Handler(Looper.getMainLooper());
     Runnable reconnectionRunnable = this::reconnection;
     private int connCount = 0;
     private HeartbeatManager heartbeatManager;

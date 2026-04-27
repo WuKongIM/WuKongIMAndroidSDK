@@ -13,14 +13,20 @@ public class BaseManager {
         return Looper.getMainLooper().getThread() == Thread.currentThread();
     }
 
-    private Handler mainHandler;
+    private volatile Handler mainHandler;
 
-    synchronized void runOnMainThread(ICheckThreadBack iCheckThreadBack) {
+    void runOnMainThread(ICheckThreadBack iCheckThreadBack) {
         if (iCheckThreadBack == null) {
             return;
         }
         if (!isMainThread()) {
-            if (mainHandler == null) mainHandler = new Handler(Looper.getMainLooper());
+            if (mainHandler == null) {
+                synchronized (this) {
+                    if (mainHandler == null) {
+                        mainHandler = new Handler(Looper.getMainLooper());
+                    }
+                }
+            }
             mainHandler.post(iCheckThreadBack::onMainThread);
         } else iCheckThreadBack.onMainThread();
     }

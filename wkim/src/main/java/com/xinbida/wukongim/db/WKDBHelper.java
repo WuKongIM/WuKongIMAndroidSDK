@@ -42,7 +42,7 @@ public class WKDBHelper {
     // 数据库版本
     private final static int version = 1;
     private static String myDBName;
-    private static String uid;
+    private static volatile String uid;
     
     /**
      * 数据库查询回调接口
