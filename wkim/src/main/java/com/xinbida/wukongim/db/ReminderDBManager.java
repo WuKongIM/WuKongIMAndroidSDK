@@ -204,9 +204,10 @@ public class ReminderDBManager {
                 insertCVs.add(WKSqlContentValues.getCVWithReminder(list.get(i)));
             }
         }
+        net.zetetic.database.sqlcipher.SQLiteDatabase db = WKIMApplication.getInstance().getDbHelper().getDb();
+        if (db == null) return new ArrayList<>();
         try {
-            WKIMApplication.getInstance().getDbHelper().getDb()
-                    .beginTransaction();
+            db.beginTransaction();
             if (!insertCVs.isEmpty()) {
                 for (ContentValues cv : insertCVs) {
                     WKIMApplication.getInstance().getDbHelper().insert(reminders, cv);
@@ -220,13 +221,12 @@ public class ReminderDBManager {
                             .update(reminders, cv, "reminder_id=?", update);
                 }
             }
-            WKIMApplication.getInstance().getDbHelper().getDb()
-                    .setTransactionSuccessful();
+            db.setTransactionSuccessful();
         } catch (Exception ignored) {
         } finally {
-            if (WKIMApplication.getInstance().getDbHelper().getDb().inTransaction()) {
-                WKIMApplication.getInstance().getDbHelper().getDb()
-                        .endTransaction();
+            try {
+                if (db.inTransaction()) db.endTransaction();
+            } catch (Exception ignored2) {
             }
         }
 

@@ -147,23 +147,21 @@ public class ChannelDBManager {
             ContentValues cv = WKSqlContentValues.getContentValuesWithChannel(channel);
             newCVList.add(cv);
         }
+        if (WKIMApplication.getInstance().getDbHelper() == null) return;
+        net.zetetic.database.sqlcipher.SQLiteDatabase db = WKIMApplication.getInstance().getDbHelper().getDb();
+        if (db == null) return;
         try {
-            if (WKIMApplication.getInstance().getDbHelper() == null) {
-                return;
-            }
-            WKIMApplication.getInstance().getDbHelper().getDb()
-                    .beginTransaction();
+            db.beginTransaction();
             for (ContentValues cv : newCVList) {
                 WKIMApplication.getInstance().getDbHelper()
                         .insert(channel, cv);
             }
-            WKIMApplication.getInstance().getDbHelper().getDb()
-                    .setTransactionSuccessful();
+            db.setTransactionSuccessful();
         } catch (Exception ignored) {
         } finally {
-            if (WKIMApplication.getInstance().getDbHelper().getDb().inTransaction()) {
-                WKIMApplication.getInstance().getDbHelper().getDb()
-                        .endTransaction();
+            try {
+                if (db.inTransaction()) db.endTransaction();
+            } catch (Exception ignored2) {
             }
         }
     }

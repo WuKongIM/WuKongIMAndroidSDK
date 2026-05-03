@@ -29,8 +29,8 @@ public class WKDBHelper {
 //    private DatabaseHelper mDbHelper;
     private SQLiteDatabase mDb;
     
-    // 数据库操作线程池（单线程，保证数据库操作的顺序性）
-    private static final ExecutorService dbExecutor = Executors.newSingleThreadExecutor();
+    // 数据库操作线程池（3线程，配合WAL模式支持读写并发）
+    private static final ExecutorService dbExecutor = Executors.newFixedThreadPool(3);
     // 主线程 Handler，用于回调
     private static final Handler mainHandler = new Handler(Looper.getMainLooper());
 
@@ -70,6 +70,10 @@ public class WKDBHelper {
             File databaseFile = ctx.getDatabasePath(myDBName);
             databaseFile.getParentFile().mkdirs();
             mDb = SQLiteDatabase.openOrCreateDatabase(databaseFile, uid, null, null, null);
+            // 开启WAL模式：读写分离，解决锁竞争导致的ANR
+            try (Cursor c = mDb.rawQuery("PRAGMA journal_mode=WAL", null)) {
+                if (c != null) c.moveToFirst();
+            }
             WKDBUpgrade.getInstance().onUpgrade(mDb);
         } catch (Exception e) {
             WKLoggerUtils.getInstance().e(TAG + " init WKDBHelper error: " + e.getMessage());
@@ -145,14 +149,24 @@ public class WKDBHelper {
         if (mDb == null) {
             return null;
         }
-        return mDb.rawQuery(sql, null);
+        try {
+            return mDb.rawQuery(sql, null);
+        } catch (android.database.sqlite.SQLiteException e) {
+            WKLoggerUtils.getInstance().e(TAG, "rawQuery异常: " + e.getMessage() + " SQL: " + sql);
+            return null;
+        }
     }
 
     public Cursor rawQuery(String sql, Object[] selectionArgs) {
         if (mDb == null) {
             return null;
         }
-        return mDb.rawQuery(sql, selectionArgs);
+        try {
+            return mDb.rawQuery(sql, selectionArgs);
+        } catch (android.database.sqlite.SQLiteException e) {
+            WKLoggerUtils.getInstance().e(TAG, "rawQuery异常: " + e.getMessage() + " SQL: " + sql);
+            return null;
+        }
     }
 
     public Cursor select(String table, String selection,
