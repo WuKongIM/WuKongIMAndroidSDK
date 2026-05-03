@@ -37,7 +37,7 @@ public class WKDBHelper {
     private static final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     public SQLiteDatabase getDb() {
-        return mDb;
+        return isClosed ? null : mDb;
     }
 
     private volatile static WKDBHelper openHelper = null;
