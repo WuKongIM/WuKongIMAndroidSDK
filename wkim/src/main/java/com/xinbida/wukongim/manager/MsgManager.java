@@ -1,7 +1,6 @@
 package com.xinbida.wukongim.manager;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -304,6 +303,7 @@ public class MsgManager extends BaseManager {
      */
     public void getOrSyncHistoryMessages(String channelId, byte channelType, long oldestOrderSeq, boolean contain, int pullMode, int limit, long aroundMsgOrderSeq, final IGetOrSyncHistoryMsgBack iGetOrSyncHistoryMsgBack) {
         new Thread(() -> {
+            try {
             int tempPullMode = pullMode;
             long tempOldestOrderSeq = oldestOrderSeq;
             boolean tempContain = contain;
@@ -348,6 +348,10 @@ public class MsgManager extends BaseManager {
                 }
             }
             MsgDbManager.getInstance().queryOrSyncHistoryMessages(channelId, channelType, tempOldestOrderSeq, tempContain, tempPullMode, limit, iGetOrSyncHistoryMsgBack);
+            } catch (Throwable t) {
+                // Bugly#33246 防御：DB 关闭竞态 / 登出路径导致的连接池关闭等异步崩溃，在此兜底
+                com.xinbida.wukongim.utils.WKLoggerUtils.getInstance().e("MsgManager", "getOrSyncHistoryMessages aborted: " + t.getMessage());
+            }
         }).start();
     }
 
@@ -955,10 +959,18 @@ public class MsgManager extends BaseManager {
     public void setSyncChannelMsgListener(String channelID, byte channelType, long startMessageSeq, long endMessageSeq, int limit, int pullMode, ISyncChannelMsgBack iSyncChannelMsgBack) {
         if (this.iSyncChannelMsgListener != null) {
             runOnMainThread(() -> iSyncChannelMsgListener.syncChannelMsgs(channelID, channelType, startMessageSeq, endMessageSeq, limit, pullMode, syncChannelMsg -> {
-                if (syncChannelMsg != null && WKCommonUtils.isNotEmpty(syncChannelMsg.messages)) {
-                    saveSyncChannelMSGs(syncChannelMsg.messages);
-                }
-                iSyncChannelMsgBack.onBack(syncChannelMsg);
+                // DB写入和后续查询移至后台线程，避免主线程SQLCipher连接池竞争ANR
+                new Thread(() -> {
+                    try {
+                        if (syncChannelMsg != null && WKCommonUtils.isNotEmpty(syncChannelMsg.messages)) {
+                            saveSyncChannelMSGs(syncChannelMsg.messages);
+                        }
+                        iSyncChannelMsgBack.onBack(syncChannelMsg);
+                    } catch (Throwable t) {
+                        WKLoggerUtils.getInstance().e("MsgManager", "saveSyncChannelMSGs aborted: " + t.getMessage());
+                        iSyncChannelMsgBack.onBack(null);
+                    }
+                }).start();
             }));
         }
     }
@@ -995,8 +1007,15 @@ public class MsgManager extends BaseManager {
         if (WKCommonUtils.isNotEmpty(reactionList)) {
             MsgDbManager.getInstance().insertMsgReactions(reactionList);
         }
-        List<WKMsg> saveList = MsgDbManager.getInstance().queryWithMsgIds(msgIds);
-        getMsgReactionsAndRefreshMsg(msgIds, saveList);
+        // Bugly#30231 OOM 优化：复用 msgList 而不是再次全量 queryWithMsgIds，
+        // 避免 200-500 条消息同时在堆里持有两份（50-200MB 重复占用）
+        // reactionList 清空让 getMsgReactionsAndRefreshMsg 从 DB 重建，行为与原 saveList 路径等价
+        if (WKCommonUtils.isNotEmpty(msgList)) {
+            for (int i = 0, size = msgList.size(); i < size; i++) {
+                msgList.get(i).reactionList = null;
+            }
+            getMsgReactionsAndRefreshMsg(msgIds, msgList);
+        }
     }
 
     public void addOnSendMsgAckListener(String key, ISendACK iSendACKListener) {

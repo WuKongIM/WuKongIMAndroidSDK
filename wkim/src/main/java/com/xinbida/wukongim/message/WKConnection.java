@@ -713,6 +713,9 @@ public class WKConnection {
                                     resendMsg();
                                     WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.success, WKConnectReason.ConnectSuccess);
                                 }
+                            } catch (Throwable t) {
+                                // Bugly#33246 防御：saveReceiveMsg 若撞到 DB 关闭竞态，兜底吞异常
+                                WKLoggerUtils.getInstance().e(TAG, "setSyncOfflineMsg callback aborted: " + t.getMessage());
                             } finally {
                                 if (innerLocked) {
                                     connectionLock.unlock();
@@ -736,6 +739,9 @@ public class WKConnection {
                                 resendMsg();
                                 WKIM.getInstance().getConnectionManager().setConnectionStatus(WKConnectStatus.success, WKConnectReason.ConnectSuccess);
                             }
+                        } catch (Throwable t) {
+                            // Bugly#33246 防御：回调内 DB 访问若撞到关闭竞态，兜底吞异常
+                            WKLoggerUtils.getInstance().e(TAG, "setSyncConversationListener callback aborted: " + t.getMessage());
                         } finally {
                             if (innerLocked) {
                                 connectionLock.unlock();
@@ -745,7 +751,12 @@ public class WKConnection {
                 }
             } else if (status == WKConnectStatus.kicked) {
                 WKLoggerUtils.getInstance().e(TAG, "Received kick message");
-                MessageHandler.getInstance().updateLastSendingMsgFail();
+                try {
+                    MessageHandler.getInstance().updateLastSendingMsgFail();
+                } catch (Throwable t) {
+                    // Bugly#33246 防御：kicked 场景 DB 可能已被登出路径关闭
+                    WKLoggerUtils.getInstance().e(TAG, "updateLastSendingMsgFail aborted: " + t.getMessage());
+                }
                 WKIMApplication.getInstance().isCanConnect = false;
                 stopAll();
             } else {

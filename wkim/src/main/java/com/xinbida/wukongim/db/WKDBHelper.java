@@ -28,6 +28,8 @@ public class WKDBHelper {
     private static final String TAG = "WKDBHelper";
 //    private DatabaseHelper mDbHelper;
     private SQLiteDatabase mDb;
+    // Bugly#33246 防御：关闭后所有 entry 方法 short-circuit，避免 IllegalStateException: connection pool closed
+    private volatile boolean isClosed = false;
     
     // 数据库操作线程池（3线程，配合WAL模式支持读写并发）
     private static final ExecutorService dbExecutor = Executors.newFixedThreadPool(3);
@@ -35,7 +37,7 @@ public class WKDBHelper {
     private static final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     public SQLiteDatabase getDb() {
-        return mDb;
+        return isClosed ? null : mDb;
     }
 
     private volatile static WKDBHelper openHelper = null;
@@ -122,6 +124,8 @@ public class WKDBHelper {
      */
     public void close() {
         try {
+            // 先置 isClosed，阻止后续 entry；后台线程内已拿到 cursor 的也会通过 catch 兜底
+            isClosed = true;
             uid = "";
             if (mDb != null) {
                 mDb.close();
@@ -139,31 +143,35 @@ public class WKDBHelper {
 
 
     void insertSql(String tab, ContentValues cv) {
-        if (mDb == null) {
+        if (isClosed || mDb == null) {
             return;
         }
-        mDb.insertWithOnConflict(tab, "", cv, SQLiteDatabase.CONFLICT_REPLACE);
+        try {
+            mDb.insertWithOnConflict(tab, "", cv, SQLiteDatabase.CONFLICT_REPLACE);
+        } catch (IllegalStateException | android.database.SQLException e) {
+            WKLoggerUtils.getInstance().e(TAG, "insertSql aborted: " + e.getMessage());
+        }
     }
 
     public Cursor rawQuery(String sql) {
-        if (mDb == null) {
+        if (isClosed || mDb == null) {
             return null;
         }
         try {
             return mDb.rawQuery(sql, null);
-        } catch (android.database.sqlite.SQLiteException e) {
+        } catch (IllegalStateException | android.database.SQLException e) {
             WKLoggerUtils.getInstance().e(TAG, "rawQuery异常: " + e.getMessage() + " SQL: " + sql);
             return null;
         }
     }
 
     public Cursor rawQuery(String sql, Object[] selectionArgs) {
-        if (mDb == null) {
+        if (isClosed || mDb == null) {
             return null;
         }
         try {
             return mDb.rawQuery(sql, selectionArgs);
-        } catch (android.database.sqlite.SQLiteException e) {
+        } catch (IllegalStateException | android.database.SQLException e) {
             WKLoggerUtils.getInstance().e(TAG, "rawQuery异常: " + e.getMessage() + " SQL: " + sql);
             return null;
         }
@@ -172,7 +180,7 @@ public class WKDBHelper {
     public Cursor select(String table, String selection,
                          String[] selectionArgs,
                          String orderBy) {
-        if (mDb == null) return null;
+        if (isClosed || mDb == null) return null;
         Cursor cursor;
         try {
             cursor = mDb.query(table, null, selection, selectionArgs,
@@ -185,7 +193,7 @@ public class WKDBHelper {
     }
 
     public long insert(String table, ContentValues cv) {
-        if (mDb == null) return 0;
+        if (isClosed || mDb == null) return 0;
         long count = 0;
         try {
             count = mDb.insert(table, SQLiteDatabase.CONFLICT_REPLACE, cv);
@@ -204,14 +212,19 @@ public class WKDBHelper {
     }
 
     public boolean delete(String tableName, String where, String[] whereValue) {
-        if (mDb == null) return false;
-        int count = mDb.delete(tableName, where, whereValue);
-        return count > 0;
+        if (isClosed || mDb == null) return false;
+        try {
+            int count = mDb.delete(tableName, where, whereValue);
+            return count > 0;
+        } catch (IllegalStateException | android.database.SQLException e) {
+            WKLoggerUtils.getInstance().e(TAG, "delete aborted: " + e.getMessage());
+            return false;
+        }
     }
 
     public int update(String table, String[] updateFields,
                       String[] updateValues, String where, String[] whereValue) {
-        if (mDb == null) return 0;
+        if (isClosed || mDb == null) return 0;
         ContentValues cv = new ContentValues();
         for (int i = 0; i < updateFields.length; i++) {
             cv.put(updateFields[i], updateValues[i]);
@@ -227,7 +240,7 @@ public class WKDBHelper {
 
     public boolean update(String tableName, ContentValues cv, String where,
                           String[] whereValue) {
-        if (mDb == null) return false;
+        if (isClosed || mDb == null) return false;
         boolean flag = false;
         try {
             flag = mDb.update(tableName, cv, where, whereValue) > 0;
@@ -239,7 +252,7 @@ public class WKDBHelper {
 
     public boolean update(String tableName, String whereClause,
                           ContentValues args) {
-        if (mDb == null) return false;
+        if (isClosed || mDb == null) return false;
         boolean flag = false;
         try {
             flag = mDb.update(tableName, args, whereClause, null) > 0;

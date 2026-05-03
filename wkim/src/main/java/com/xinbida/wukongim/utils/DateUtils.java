@@ -22,12 +22,23 @@ public class DateUtils {
         return DateUtilsBinder.DATE_UTILS;
     }
 
+    /**
+     * Bugly#35089/#35070: 历史消息/群成员分页查询时，每行反序列化都 new 一次 SimpleDateFormat，
+     * 100 行 = ~200 个实例的瞬时分配。SimpleDateFormat 非线程安全，用 ThreadLocal 让每个线程
+     * 复用一个实例：分配从 O(N 行) 降到 O(线程数)。
+     */
+    private static final ThreadLocal<SimpleDateFormat> SDF_CACHE = new ThreadLocal<SimpleDateFormat>() {
+        @Override
+        protected SimpleDateFormat initialValue() {
+            return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+        }
+    };
+
     public String time2DateStr(long timeStamp) {
         if (String.valueOf(timeStamp).length() < 13) {
             timeStamp = timeStamp * 1000;
         }
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
-        return sdf.format(new Date(timeStamp));
+        return SDF_CACHE.get().format(new Date(timeStamp));
     }
 
 

@@ -4,6 +4,7 @@ import android.text.TextUtils;
 
 import com.xinbida.wukongim.WKIM;
 import com.xinbida.wukongim.WKIMApplication;
+import com.xinbida.wukongim.db.WKDBHelper;
 import com.xinbida.wukongim.interfaces.IConnectionStatus;
 import com.xinbida.wukongim.interfaces.IGetIpAndPort;
 import com.xinbida.wukongim.message.MessageHandler;
@@ -75,15 +76,24 @@ public class ConnectionManager extends BaseManager {
         WKConnection.getInstance().stopAll();
         WKIM.getInstance().getChannelManager().clearARMCache();
         WKIM.getInstance().getReminderManager().clearAllCache();
-        // DB操作移到后台线程，避免主线程ANR
+        // 捕获当前 DBHelper 引用，延迟关闭只关这个实例：
+        // 避免 500ms sleep 期间用户快速重登 → getDbHelper() 返回新实例 → 被误关
+        final WKDBHelper targetDbHelper = WKIMApplication.getInstance().getDbHelper();
         new Thread(() -> {
             try {
                 MessageHandler.getInstance().saveReceiveMsg();
                 MessageHandler.getInstance().updateLastSendingMsgFail();
+            } catch (Throwable t) {
+                // Bugly#33246 防御：登出落盘若撞到 DB 关闭竞态，不让进程崩溃
+                WKLoggerUtils.getInstance().e(TAG, "logout save aborted: " + t.getMessage());
             } finally {
                 // 延迟关闭DB，等待其他in-flight DB操作完成
                 try { Thread.sleep(500); } catch (InterruptedException ignored) {}
-                WKIMApplication.getInstance().closeDbHelper();
+                // 500ms 窗口内若用户已快速重登（token 非空），则跳过关闭——
+                // 因为 WKDBHelper 同 uid 复用同一实例，关了就把新会话的活实例也关了
+                if (TextUtils.isEmpty(WKIMApplication.getInstance().getToken())) {
+                    WKIMApplication.getInstance().closeDbHelper(targetDbHelper);
+                }
             }
         }, "logout-db").start();
     }

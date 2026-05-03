@@ -107,6 +107,7 @@ public class ChannelMembersManager extends BaseManager {
     public synchronized void save(List<WKChannelMember> list) {
         if (WKCommonUtils.isEmpty(list)) return;
         new Thread(() -> {
+            try {
             String channelID = list.get(0).channelID;
             byte channelType = list.get(0).channelType;
 
@@ -167,6 +168,10 @@ public class ChannelMembersManager extends BaseManager {
                 for (int i = 0, size = updateList.size(); i < size; i++) {
                     setRefreshChannelMember(updateList.get(i), i == updateList.size() - 1);
                 }
+            }
+            } catch (Throwable t) {
+                // Bugly#33246 防御：DB 关闭竞态导致的后台线程崩溃
+                com.xinbida.wukongim.utils.WKLoggerUtils.getInstance().e("ChannelMembersManager", "save aborted: " + t.getMessage());
             }
         }).start();
 
