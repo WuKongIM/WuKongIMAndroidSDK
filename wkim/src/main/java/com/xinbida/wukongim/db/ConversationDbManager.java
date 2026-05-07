@@ -91,7 +91,7 @@ public class ConversationDbManager {
                 return list;
             }
             List<String> clientMsgNos = new ArrayList<>();
-            for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
+            for (WKDBHelper.safeMoveToFirst(cursor); !WKDBHelper.safeIsAfterLast(cursor); WKDBHelper.safeMoveToNext(cursor)) {
                 WKConversationMsg msg = serializeMsg(cursor);
                 if (msg.isDeleted == 0) {
                     WKUIConversationMsg uiMsg = getUIMsg(msg, cursor);
@@ -190,7 +190,7 @@ public class ConversationDbManager {
                 return list;
             }
 
-            for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
+            for (WKDBHelper.safeMoveToFirst(cursor); !WKDBHelper.safeIsAfterLast(cursor); WKDBHelper.safeMoveToNext(cursor)) {
                 WKConversationMsg msg = serializeMsg(cursor);
                 WKUIConversationMsg uiMsg = getUIMsg(msg, cursor);
                 list.add(uiMsg);
@@ -210,7 +210,7 @@ public class ConversationDbManager {
                 return list;
             }
 
-            for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
+            for (WKDBHelper.safeMoveToFirst(cursor); !WKDBHelper.safeIsAfterLast(cursor); WKDBHelper.safeMoveToNext(cursor)) {
                 WKConversationMsg msg = serializeMsg(cursor);
                 list.add(msg);
             }
@@ -246,7 +246,7 @@ public class ConversationDbManager {
                 .getDbHelper()
                 .rawQuery(sql);
         if (cursor != null) {
-            if (cursor.moveToFirst()) {
+            if (WKDBHelper.safeMoveToFirst(cursor)) {
                 maxVersion = WKCursor.readLong(cursor, WKDBColumns.WKCoverMessageColumns.version);
             }
             cursor.close();
@@ -269,7 +269,7 @@ public class ConversationDbManager {
         if (cursor == null) {
             return lastMsgSeqs;
         }
-        if (cursor.moveToFirst()) {
+        if (WKDBHelper.safeMoveToFirst(cursor)) {
             lastMsgSeqs = WKCursor.readString(cursor, "synckey");
         }
         cursor.close();
@@ -310,7 +310,7 @@ public class ConversationDbManager {
                 .rawQuery(sql, new Object[]{channelID, channelType});
         WKConversationMsg conversationMsg = null;
         if (cursor != null) {
-            if (cursor.moveToFirst()) {
+            if (WKDBHelper.safeMoveToFirst(cursor)) {
                 conversationMsg = serializeMsg(cursor);
             }
             cursor.close();
@@ -420,7 +420,7 @@ public class ConversationDbManager {
                 .select(conversation, selection, selectionArgs,
                         null);
         if (cursor != null) {
-            if (cursor.moveToFirst()) {
+            if (WKDBHelper.safeMoveToFirst(cursor)) {
                 msg = serializeMsg(cursor);
             }
             cursor.close();
@@ -441,7 +441,7 @@ public class ConversationDbManager {
                 .getInstance()
                 .getDbHelper().select(conversationExtra, selection, new String[]{channelID, String.valueOf(channelType)}, null);
         if (cursor != null) {
-            if (cursor.moveToFirst()) {
+            if (WKDBHelper.safeMoveToFirst(cursor)) {
                 msgExtra = serializeMsgExtra(cursor);
             }
             cursor.close();
@@ -456,7 +456,7 @@ public class ConversationDbManager {
             if (cursor == null) {
                 return list;
             }
-            for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
+            for (WKDBHelper.safeMoveToFirst(cursor); !WKDBHelper.safeIsAfterLast(cursor); WKDBHelper.safeMoveToNext(cursor)) {
                 WKConversationMsgExtra extra = serializeMsgExtra(cursor);
                 list.add(extra);
             }
@@ -549,7 +549,7 @@ public class ConversationDbManager {
                 .getDbHelper()
                 .rawQuery(sql);
         if (cursor != null) {
-            if (cursor.moveToFirst()) {
+            if (WKDBHelper.safeMoveToFirst(cursor)) {
                 maxVersion = WKCursor.readLong(cursor, "version");
             }
             cursor.close();
