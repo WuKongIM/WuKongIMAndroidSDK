@@ -142,6 +142,41 @@ public class WKDBHelper {
     }
 
 
+    /**
+     * Bugly#33446 兜底：cursor.moveToFirst() 在 lazy fillWindow 时向连接池拿 connection，
+     * 若连接池已关（logout race / 切账号），抛 IllegalStateException。
+     * 所有 DbManager 的 cursor 消费点都应改用此 helper（PR #25 1926a14 只覆盖了 rawQuery 入口，
+     * cursor 拿到后离开 WKDBHelper 再 fillWindow 不在防御范围内）。
+     */
+    public static boolean safeMoveToFirst(Cursor cursor) {
+        if (cursor == null) return false;
+        try {
+            return cursor.moveToFirst();
+        } catch (IllegalStateException | android.database.SQLException e) {
+            WKLoggerUtils.getInstance().e(TAG, "safeMoveToFirst aborted: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public static boolean safeMoveToNext(Cursor cursor) {
+        if (cursor == null) return false;
+        try {
+            return cursor.moveToNext();
+        } catch (IllegalStateException | android.database.SQLException e) {
+            WKLoggerUtils.getInstance().e(TAG, "safeMoveToNext aborted: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public static boolean safeIsAfterLast(Cursor cursor) {
+        if (cursor == null) return true;
+        try {
+            return cursor.isAfterLast();
+        } catch (IllegalStateException | android.database.SQLException e) {
+            return true;  // fail-safe，跳出循环
+        }
+    }
+
     void insertSql(String tab, ContentValues cv) {
         if (isClosed || mDb == null) {
             return;
