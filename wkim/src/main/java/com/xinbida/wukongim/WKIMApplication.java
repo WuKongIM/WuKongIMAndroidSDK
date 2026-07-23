@@ -3,6 +3,7 @@ package com.xinbida.wukongim;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
+import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
 import android.os.Build;
@@ -209,12 +210,11 @@ public class WKIMApplication {
         ConnectivityManager manager = (ConnectivityManager) mContext.get().getSystemService(Context.CONNECTIVITY_SERVICE);
         if (manager != null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                NetworkCapabilities networkCapabilities = manager.getNetworkCapabilities(manager.getActiveNetwork());
-                if (networkCapabilities != null) {
-                    return networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
-                            || networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
-                            || networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET);
-                }
+                Network activeNetwork = manager.getActiveNetwork();
+                if (activeNetwork == null) return false;
+                NetworkCapabilities networkCapabilities = manager.getNetworkCapabilities(activeNetwork);
+                return networkCapabilities != null
+                        && networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
             } else {
                 NetworkInfo networkInfo = manager.getActiveNetworkInfo();
                 return networkInfo != null && networkInfo.isConnected();
