@@ -209,6 +209,13 @@ public class WKIMApplication {
         }
         ConnectivityManager manager = (ConnectivityManager) mContext.get().getSystemService(Context.CONNECTIVITY_SERVICE);
         if (manager != null) {
+            // Android 8.x 上部分 VPN 实现不会给活动网络附加 INTERNET capability，
+            // 但 NetworkInfo 会正确报告 VPN 已连接。
+            if (Build.VERSION.SDK_INT == Build.VERSION_CODES.O
+                    || Build.VERSION.SDK_INT == Build.VERSION_CODES.O_MR1) {
+                NetworkInfo networkInfo = manager.getActiveNetworkInfo();
+                return networkInfo != null && networkInfo.isConnected();
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 Network activeNetwork = manager.getActiveNetwork();
                 if (activeNetwork == null) return false;
